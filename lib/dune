@@ -1,0 +1,6 @@
+
+(library
+ (name miiify)
+ (libraries irmin-unix ezjsonm)
+  (preprocess (pps lwt_ppx ppx_yojson_conv)))
+
