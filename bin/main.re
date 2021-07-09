@@ -1,18 +1,36 @@
 open Miiify;
 open Lwt.Infix;
 
-let () =
+// store our context
+type t = {db: Db.t};
+
+// not initialised yet
+let ctx = ref(None);
+
+let init = () => {
+  ctx := Some({db: Db.create("my_db")});
+  Dream.log("Initialised the database");
+};
+
+let run = () =>
   Dream.run @@
   Dream.logger @@
   Dream.router([
     Dream.post("/annotations/", request => {
       Dream.body(request)
       >|= Annotation.create
-      >>= (
-        obj => {
-          Annotation.id(obj) |> Dream.json;
-        }
-      )
+      >>= {
+        obj =>
+          Db.add(
+            ~ctx=Option.get(ctx^).db,
+            ~key=Annotation.id(obj),
+            ~data=Ezjsonm.dict([]),
+          )
+          >>= (() => Dream.html("Good morning, world!"));
+      }
     }),
   ]) @@
   Dream.not_found;
+
+  init();
+  run();

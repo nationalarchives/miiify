@@ -1,7 +1,7 @@
+type t;
 
+let create: (~fname: string) => t;
 
-let create: (~fname: string) => unit;
+let add: (~ctx: t, ~key: string, ~data: Ezjsonm.t) => Lwt.t(unit);
 
-let add: (~key: string, ~data: Ezjsonm.t) => Lwt.t(unit);
-
-let get: (~key: string) => Lwt.t(Ezjsonm.t);
+let get: (~ctx: t, ~key: string) => Lwt.t(Ezjsonm.t);
