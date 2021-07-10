@@ -16,7 +16,7 @@ let create = (~fname) => {
 };
 
 let add = (~ctx, ~key, ~data) => {
-  let json = Ezjsonm.dict([]);
+  let json = Ezjsonm.value(data);
   ctx.db
   >>= {
     branch => Proj.set(branch, [key], json, ~info=info("adding data"));
