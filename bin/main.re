@@ -8,7 +8,7 @@ type t = {db: Db.t};
 let ctx = ref(None);
 
 let init = () => {
-  ctx := Some({db: Db.create("my_db")});
+  ctx := Some({db: Db.create("miiify_db")});
   Dream.log("Initialised the database");
 };
 
@@ -24,7 +24,7 @@ let run = () =>
           Db.add(
             ~ctx=Option.get(ctx^).db,
             ~key=Annotation.id(obj),
-            ~data=Ezjsonm.dict([]),
+            ~data=Ezjsonm.from_string(""),
           )
           >>= (() => Dream.html("Good morning, world!"));
       }
