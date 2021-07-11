@@ -24,5 +24,9 @@ let add = (~ctx, ~key, ~data) => {
 };
 
 let get = (~ctx, ~key) => {
-  Ezjsonm.dict([]) |> Lwt.return;
+  ctx.db
+  >>= {
+    branch =>
+      Proj.get(branch, [key]) >|= (json => `O(Ezjsonm.get_dict(json)))
+  };
 };

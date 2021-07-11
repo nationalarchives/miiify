@@ -8,7 +8,7 @@ type t = {db: Db.t};
 let ctx = ref(None);
 
 let init = () => {
-  ctx := Some({db: Db.create("db")});
+  ctx := Some({db: Db.create(~fname="db")});
   Dream.log("Initialised the database");
 };
 
@@ -31,6 +31,11 @@ let run = () =>
               >>= (() => Dream.html("Good morning, world!"))
           )
       )
+    }),
+    Dream.get("/annotations/:id", request => {
+      Db.get(~ctx=Option.get(ctx^).db, ~key=Dream.param("id", request))
+      >|= Ezjsonm.to_string
+      >>= Dream.json
     }),
   ]) @@
   Dream.not_found;
