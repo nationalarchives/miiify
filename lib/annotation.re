@@ -1,18 +1,9 @@
+open Annotate_t;
 
-[@deriving yojson]
-type annotation_object = {
-  [@key "@context"] context: string,
-  id: string,
-  [@key "type"] type_: string,
-  body: string,
-  target: string,
-};
-
-type t = annotation_object;
+type t = basic_annotation;
 
 let create = (s) => {
-  let json = Yojson.Safe.from_string(s);
-  annotation_object_of_yojson(json);
+  Annotate_j.basic_annotation_of_string(s);
 }
 
 let id = (obj) => obj.id;

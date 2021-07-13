@@ -1,6 +1,15 @@
+(rule
+  (targets annotate_j.ml annotate_j.mli)
+  (deps    annotate.atd)
+  (action  (run atdgen -j %{deps})))
+
+(rule
+  (targets annotate_t.ml annotate_t.mli)
+  (deps    annotate.atd)
+  (action  (run atdgen -t %{deps})))
 
 (library
  (name miiify)
- (libraries dream irmin-unix ezjsonm)
-  (preprocess (pps lwt_ppx ppx_yojson_conv)))
+ (libraries dream irmin-unix ezjsonm atdgen)
+ (modules db annotation annotate_t annotate_j))
 
