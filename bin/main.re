@@ -12,8 +12,22 @@ let init = () => {
   Dream.log("Initialised the database");
 };
 
+
+let error_response = (code, reason) => {
+  open Ezjsonm;
+  let json = dict([("code", int(code)), ("reason", string(reason))]);
+  to_string(json);
+}
+
+let error_template = (debug_info, suggested_response) => {
+  let status = Dream.status(suggested_response);
+  let code = Dream.status_to_int(status)
+  and reason = Dream.status_to_string(status);
+  Dream.json(error_response(code, reason), ~code=code);
+}
+
 let run = () =>
-  Dream.run @@
+  Dream.run(~error_handler=Dream.error_template(error_template)) @@
   Dream.logger @@
   Dream.router([
     Dream.post("/annotations/", request => {
