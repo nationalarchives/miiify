@@ -12,19 +12,18 @@ let init = () => {
   Dream.log("Initialised the database");
 };
 
-
 let error_response = (code, reason) => {
   open Ezjsonm;
   let json = dict([("code", int(code)), ("reason", string(reason))]);
   to_string(json);
-}
+};
 
 let error_template = (debug_info, suggested_response) => {
   let status = Dream.status(suggested_response);
   let code = Dream.status_to_int(status)
   and reason = Dream.status_to_string(status);
-  Dream.json(error_response(code, reason), ~code=code);
-}
+  Dream.json(error_response(code, reason), ~code);
+};
 
 let run = () =>
   Dream.run(~error_handler=Dream.error_template(error_template)) @@
@@ -42,9 +41,22 @@ let run = () =>
                 ~key=Annotation.id(obj),
                 ~data=Ezjsonm.from_string(data),
               )
-              >>= (() => Dream.html("Good morning, world!"))
+              >>= (() => Dream.json(data, ~code=201))
           )
       )
+    }),
+    Dream.put("/annotations/:id", request => {
+      Dream.body(request)
+      >>= {
+        data => {
+          Db.add(
+            ~ctx=Option.get(ctx^).db,
+            ~key=Dream.param("id", request),
+            ~data=Ezjsonm.from_string(data),
+          )
+          >>= (() => Dream.json(data));
+        }
+      }
     }),
     Dream.get("/annotations/:id", request => {
       Db.get(~ctx=Option.get(ctx^).db, ~key=Dream.param("id", request))
