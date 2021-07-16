@@ -35,13 +35,16 @@ let run = () =>
         data =>
           Annotation.create(data)
           |> (
-            obj =>
+            obj => {
+              let id = Annotation.id(obj);
               Db.add(
                 ~ctx=Option.get(ctx^).db,
-                ~key=Annotation.id(obj),
+                ~key=id,
                 ~data=Ezjsonm.from_string(data),
+                ~message="CREATE " ++ id,
               )
-              >>= (() => Dream.json(data, ~code=201))
+              >>= (() => Dream.json(data, ~code=201));
+            }
           )
       )
     }),
@@ -49,13 +52,15 @@ let run = () =>
       Dream.body(request)
       >>= {
         data => {
+          let id = Dream.param("id", request);
           Db.add(
             ~ctx=Option.get(ctx^).db,
             ~key=Dream.param("id", request),
             ~data=Ezjsonm.from_string(data),
+            ~message="UPDATE " ++ id,
           )
           >>= (() => Dream.json(data));
-        }
+        };
       }
     }),
     Dream.get("/annotations/:id", request => {

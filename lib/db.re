@@ -15,11 +15,11 @@ let create = (~fname) => {
   {db: branch};
 };
 
-let add = (~ctx, ~key, ~data) => {
+let add = (~ctx, ~key, ~data, ~message) => {
   let json = Ezjsonm.value(data);
   ctx.db
   >>= {
-    branch => Proj.set(branch, [key], json, ~info=info("adding data"));
+    branch => Proj.set(branch, [key], json, ~info=info(message));
   };
 };
 
