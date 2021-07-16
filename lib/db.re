@@ -27,6 +27,11 @@ let get = (~ctx, ~key) => {
   ctx.db
   >>= {
     branch =>
-      Proj.get(branch, [key]) >|= (json => `O(Ezjsonm.get_dict(json)))
+      Proj.get(branch, [key]) >|= (json => `O(Ezjsonm.get_dict(json)));
   };
+};
+
+let delete = (~ctx, ~key, ~message) => {
+  ctx.db
+  >>= (branch => Store.remove_exn(branch, [key], ~info=info(message)));
 };

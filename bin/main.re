@@ -55,13 +55,18 @@ let run = () =>
           let id = Dream.param("id", request);
           Db.add(
             ~ctx=Option.get(ctx^).db,
-            ~key=Dream.param("id", request),
+            ~key=id,
             ~data=Ezjsonm.from_string(data),
             ~message="UPDATE " ++ id,
           )
           >>= (() => Dream.json(data));
         };
       }
+    }),
+    Dream.delete("/annotations/:id", request => {
+      let id = Dream.param("id", request);
+      Db.delete(~ctx=Option.get(ctx^).db, ~key=id, ~message="DELETE " ++ id)
+      >>= (() => Dream.empty(Dream.(`No_Content)));
     }),
     Dream.get("/annotations/:id", request => {
       Db.get(~ctx=Option.get(ctx^).db, ~key=Dream.param("id", request))
