@@ -35,3 +35,8 @@ let delete = (~ctx, ~key, ~message) => {
   ctx.db
   >>= (branch => Store.remove_exn(branch, [key], ~info=info(message)));
 };
+
+let exists = (~ctx, ~key) => {
+  ctx.db
+  >>= (branch => Store.mem(branch, [key]))
+}
