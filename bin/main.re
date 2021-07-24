@@ -12,21 +12,15 @@ let init = () => {
   Dream.log("Initialised the database");
 };
 
-let error_response = (code, reason) => {
+let error_response = (status, reason) => {
   open Ezjsonm;
+  let code = Dream.status_to_int(status);
   let json = dict([("code", int(code)), ("reason", string(reason))]);
   to_string(json);
 };
 
-let error_template = (debug_info, suggested_response) => {
-  let status = Dream.status(suggested_response);
-  let code = Dream.status_to_int(status)
-  and reason = Dream.status_to_string(status);
-  Dream.json(error_response(code, reason), ~code);
-};
-
 let run = () =>
-  Dream.run(~error_handler=Dream.error_template(error_template)) @@
+  Dream.run @@
   Dream.logger @@
   Dream.router([
     Dream.post("/annotations/", request => {
@@ -54,17 +48,32 @@ let run = () =>
           |> {
             obj => {
               let id = Dream.param("id", request);
-              // make sure the id's match
-              if (id == Data.id(obj)) {
-                Db.add(
-                  ~ctx=Option.get(ctx^).db,
-                  ~key=id,
-                  ~json=Data.json(obj),
-                  ~message="UPDATE " ++ id,
-                )
-                >>= (() => Dream.json(body));
-              } else {
-                Dream.empty(`Bad_Request);
+              let ctx = Option.get(ctx^).db;
+              Db.exists(~ctx, ~key=id)
+              >>= {
+                ok =>
+                  if (ok) {
+                    // make sure the id's match
+                    if (id == Data.id(obj)) {
+                      Db.add(
+                        ~ctx,
+                        ~key=id,
+                        ~json=Data.json(obj),
+                        ~message="UPDATE " ++ id,
+                      )
+                      >>= (() => Dream.json(body));
+                    } else {
+                      let json =
+                        error_response(
+                          `Bad_Request,
+                          "id in body does not match path parameter",
+                        );
+                      Dream.json(~status=`Bad_Request, json);
+                    };
+                  } else {
+                    let json = error_response(`Not_Found, "id not found");
+                    Dream.json(~status=`Not_Found, json);
+                  };
               };
             };
           };
@@ -72,13 +81,32 @@ let run = () =>
     }),
     Dream.delete("/annotations/:id", request => {
       let id = Dream.param("id", request);
-      Db.delete(~ctx=Option.get(ctx^).db, ~key=id, ~message="DELETE " ++ id)
-      >>= (() => Dream.empty(`No_Content));
+      let ctx = Option.get(ctx^).db;
+      Db.exists(~ctx, ~key=id)
+      >>= {
+        ok =>
+          if (ok) {
+            Db.delete(~ctx, ~key=id, ~message="DELETE " ++ id)
+            >>= (() => Dream.empty(`No_Content));
+          } else {
+            let json = error_response(`Not_Found, "id not found");
+            Dream.json(~status=`Not_Found, json);
+          };
+      };
     }),
     Dream.get("/annotations/:id", request => {
-      Db.get(~ctx=Option.get(ctx^).db, ~key=Dream.param("id", request))
-      >|= Ezjsonm.to_string
-      >>= Dream.json
+      let id = Dream.param("id", request);
+      let ctx = Option.get(ctx^).db;
+      Db.exists(~ctx, ~key=id)
+      >>= {
+        ok =>
+          if (ok) {
+            Db.get(~ctx, ~key=id) >|= Ezjsonm.to_string >>= Dream.json;
+          } else {
+            let json = error_response(`Not_Found, "id not found");
+            Dream.json(~status=`Not_Found, json);
+          };
+      };
     }),
   ]) @@
   Dream.not_found;

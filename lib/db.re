@@ -38,5 +38,5 @@ let delete = (~ctx, ~key, ~message) => {
 
 let exists = (~ctx, ~key) => {
   ctx.db
-  >>= (branch => Store.mem(branch, [key]))
+  >>= (branch => Store.mem_tree(branch, [key]))
 }
