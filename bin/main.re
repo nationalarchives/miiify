@@ -31,42 +31,49 @@ let run = () =>
   Dream.router([
     Dream.post("/annotations/", request => {
       Dream.body(request)
-      >>= (
-        data =>
-          Annotation.create(data)
-          |> (
-            obj => {
-              let id = Annotation.id(obj);
+      >>= {
+        body =>
+          Data.convert(body)
+          |> {
+            obj =>
               Db.add(
                 ~ctx=Option.get(ctx^).db,
-                ~key=id,
-                ~data=Ezjsonm.from_string(data),
-                ~message="CREATE " ++ id,
+                ~key=Data.id(obj),
+                ~json=Data.json(obj),
+                ~message="CREATE " ++ Data.id(obj),
               )
-              >>= (() => Dream.json(data, ~code=201));
-            }
-          )
-      )
+              >>= (() => Dream.json(body, ~code=201));
+          };
+      }
     }),
     Dream.put("/annotations/:id", request => {
       Dream.body(request)
       >>= {
-        data => {
-          let id = Dream.param("id", request);
-          Db.add(
-            ~ctx=Option.get(ctx^).db,
-            ~key=id,
-            ~data=Ezjsonm.from_string(data),
-            ~message="UPDATE " ++ id,
-          )
-          >>= (() => Dream.json(data));
-        };
+        body =>
+          Data.convert(body)
+          |> {
+            obj => {
+              let id = Dream.param("id", request);
+              // make sure the id's match
+              if (id == Data.id(obj)) {
+                Db.add(
+                  ~ctx=Option.get(ctx^).db,
+                  ~key=id,
+                  ~json=Data.json(obj),
+                  ~message="UPDATE " ++ id,
+                )
+                >>= (() => Dream.json(body));
+              } else {
+                Dream.empty(`Bad_Request);
+              };
+            };
+          };
       }
     }),
     Dream.delete("/annotations/:id", request => {
       let id = Dream.param("id", request);
       Db.delete(~ctx=Option.get(ctx^).db, ~key=id, ~message="DELETE " ++ id)
-      >>= (() => Dream.empty(Dream.(`No_Content)));
+      >>= (() => Dream.empty(`No_Content));
     }),
     Dream.get("/annotations/:id", request => {
       Db.get(~ctx=Option.get(ctx^).db, ~key=Dream.param("id", request))

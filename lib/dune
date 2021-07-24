@@ -11,5 +11,5 @@
 (library
  (name miiify)
  (libraries dream irmin-unix ezjsonm atdgen)
- (modules db annotation annotate_t annotate_j))
+ (modules data db annotation annotate_t annotate_j))
 
