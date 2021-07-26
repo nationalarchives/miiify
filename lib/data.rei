@@ -1,6 +1,8 @@
 type t;
 
-let convert: (string) => t;
+let convert_post: (~data:string, ~id:string, ~host:string) => t;
+
+let convert_put: (~data:string) => t;
 
 let id: (t) => string;
 

@@ -19,6 +19,10 @@ let error_response = (status, reason) => {
   to_string(json);
 };
 
+let gen_uuid = () =>
+  Uuidm.v4_gen(Random.State.make_self_init(), ()) |> Uuidm.to_string;
+
+
 let run = () =>
   Dream.run @@
   Dream.logger @@
@@ -27,7 +31,7 @@ let run = () =>
       Dream.body(request)
       >>= {
         body =>
-          Data.convert(body)
+          Data.convert_post(~data=body, ~id=gen_uuid(), ~host=Option.get(Dream.header("HOST", request)))
           |> {
             obj =>
               Db.add(
@@ -36,7 +40,7 @@ let run = () =>
                 ~json=Data.json(obj),
                 ~message="CREATE " ++ Data.id(obj),
               )
-              >>= (() => Dream.json(body, ~code=201));
+              >>= (() => Dream.json(Ezjsonm.to_string(Data.json(obj)), ~code=201));
           };
       }
     }),
@@ -44,7 +48,7 @@ let run = () =>
       Dream.body(request)
       >>= {
         body =>
-          Data.convert(body)
+          Data.convert_put(~data=body)
           |> {
             obj => {
               let id = Dream.param("id", request);
