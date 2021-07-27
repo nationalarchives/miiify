@@ -28,7 +28,7 @@ let from_post = (~data, ~id, ~host) => {
 // id contained in body
 let from_put = (~data, ~id, ~host) => {
   switch (from_string(data)) {
-  | exception (Parse_error(_, m)) => Result.error(m)
+  | exception (Parse_error(_, _)) => Result.error("could not parse JSON")
   | json =>
     switch (find_opt(json, ["id"])) {
     | None => Result.error("id does not exit")
