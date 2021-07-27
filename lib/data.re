@@ -23,11 +23,18 @@ let from_post = (~data, ~id, ~host) => {
 };
 
 // id contained in body
-let from_put = (~data) => {
+let from_put = (~data, ~id, ~host) => {
   let json = from_string(data);
   switch (find_opt(json, ["id"])) {
   | None => Result.error("id does not exit")
-  | Some(id) => Result.ok({id: get_string(id), json})
+  | Some(id') =>
+    let iri = gen_iri(host, id);
+    let iri' = get_string(id');
+    if (iri == iri') {
+      Result.ok({id: iri, json});
+    } else {
+      Result.error("id does not match");
+    };
   };
 };
 

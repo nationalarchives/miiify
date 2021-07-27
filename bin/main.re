@@ -69,8 +69,9 @@ let run = () =>
     Dream.put("/annotations/:id", request => {
       Dream.body(request)
       >>= {
+        let id = Dream.param("id", request);
         body =>
-          Data.from_put(~data=body)
+          Data.from_put(~data=body, ~id, ~host=get_host(request))
           |> {
             obj =>
               switch (obj) {
@@ -80,30 +81,19 @@ let run = () =>
                   error_response(`Bad_Request, m),
                 )
               | Ok(obj) =>
-                let id = Dream.param("id", request);
                 let ctx = Option.get(ctx^).db;
                 Db.exists(~ctx, ~key=id)
                 >>= {
                   (
                     ok =>
                       if (ok) {
-                        // make sure the id's match
-                        if (id == Data.id(obj)) {
-                          Db.add(
-                            ~ctx,
-                            ~key=id,
-                            ~json=Data.json(obj),
-                            ~message="UPDATE " ++ id,
-                          )
-                          >>= (() => Dream.json(body));
-                        } else {
-                          let json =
-                            error_response(
-                              `Bad_Request,
-                              "id in body does not match path parameter",
-                            );
-                          Dream.json(~status=`Bad_Request, json);
-                        };
+                        Db.add(
+                          ~ctx,
+                          ~key=id,
+                          ~json=Data.json(obj),
+                          ~message="UPDATE " ++ id,
+                        )
+                        >>= (() => Dream.json(body));
                       } else {
                         let json = error_response(`Not_Found, "id not found");
                         Dream.json(~status=`Not_Found, json);
