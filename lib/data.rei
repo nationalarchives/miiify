@@ -7,3 +7,5 @@ let from_put: (~data:string) => t;
 let id: (t) => string;
 
 let json: (t) => Ezjsonm.t;
+
+let to_string: (t) => string;

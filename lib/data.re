@@ -26,3 +26,7 @@ let from_put = (~data) => {
 let id = (r) => r.id;
 
 let json = (r) => r.json;
+
+let to_string = (r) => {
+    Ezjsonm.to_string(r.json);    
+}

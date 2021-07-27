@@ -53,7 +53,7 @@ let run = () =>
                 ~json=Data.json(obj),
                 ~message="CREATE " ++ Data.id(obj),
               )
-              >>= (() => Dream.json(Ezjsonm.to_string(Data.json(obj)), ~code=201));
+              >>= (() => Dream.json(Data.to_string(obj), ~code=201));
           };
       }
     }),
