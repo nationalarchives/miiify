@@ -55,13 +55,24 @@ let run = () =>
                   error_response(`Bad_Request, m),
                 )
               | Ok(obj) =>
-                Db.add(
-                  ~ctx=Option.get(ctx^).db,
-                  ~key=Data.id(obj),
-                  ~json=Data.json(obj),
-                  ~message="CREATE " ++ Data.id(obj),
-                )
-                >>= (() => Dream.json(Data.to_string(obj), ~code=201))
+                let ctx = Option.get(ctx^).db;
+                let key = Data.id(obj);
+                Db.exists(~ctx, ~key)
+                >>= (
+                  ok =>
+                    if (ok) {
+                      let json = error_response(`Bad_Request, "id exists");
+                      Dream.json(~status=`Bad_Request, json);
+                    } else {
+                      Db.add(
+                        ~ctx,
+                        ~key,
+                        ~json=Data.json(obj),
+                        ~message="CREATE " ++ Data.id(obj),
+                      )
+                      >>= (() => Dream.json(Data.to_string(obj), ~code=201));
+                    }
+                );
               };
           };
       }
@@ -95,8 +106,8 @@ let run = () =>
                         )
                         >>= (() => Dream.json(body));
                       } else {
-                        let json = error_response(`Not_Found, "id not found");
-                        Dream.json(~status=`Not_Found, json);
+                        let json = error_response(`Bad_Request, "id not found");
+                        Dream.json(~status=`Bad_Request, json);
                       }
                   );
                 };
