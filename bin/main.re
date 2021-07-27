@@ -44,7 +44,7 @@ let run = () =>
       Dream.body(request)
       >>= {
         body =>
-          Data.convert_post(~data=body, ~id=get_id(request), ~host=get_host(request))
+          Data.from_post(~data=body, ~id=get_id(request), ~host=get_host(request))
           |> {
             obj =>
               Db.add(
@@ -61,7 +61,7 @@ let run = () =>
       Dream.body(request)
       >>= {
         body =>
-          Data.convert_put(~data=body)
+          Data.from_put(~data=body)
           |> {
             obj => {
               let id = Dream.param("id", request);

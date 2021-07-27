@@ -1,8 +1,8 @@
 type t;
 
-let convert_post: (~data:string, ~id:string, ~host:string) => t;
+let from_post: (~data:string, ~id:string, ~host:string) => t;
 
-let convert_put: (~data:string) => t;
+let from_put: (~data:string) => t;
 
 let id: (t) => string;
 
