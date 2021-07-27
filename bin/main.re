@@ -23,6 +23,19 @@ let gen_uuid = () =>
   Uuidm.v4_gen(Random.State.make_self_init(), ()) |> Uuidm.to_string;
 
 
+let get_id = (request) => {
+  switch (Dream.header("Slug", request)) {
+    | None => gen_uuid();
+    | Some(slug) => slug;
+  }
+}
+
+
+let get_host = (request) => {
+  Option.get(Dream.header("Host", request))
+}
+
+
 let run = () =>
   Dream.run @@
   Dream.logger @@
@@ -31,7 +44,7 @@ let run = () =>
       Dream.body(request)
       >>= {
         body =>
-          Data.convert_post(~data=body, ~id=gen_uuid(), ~host=Option.get(Dream.header("HOST", request)))
+          Data.convert_post(~data=body, ~id=get_id(request), ~host=get_host(request))
           |> {
             obj =>
               Db.add(
