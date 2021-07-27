@@ -1,8 +1,8 @@
 type t;
 
-let from_post: (~data:string, ~id:string, ~host:string) => t;
+let from_post: (~data:string, ~id:string, ~host:string) => result(t,string);
 
-let from_put: (~data:string) => t;
+let from_put: (~data:string) => result(t, string);
 
 let id: (t) => string;
 

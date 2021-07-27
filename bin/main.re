@@ -22,19 +22,16 @@ let error_response = (status, reason) => {
 let gen_uuid = () =>
   Uuidm.v4_gen(Random.State.make_self_init(), ()) |> Uuidm.to_string;
 
-
-let get_id = (request) => {
+let get_id = request => {
   switch (Dream.header("Slug", request)) {
-    | None => gen_uuid();
-    | Some(slug) => slug;
-  }
-}
+  | None => gen_uuid()
+  | Some(slug) => slug
+  };
+};
 
-
-let get_host = (request) => {
-  Option.get(Dream.header("Host", request))
-}
-
+let get_host = request => {
+  Option.get(Dream.header("Host", request));
+};
 
 let run = () =>
   Dream.run @@
@@ -44,16 +41,28 @@ let run = () =>
       Dream.body(request)
       >>= {
         body =>
-          Data.from_post(~data=body, ~id=get_id(request), ~host=get_host(request))
+          Data.from_post(
+            ~data=body,
+            ~id=get_id(request),
+            ~host=get_host(request),
+          )
           |> {
             obj =>
-              Db.add(
-                ~ctx=Option.get(ctx^).db,
-                ~key=Data.id(obj),
-                ~json=Data.json(obj),
-                ~message="CREATE " ++ Data.id(obj),
-              )
-              >>= (() => Dream.json(Data.to_string(obj), ~code=201));
+              switch (obj) {
+              | Error(m) =>
+                Dream.json(
+                  ~status=`Bad_Request,
+                  error_response(`Bad_Request, m),
+                )
+              | Ok(obj) =>
+                Db.add(
+                  ~ctx=Option.get(ctx^).db,
+                  ~key=Data.id(obj),
+                  ~json=Data.json(obj),
+                  ~message="CREATE " ++ Data.id(obj),
+                )
+                >>= (() => Dream.json(Data.to_string(obj), ~code=201))
+              };
           };
       }
     }),
@@ -63,36 +72,45 @@ let run = () =>
         body =>
           Data.from_put(~data=body)
           |> {
-            obj => {
-              let id = Dream.param("id", request);
-              let ctx = Option.get(ctx^).db;
-              Db.exists(~ctx, ~key=id)
-              >>= {
-                ok =>
-                  if (ok) {
-                    // make sure the id's match
-                    if (id == Data.id(obj)) {
-                      Db.add(
-                        ~ctx,
-                        ~key=id,
-                        ~json=Data.json(obj),
-                        ~message="UPDATE " ++ id,
-                      )
-                      >>= (() => Dream.json(body));
-                    } else {
-                      let json =
-                        error_response(
-                          `Bad_Request,
-                          "id in body does not match path parameter",
-                        );
-                      Dream.json(~status=`Bad_Request, json);
-                    };
-                  } else {
-                    let json = error_response(`Not_Found, "id not found");
-                    Dream.json(~status=`Not_Found, json);
-                  };
+            obj =>
+              switch (obj) {
+              | Error(m) =>
+                Dream.json(
+                  ~status=`Bad_Request,
+                  error_response(`Bad_Request, m),
+                )
+              | Ok(obj) =>
+                let id = Dream.param("id", request);
+                let ctx = Option.get(ctx^).db;
+                Db.exists(~ctx, ~key=id)
+                >>= {
+                  (
+                    ok =>
+                      if (ok) {
+                        // make sure the id's match
+                        if (id == Data.id(obj)) {
+                          Db.add(
+                            ~ctx,
+                            ~key=id,
+                            ~json=Data.json(obj),
+                            ~message="UPDATE " ++ id,
+                          )
+                          >>= (() => Dream.json(body));
+                        } else {
+                          let json =
+                            error_response(
+                              `Bad_Request,
+                              "id in body does not match path parameter",
+                            );
+                          Dream.json(~status=`Bad_Request, json);
+                        };
+                      } else {
+                        let json = error_response(`Not_Found, "id not found");
+                        Dream.json(~status=`Not_Found, json);
+                      }
+                  );
+                };
               };
-            };
           };
       }
     }),
