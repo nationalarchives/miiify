@@ -19,7 +19,7 @@ let add = (~ctx, ~key, ~json, ~message) => {
   let json = Ezjsonm.value(json);
   ctx.db
   >>= {
-    branch => Proj.set(branch, [key], json, ~info=info(message));
+    branch => Proj.set(branch, key, json, ~info=info(message));
   };
 };
 
@@ -27,16 +27,16 @@ let get = (~ctx, ~key) => {
   ctx.db
   >>= {
     branch =>
-      Proj.get(branch, [key]) >|= (json => `O(Ezjsonm.get_dict(json)));
+      Proj.get(branch, key) >|= (json => `O(Ezjsonm.get_dict(json)));
   };
 };
 
 let delete = (~ctx, ~key, ~message) => {
   ctx.db
-  >>= (branch => Store.remove_exn(branch, [key], ~info=info(message)));
+  >>= (branch => Store.remove_exn(branch, key, ~info=info(message)));
 };
 
 let exists = (~ctx, ~key) => {
   ctx.db
-  >>= (branch => Store.mem_tree(branch, [key]))
+  >>= (branch => Store.mem_tree(branch, key))
 }

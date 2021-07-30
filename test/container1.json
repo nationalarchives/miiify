@@ -1,0 +1,8 @@
+{
+  "@context": [
+    "http://www.w3.org/ns/anno.jsonld",
+    "http://www.w3.org/ns/ldp.jsonld"
+  ],
+  "type": ["BasicContainer", "AnnotationCollection"],
+  "label": "A Container for Web Annotations"
+}
