@@ -65,7 +65,7 @@ let run = () =>
                 >>= (
                   ok =>
                     if (ok) {
-                      let json = error_response(`Bad_Request, "id exists");
+                      let json = error_response(`Bad_Request, "container already exists");
                       Dream.json(~status=`Bad_Request, json);
                     } else {
                       Db.add(
@@ -82,6 +82,22 @@ let run = () =>
           };
       }
     }),
+    Dream.delete("/annotations/:container_id", request => {
+      let container_id = Dream.param("container_id", request);
+      let ctx = Option.get(ctx^).db;
+      let key = [container_id];
+      Db.exists(~ctx, ~key)
+      >>= {
+        ok =>
+          if (ok) {
+            Db.delete(~ctx, ~key, ~message="DELETE " ++ key_to_string(key))
+            >>= (() => Dream.empty(`No_Content));
+          } else {
+            let json = error_response(`Not_Found, "container not found");
+            Dream.json(~status=`Not_Found, json);
+          };
+      };
+    }),    
     Dream.post("/annotations/:container_id/", request => {
       Dream.body(request)
       >>= {
