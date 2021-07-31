@@ -12,12 +12,17 @@ let init = () => {
   Dream.log("Initialised the database");
 };
 
-let error_response = (status, reason) => {
+let make_error = (status, reason) => {
   open Ezjsonm;
   let code = Dream.status_to_int(status);
   let json = dict([("code", int(code)), ("reason", string(reason))]);
   to_string(json);
 };
+
+let error_response = (status, reason) => {
+  let resp = make_error(status, reason);
+  Dream.json(~status, resp);
+}
 
 let gen_uuid = () =>
   Uuidm.v4_gen(Random.State.make_self_init(), ()) |> Uuidm.to_string;
@@ -53,11 +58,7 @@ let run = () =>
           |> {
             obj =>
               switch (obj) {
-              | Error(m) =>
-                Dream.json(
-                  ~status=`Bad_Request,
-                  error_response(`Bad_Request, m),
-                )
+              | Error(m) => error_response(`Bad_Request, m);
               | Ok(obj) =>
                 let ctx = Option.get(ctx^).db;
                 let key = Data.id(obj);
@@ -65,12 +66,7 @@ let run = () =>
                 >>= (
                   ok =>
                     if (ok) {
-                      let json =
-                        error_response(
-                          `Bad_Request,
-                          "container already exists",
-                        );
-                      Dream.json(~status=`Bad_Request, json);
+                      error_response(`Bad_Request, "container already exists");
                     } else {
                       Db.add(
                         ~ctx,
@@ -97,8 +93,7 @@ let run = () =>
             Db.delete(~ctx, ~key, ~message="DELETE " ++ key_to_string(key))
             >>= (() => Dream.empty(`No_Content));
           } else {
-            let json = error_response(`Not_Found, "container not found");
-            Dream.json(~status=`Not_Found, json);
+            error_response(`Not_Found, "container not found");
           };
       };
     }),
@@ -115,11 +110,7 @@ let run = () =>
           |> {
             obj =>
               switch (obj) {
-              | Error(m) =>
-                Dream.json(
-                  ~status=`Bad_Request,
-                  error_response(`Bad_Request, m),
-                )
+              | Error(m) => error_response(`Bad_Request, m);
               | Ok(obj) =>
                 let ctx = Option.get(ctx^).db;
                 let key = Data.id(obj);
@@ -133,12 +124,7 @@ let run = () =>
                       >>= (
                         ok =>
                           if (ok) {
-                            let json =
-                              error_response(
-                                `Bad_Request,
-                                "annotation already exists",
-                              );
-                            Dream.json(~status=`Bad_Request, json);
+                            error_response(`Bad_Request, "annotation already exists");
                           } else {
                             Db.add(
                               ~ctx,
@@ -153,12 +139,7 @@ let run = () =>
                           }
                       );
                     } else {
-                      let json =
-                        error_response(
-                          `Bad_Request,
-                          "container does not exist",
-                        );
-                      Dream.json(~status=`Bad_Request, json);
+                      error_response(`Bad_Request, "container does not exist");
                     }
                 );
               };
@@ -178,11 +159,7 @@ let run = () =>
           |> {
             obj =>
               switch (obj) {
-              | Error(m) =>
-                Dream.json(
-                  ~status=`Bad_Request,
-                  error_response(`Bad_Request, m),
-                )
+              | Error(m) => error_response(`Bad_Request, m);
               | Ok(obj) =>
                 Db.exists(~ctx, ~key)
                 >>= {
@@ -197,12 +174,7 @@ let run = () =>
                         )
                         >>= (() => Dream.json(body));
                       } else {
-                        let json =
-                          error_response(
-                            `Bad_Request,
-                            "annotation not found",
-                          );
-                        Dream.json(~status=`Bad_Request, json);
+                        error_response(`Bad_Request, "annotation not found");
                       }
                   );
                 }
@@ -223,8 +195,7 @@ let run = () =>
             Db.delete(~ctx, ~key, ~message="DELETE " ++ key_to_string(key))
             >>= (() => Dream.empty(`No_Content));
           } else {
-            let json = error_response(`Not_Found, "annotation not found");
-            Dream.json(~status=`Not_Found, json);
+            error_response(`Not_Found, "annotation not found");
           };
       };
     }),
@@ -239,8 +210,7 @@ let run = () =>
           if (ok) {
             Db.get(~ctx, ~key) >|= Ezjsonm.to_string >>= Dream.json;
           } else {
-            let json = error_response(`Not_Found, "annotation not found");
-            Dream.json(~status=`Not_Found, json);
+            error_response(`Not_Found, "annotation not found");
           };
       };
     }),
