@@ -79,7 +79,7 @@ let run = () =>
                             ~ctx,
                             ~key,
                             ~json=Data.json(obj),
-                            ~message="POST" ++ key_to_string(Data.id(obj)),
+                            ~message="POST " ++ key_to_string(Data.id(obj)),
                           )
                           >>= (
                             () => Dream.json(Data.to_string(obj), ~code=201)
