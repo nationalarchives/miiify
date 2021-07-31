@@ -65,7 +65,11 @@ let run = () =>
                 >>= (
                   ok =>
                     if (ok) {
-                      let json = error_response(`Bad_Request, "container already exists");
+                      let json =
+                        error_response(
+                          `Bad_Request,
+                          "container already exists",
+                        );
                       Dream.json(~status=`Bad_Request, json);
                     } else {
                       Db.add(
@@ -97,14 +101,15 @@ let run = () =>
             Dream.json(~status=`Not_Found, json);
           };
       };
-    }),    
+    }),
     Dream.post("/annotations/:container_id/", request => {
       Dream.body(request)
       >>= {
-        body =>
+        body => {
+          let container_id = Dream.param("container_id", request);
           Data.from_post(
             ~data=body,
-            ~id=[Dream.param("container_id", request), get_id(request)],
+            ~id=[container_id, get_id(request)],
             ~host=get_host(request),
           )
           |> {
@@ -118,28 +123,47 @@ let run = () =>
               | Ok(obj) =>
                 let ctx = Option.get(ctx^).db;
                 let key = Data.id(obj);
-                Db.exists(~ctx, ~key)
+                // container must exist already
+                Db.exists(~ctx, ~key=[container_id])
                 >>= (
                   ok =>
                     if (ok) {
+                      // annotation can't exist already
+                      Db.exists(~ctx, ~key)
+                      >>= (
+                        ok =>
+                          if (ok) {
+                            let json =
+                              error_response(
+                                `Bad_Request,
+                                "annotation already exists",
+                              );
+                            Dream.json(~status=`Bad_Request, json);
+                          } else {
+                            Db.add(
+                              ~ctx,
+                              ~key,
+                              ~json=Data.json(obj),
+                              ~message="CREATE " ++ key_to_string(key),
+                            )
+                            >>= (
+                              () =>
+                                Dream.json(Data.to_string(obj), ~code=201)
+                            );
+                          }
+                      );
+                    } else {
                       let json =
                         error_response(
                           `Bad_Request,
-                          "annotation already exists",
+                          "container does not exist",
                         );
                       Dream.json(~status=`Bad_Request, json);
-                    } else {
-                      Db.add(
-                        ~ctx,
-                        ~key,
-                        ~json=Data.json(obj),
-                        ~message="CREATE " ++ key_to_string(key),
-                      )
-                      >>= (() => Dream.json(Data.to_string(obj), ~code=201));
                     }
                 );
               };
           };
+        };
       }
     }),
     Dream.put("/annotations/:container_id/:annotation_id", request => {
