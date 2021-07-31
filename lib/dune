@@ -1,15 +1,15 @@
 (rule
-  (targets annotate_j.ml annotate_j.mli)
-  (deps    annotate.atd)
+  (targets schema_j.ml schema_j.mli)
+  (deps    schema.atd)
   (action  (run atdgen -j %{deps})))
 
 (rule
-  (targets annotate_t.ml annotate_t.mli)
-  (deps    annotate.atd)
+  (targets schema_t.ml schema_t.mli)
+  (deps    schema.atd)
   (action  (run atdgen -t %{deps})))
 
 (library
  (name miiify)
  (libraries dream irmin-unix ezjsonm atdgen uuidm)
- (modules data db annotation annotate_t annotate_j))
+ (modules data db validate schema_t schema_j))
 

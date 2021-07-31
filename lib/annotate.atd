@@ -1,9 +1,0 @@
-
-
-type basic_annotation = {
-  context <json name="@context">: string;
-  id: string;
-  type_ <json name="type">: [Annotation];
-  body: string;
-  target: string;
-}
