@@ -32,11 +32,29 @@ let get = (~ctx, ~key) => {
 };
 
 let delete = (~ctx, ~key, ~message) => {
-  ctx.db
-  >>= (branch => Store.remove_exn(branch, key, ~info=info(message)));
+  ctx.db >>= (branch => Store.remove_exn(branch, key, ~info=info(message)));
 };
 
 let exists = (~ctx, ~key) => {
+  ctx.db >>= (branch => Store.mem_tree(branch, key));
+};
+
+let get_collection_worker = (ctx, key) => {
+  get(ctx, key)
+  >>= (json => Lwt_io.printf("json:%s\n", Ezjsonm.to_string(json)));
+};
+
+let get_collection = (~ctx, ~key, ~offset, ~length) => {
   ctx.db
-  >>= (branch => Store.mem_tree(branch, key))
-}
+  >>= {
+    branch =>
+      Store.get_tree(branch, key)
+      >>= {
+        tree =>
+          Store.Tree.list(tree, [], ~offset, ~length)
+          >>= Lwt_list.iter_s(((k, _)) =>
+                get_collection_worker(ctx, List.append(key, [k]))
+              );
+      };
+  };
+};

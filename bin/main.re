@@ -115,7 +115,7 @@ let run = () =>
           let container_id = Dream.param("container_id", request);
           Data.from_post(
             ~data=body,
-            ~id=[container_id, get_id(request)],
+            ~id=[container_id, "collection", get_id(request)],
             ~host=get_host(request),
           )
           |> {
@@ -170,7 +170,7 @@ let run = () =>
         body => {
           let container_id = Dream.param("container_id", request);
           let annotation_id = Dream.param("annotation_id", request);
-          let key = [container_id, annotation_id];
+          let key = [container_id, "collection", annotation_id];
           let ctx = Option.get(ctx^).db;
           Data.from_put(~data=body, ~id=key, ~host=get_host(request))
           |> {
@@ -204,7 +204,7 @@ let run = () =>
       let container_id = Dream.param("container_id", request);
       let annotation_id = Dream.param("annotation_id", request);
       let ctx = Option.get(ctx^).db;
-      let key = [container_id, annotation_id];
+      let key = [container_id, "collection", annotation_id];
       Db.exists(~ctx, ~key)
       >>= {
         ok =>
@@ -220,7 +220,7 @@ let run = () =>
       let container_id = Dream.param("container_id", request);
       let annotation_id = Dream.param("annotation_id", request);
       let ctx = Option.get(ctx^).db;
-      let key = [container_id, annotation_id];
+      let key = [container_id, "collection", annotation_id];
       Db.exists(~ctx, ~key)
       >>= {
         ok =>
@@ -228,6 +228,21 @@ let run = () =>
             Db.get(~ctx, ~key) >|= Ezjsonm.to_string >>= Dream.json;
           } else {
             error_response(`Not_Found, "annotation not found");
+          };
+      };
+    }),
+    Dream.get("/annotations/:container_id", request => {
+      let container_id = Dream.param("container_id", request);
+      let ctx = Option.get(ctx^).db;
+      let key = [container_id, "collection"];
+      Db.exists(~ctx, ~key)
+      >>= {
+        ok =>
+          if (ok) {
+            Db.get_collection(~ctx, ~key, ~offset=0, ~length=100)
+            >>= (() => Dream.empty(`No_Content));
+          } else {
+            error_response(`Not_Found, "container not found");
           };
       };
     }),

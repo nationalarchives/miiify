@@ -8,7 +8,7 @@ type t = {
 let gen_iri = (host, id) => {
   switch (id) {
   | [container_id] => "http://" ++ host ++ "/annotations/" ++ container_id
-  | [container_id, annotation_id] =>
+  | [container_id, "collection", annotation_id] =>
     "http://"
     ++ host
     ++ "/annotations/"
