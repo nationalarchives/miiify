@@ -47,7 +47,9 @@ let get_collection = (~ctx, ~key, ~offset, ~length) => {
       >>= {
         tree =>
           Store.Tree.list(tree, [], ~offset, ~length)
-          >>= Lwt_list.map_s(((k, _)) => get(ctx, List.append(key, [k])))
+          >>= Lwt_list.map_s(((k, _)) =>
+                get(~ctx, ~key=List.append(key, [k]))
+              )
           >|= Ezjsonm.list(x => x);
       };
   };
