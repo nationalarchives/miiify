@@ -240,7 +240,7 @@ let run = () =>
         ok =>
           if (ok) {
             Db.get_collection(~ctx, ~key, ~offset=0, ~length=100)
-            >>= (() => Dream.empty(`No_Content));
+            >|= Ezjsonm.to_string >>= Dream.json
           } else {
             error_response(`Not_Found, "container not found");
           };

@@ -39,11 +39,6 @@ let exists = (~ctx, ~key) => {
   ctx.db >>= (branch => Store.mem_tree(branch, key));
 };
 
-let get_collection_worker = (ctx, key) => {
-  get(ctx, key)
-  >>= (json => Lwt_io.printf("json:%s\n", Ezjsonm.to_string(json)));
-};
-
 let get_collection = (~ctx, ~key, ~offset, ~length) => {
   ctx.db
   >>= {
@@ -52,9 +47,8 @@ let get_collection = (~ctx, ~key, ~offset, ~length) => {
       >>= {
         tree =>
           Store.Tree.list(tree, [], ~offset, ~length)
-          >>= Lwt_list.iter_s(((k, _)) =>
-                get_collection_worker(ctx, List.append(key, [k]))
-              );
+          >>= Lwt_list.map_s(((k, _)) => get(ctx, List.append(key, [k])))
+          >|= Ezjsonm.list(x => x);
       };
   };
 };
