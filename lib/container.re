@@ -10,7 +10,7 @@ let embedded_response = (main, collection) => {
 
 let with_annotations = (~ctx, ~key, ~offset, ~length) => {
   // get main data
-  Db.get(ctx, key)
+  Db.get(~ctx, ~key)
   >>= (
     main => {
       // swap "main" for "collection"
