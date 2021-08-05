@@ -55,7 +55,7 @@ let run = () =>
           | Ok () =>
             Data.from_post(
               ~data=body,
-              ~id=[get_id(request)],
+              ~id=[get_id(request), "main"],
               ~host=get_host(request),
             )
             |> {
@@ -234,7 +234,7 @@ let run = () =>
     Dream.get("/annotations/:container_id", request => {
       let container_id = Dream.param("container_id", request);
       let ctx = Option.get(ctx^).db;
-      let key = [container_id, "collection"];
+      let key = [container_id, "main"];
       Db.exists(~ctx, ~key)
       >>= {
         ok =>
