@@ -54,3 +54,7 @@ let get_collection = (~ctx, ~key, ~offset, ~length) => {
       };
   };
 };
+
+let count = (~ctx, ~key) => {
+  ctx.db >>= (branch => Store.list(branch, key) >|= List.length);
+};
