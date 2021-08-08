@@ -1,15 +1,9 @@
 open Miiify;
 open Lwt.Infix;
 
-// store our context
-type t = {db: Db.t, container: Container.t};
-
-// not initialised yet
-let ctx = ref(None);
-
-let init = () => {
-  ctx := Some({db: Db.create(~fname="db"), container:Container.create(~page_limit=100)});
-  Dream.log("Initialised the database");
+type t = {
+  db: Db.t,
+  container: Container.t,
 };
 
 let make_error = (status, reason) => {
@@ -42,19 +36,18 @@ let key_to_string = key => {
   List.fold_left((x, y) => x ++ "/" ++ y, "", key);
 };
 
-
-let get_page = (request) => {
+let get_page = request => {
   switch (Dream.query("page", request)) {
   | None => 0
   | Some(page) =>
     switch (int_of_string_opt(page)) {
     | None => 0
-    | Some(value) => value;
+    | Some(value) => value
     }
   };
 };
 
-let run = () =>
+let run = ctx =>
   Dream.run @@
   Dream.logger @@
   Dream.router([
@@ -76,7 +69,6 @@ let run = () =>
                   switch (obj) {
                   | Error(m) => error_response(`Bad_Request, m)
                   | Ok(obj) =>
-                    let ctx = Option.get(ctx^);
                     let key = Data.id(obj);
                     Db.exists(~ctx=ctx.db, ~key)
                     >>= (
@@ -107,13 +99,16 @@ let run = () =>
     }),
     Dream.delete("/annotations/:container_id", request => {
       let container_id = Dream.param("container_id", request);
-      let ctx = Option.get(ctx^);
       let key = [container_id];
       Db.exists(~ctx=ctx.db, ~key)
       >>= {
         ok =>
           if (ok) {
-            Db.delete(~ctx=ctx.db, ~key, ~message="DELETE " ++ key_to_string(key))
+            Db.delete(
+              ~ctx=ctx.db,
+              ~key,
+              ~message="DELETE " ++ key_to_string(key),
+            )
             >>= (() => Dream.empty(`No_Content));
           } else {
             error_response(`Not_Found, "container not found");
@@ -135,7 +130,6 @@ let run = () =>
               switch (obj) {
               | Error(m) => error_response(`Bad_Request, m)
               | Ok(obj) =>
-                let ctx = Option.get(ctx^);
                 let key = Data.id(obj);
                 // container must exist already
                 Db.exists(~ctx=ctx.db, ~key=[container_id])
@@ -183,7 +177,6 @@ let run = () =>
           let container_id = Dream.param("container_id", request);
           let annotation_id = Dream.param("annotation_id", request);
           let key = [container_id, "collection", annotation_id];
-          let ctx = Option.get(ctx^);
           Data.from_put(~data=body, ~id=key, ~host=get_host(request))
           |> {
             obj =>
@@ -215,13 +208,16 @@ let run = () =>
     Dream.delete("/annotations/:container_id/:annotation_id", request => {
       let container_id = Dream.param("container_id", request);
       let annotation_id = Dream.param("annotation_id", request);
-      let ctx = Option.get(ctx^);
       let key = [container_id, "collection", annotation_id];
       Db.exists(~ctx=ctx.db, ~key)
       >>= {
         ok =>
           if (ok) {
-            Db.delete(~ctx=ctx.db, ~key, ~message="DELETE " ++ key_to_string(key))
+            Db.delete(
+              ~ctx=ctx.db,
+              ~key,
+              ~message="DELETE " ++ key_to_string(key),
+            )
             >>= (() => Dream.empty(`No_Content));
           } else {
             error_response(`Not_Found, "annotation not found");
@@ -231,7 +227,6 @@ let run = () =>
     Dream.get("/annotations/:container_id/:annotation_id", request => {
       let container_id = Dream.param("container_id", request);
       let annotation_id = Dream.param("annotation_id", request);
-      let ctx = Option.get(ctx^);
       let key = [container_id, "collection", annotation_id];
       Db.exists(~ctx=ctx.db, ~key)
       >>= {
@@ -245,14 +240,18 @@ let run = () =>
     }),
     Dream.get("/annotations/:container_id/", request => {
       let container_id = Dream.param("container_id", request);
-      let ctx = Option.get(ctx^);
       let key = [container_id, "main"];
       let page = get_page(request);
       Db.exists(~ctx=ctx.db, ~key)
       >>= {
         ok =>
           if (ok) {
-            Container.annotation_collection(~ctx=ctx.container, ~db=ctx.db, ~key, ~page)
+            Container.annotation_collection(
+              ~ctx=ctx.container,
+              ~db=ctx.db,
+              ~key,
+              ~page,
+            )
             >|= Ezjsonm.to_string
             >>= Dream.json;
           } else {
@@ -263,5 +262,9 @@ let run = () =>
   ]) @@
   Dream.not_found;
 
-init();
-run();
+let init = () => {
+  db: Db.create(~fname="db"),
+  container: Container.create(~page_limit=100),
+};
+
+run(init());
