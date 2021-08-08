@@ -57,16 +57,23 @@ let annotation_collection = (~ctx, ~db, ~key, ~page) => {
       Db.count(~ctx=db, ~key=k)
       >>= (
         count =>
-          Db.get_collection(
-            ~ctx=db,
-            ~key=k,
-            ~offset=page * limit,
-            ~length=limit,
-          )
-          >|= (
-            collection =>
-              annotation_collection_response(count, limit, main, collection)
-          )
+          if (count == 0) {
+            // return an empty items array
+            Lwt.return(
+              annotation_collection_response(count, limit, main, `A([])),
+            );
+          } else {
+            Db.get_collection(
+              ~ctx=db,
+              ~key=k,
+              ~offset=page * limit,
+              ~length=limit,
+            )
+            >|= (
+              collection =>
+                annotation_collection_response(count, limit, main, collection)
+            );
+          }
       );
     }
   );
