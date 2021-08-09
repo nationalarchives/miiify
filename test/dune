@@ -1,2 +1,6 @@
+(include_subdirs unqualified)
+
 (test
- (name miiify))
+ (name miiify)
+ (libraries miiify))
+
