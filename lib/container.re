@@ -39,18 +39,18 @@ let gen_next = (id, page, count, limit) => {
   open Ezjsonm;
   let last_page = count / limit;
   if (page < last_page) {
-    string(Printf.sprintf("%s?page=%d", id, page+1))
+    Some(string(Printf.sprintf("%s?page=%d", id, page+1)))
   } else {
-    string(Printf.sprintf("%s?page=%d", id, page))
+    None;
   };
 };
 
 let gen_prev = (id, page) => {
   open Ezjsonm;
   if (page > 0) {
-    string(Printf.sprintf("%s?page=%d", id, page-1))
+    Some(string(Printf.sprintf("%s?page=%d", id, page-1)))
   } else {
-    string(Printf.sprintf("%s?page=%d", id, page))
+    None;
   };
 };
 
@@ -80,8 +80,8 @@ let annotation_page_response = (page, count, limit, main, collection) => {
   let json = update(json, ["type"], Some(type_page));
   let json = update(json, ["partOf"], Some(part_of));
   let json = update(json, ["startIndex"], Some(start_index));
-  let json = update(json, ["prev"], Some(prev));
-  let json = update(json, ["next"], Some(next));
+  let json = update(json, ["prev"], prev);
+  let json = update(json, ["next"], next);
   let json = update(json, ["items"], Some(items));
   `O(get_dict(json));
 };
