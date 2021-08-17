@@ -238,7 +238,8 @@ let run = ctx =>
           };
       };
     }),
-    Dream.get("/annotations/:container_id/", request => {
+    // annotation pages
+    Dream.get("/annotations/:container_id", request => {
       let container_id = Dream.param("container_id", request);
       let key = [container_id, "main"];
       let page = get_page(request);
