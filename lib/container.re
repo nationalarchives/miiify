@@ -36,19 +36,17 @@ let gen_start_index = (page, limit) => {
 };
 
 let gen_next = (id, page, count, limit) => {
-  open Ezjsonm;
   let last_page = count / limit;
   if (page < last_page) {
-    Some(string(Printf.sprintf("%s?page=%d", id, page+1)))
+    Some(gen_id(id, page+1))
   } else {
     None;
   };
 };
 
 let gen_prev = (id, page) => {
-  open Ezjsonm;
   if (page > 0) {
-    Some(string(Printf.sprintf("%s?page=%d", id, page-1)))
+    Some(gen_id(id, page-1))
   } else {
     None;
   };
