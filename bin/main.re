@@ -246,7 +246,7 @@ let run = ctx =>
       >>= {
         ok =>
           if (ok) {
-            Container.annotation_collection(
+            Container.annotation_page(
               ~ctx=ctx.container,
               ~db=ctx.db,
               ~key,
