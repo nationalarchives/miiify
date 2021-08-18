@@ -265,7 +265,7 @@ let run = ctx =>
 
 let init = () => {
   db: Db.create(~fname="db"),
-  container: Container.create(~page_limit=100),
+  container: Container.create(~page_limit=200),
 };
 
 run(init());

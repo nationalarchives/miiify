@@ -9,7 +9,7 @@ let info = message => Irmin_unix.info(~author="miiify.rocks", "%s", message);
 type t = {db: Lwt.t(Store.t)};
 
 let create = (~fname) => {
-  let config = Irmin_git.config(~bare=false, fname);
+  let config = Irmin_git.config(~bare=true, fname);
   let repo = Store.Repo.v(config);
   let branch = repo >>= Store.master;
   {db: branch};
