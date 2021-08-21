@@ -102,6 +102,7 @@ let annotation_page = (~ctx, ~db, ~key, ~page) => {
         count =>
           switch (count) {
           | _ when page < 0 => Lwt.return(None)
+          | _ when page > count / limit => Lwt.return(None)
           | 0 when page > 0 => Lwt.return(None)
           | 0 =>
             // return an empty items array
@@ -110,7 +111,6 @@ let annotation_page = (~ctx, ~db, ~key, ~page) => {
                 annotation_page_response(page, count, limit, main, `A([])),
               ),
             )
-          | _ when page > count / limit => Lwt.return(None)
           | _ =>
             Db.get_collection(
               ~ctx=db,
