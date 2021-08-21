@@ -10,7 +10,7 @@ let get_value = (term, json) => {
   Ezjsonm.(find_opt(value(json), [term]));
 };
 
-let gen_id  = (id, page) => {
+let gen_id = (id, page) => {
   open Ezjsonm;
   let suffix = Printf.sprintf("?page=%d", page);
   string(id ++ suffix);
@@ -20,10 +20,9 @@ let gen_type_page = () => {
   Ezjsonm.string("AnnotationPage");
 };
 
-
-let gen_total = (count) => {
+let gen_total = count => {
   Ezjsonm.int(count);
-}
+};
 
 let gen_part_of = (id, count, main) => {
   open Ezjsonm;
@@ -50,20 +49,18 @@ let gen_start_index = (page, limit) => {
 let gen_next = (id, page, count, limit) => {
   let last_page = count / limit;
   if (page < last_page) {
-    Some(gen_id(id, page+1))
+    Some(gen_id(id, page + 1));
   } else {
     None;
   };
 };
 
-let gen_prev = (id, page) => {
+let gen_prev = (id, page) =>
   if (page > 0) {
-    Some(gen_id(id, page-1))
+    Some(gen_id(id, page - 1));
   } else {
     None;
   };
-};
-
 
 let get_string_value = (term, json) => {
   Ezjsonm.(get_string(Option.get(get_value(term, json))));
@@ -92,8 +89,6 @@ let annotation_page_response = (page, count, limit, main, collection) => {
   `O(get_dict(json));
 };
 
-
-
 let annotation_page = (~ctx, ~db, ~key, ~page) => {
   // get main data
   Db.get(~ctx=db, ~key)
@@ -103,14 +98,19 @@ let annotation_page = (~ctx, ~db, ~key, ~page) => {
       // swap "main" for "collection"
       let k = List.cons(List.hd(key), ["collection"]);
       Db.count(~ctx=db, ~key=k)
-      >>= (
+      >>= {
         count =>
-          if (count == 0) {
+          switch (count) {
+          | 0 =>
             // return an empty items array
             Lwt.return(
-              annotation_page_response(page, count, limit, main, `A([])),
-            );
-          } else {
+              Some(
+                annotation_page_response(page, count, limit, main, `A([])),
+              ),
+            )
+          | _ when page < 0 => Lwt.return(None)
+          | _ when page > count / limit => Lwt.return(None)
+          | _ =>
             Db.get_collection(
               ~ctx=db,
               ~key=k,
@@ -119,10 +119,18 @@ let annotation_page = (~ctx, ~db, ~key, ~page) => {
             )
             >|= (
               collection =>
-                annotation_page_response(page, count, limit, main, collection)
-            );
-          }
-      );
+                Some(
+                  annotation_page_response(
+                    page,
+                    count,
+                    limit,
+                    main,
+                    collection,
+                  ),
+                )
+            )
+          };
+      };
     }
   );
 };

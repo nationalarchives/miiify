@@ -247,8 +247,13 @@ let run = ctx =>
               ~key,
               ~page,
             )
-            >|= Ezjsonm.to_string
-            >>= Dream.json;
+            >>= (
+              page =>
+                switch (page) {
+                | Some(page) => Dream.json(Ezjsonm.to_string(page))
+                | None => error_response(`Not_Found, "page not found")
+                }
+            );
           } else {
             error_response(`Not_Found, "container not found");
           };
