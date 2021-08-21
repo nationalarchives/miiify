@@ -10,7 +10,7 @@ let get_timestamp = () => {
   Ptime.to_rfc3339(t, ~tz_offset_s=0);
 };
 
-let gen_iri = (host, id) => {
+let get_iri = (host, id) => {
   switch (id) {
   | [container_id, "main"] =>
     "http://" ++ host ++ "/annotations/" ++ container_id
@@ -33,7 +33,7 @@ let post_annotation = (~data, ~id, ~host) => {
     if (mem(json, ["id"])) {
       Result.error("id can not be supplied");
     } else {
-      let iri = gen_iri(host, id);
+      let iri = get_iri(host, id);
       let json_with_id = update(json, ["id"], Some(string(iri)));
       let json' = `O(get_dict(json_with_id));
       Result.ok({id, json: json'});
@@ -53,7 +53,7 @@ let post_container = (~data, ~id, ~host) => {
       if (mem(json, ["id"])) {
         Result.error("id can not be supplied");
       } else {
-        let iri = gen_iri(host, id);
+        let iri = get_iri(host, id);
         let json = update(json, ["id"], Some(string(iri)));
         let timestamp = get_timestamp();
         let json = update(json, ["created"], Some(string(timestamp)));
@@ -72,7 +72,7 @@ let put_annotation = (~data, ~id, ~host) => {
     switch (find_opt(json, ["id"])) {
     | None => Result.error("id does not exit")
     | Some(id') =>
-      let iri = gen_iri(host, id);
+      let iri = get_iri(host, id);
       switch (get_string(id')) {
       | exception (Parse_error(_, _)) => Result.error("id not string")
       | iri' =>
