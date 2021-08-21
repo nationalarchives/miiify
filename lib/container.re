@@ -13,15 +13,15 @@ let get_value = (term, json) => {
 let gen_id = (id, page) => {
   open Ezjsonm;
   let suffix = Printf.sprintf("?page=%d", page);
-  string(id ++ suffix);
+  Some(string(id ++ suffix));
 };
 
 let gen_type_page = () => {
-  Ezjsonm.string("AnnotationPage");
+  Some(Ezjsonm.string("AnnotationPage"));
 };
 
 let gen_total = count => {
-  Ezjsonm.int(count);
+  Some(Ezjsonm.int(count));
 };
 
 let gen_part_of = (id, count, main) => {
@@ -30,26 +30,26 @@ let gen_part_of = (id, count, main) => {
   let label = get_value("label", main);
   let total = gen_total(count);
   let json = dict([]);
-  let json = update(json, ["id"], Some(id));
+  let json = update(json, ["id"], id);
   let json = update(json, ["created"], created);
-  let json = update(json, ["total"], Some(total));
+  let json = update(json, ["total"], total);
   let json = update(json, ["label"], label);
-  `O(get_dict(json));
+  Some(`O(get_dict(json)));
 };
 
 let gen_items = collection => {
-  Ezjsonm.value(collection);
+  Some(Ezjsonm.value(collection));
 };
 
 let gen_start_index = (page, limit) => {
   let index = page * limit;
-  Ezjsonm.int(index);
+  Some(Ezjsonm.int(index));
 };
 
 let gen_next = (id, page, count, limit) => {
   let last_page = count / limit;
   if (page < last_page) {
-    Some(gen_id(id, page + 1));
+    gen_id(id, page + 1);
   } else {
     None;
   };
@@ -57,7 +57,7 @@ let gen_next = (id, page, count, limit) => {
 
 let gen_prev = (id, page) =>
   if (page > 0) {
-    Some(gen_id(id, page - 1));
+    gen_id(id, page - 1);
   } else {
     None;
   };
@@ -79,13 +79,13 @@ let annotation_page_response = (page, count, limit, main, collection) => {
   let items = gen_items(collection);
   let json = dict([]);
   let json = update(json, ["@context"], context);
-  let json = update(json, ["id"], Some(id));
-  let json = update(json, ["type"], Some(type_page));
-  let json = update(json, ["partOf"], Some(part_of));
-  let json = update(json, ["startIndex"], Some(start_index));
+  let json = update(json, ["id"], id);
+  let json = update(json, ["type"], type_page);
+  let json = update(json, ["partOf"], part_of);
+  let json = update(json, ["startIndex"], start_index);
   let json = update(json, ["prev"], prev);
   let json = update(json, ["next"], next);
-  let json = update(json, ["items"], Some(items));
+  let json = update(json, ["items"], items);
   `O(get_dict(json));
 };
 
