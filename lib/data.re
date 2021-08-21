@@ -5,6 +5,11 @@ type t = {
   json: Ezjsonm.t,
 };
 
+let get_timestamp = () => {
+  let t = Ptime_clock.now();
+  Ptime.to_rfc3339(t, ~tz_offset_s=0);
+};
+
 let gen_iri = (host, id) => {
   switch (id) {
   | [container_id, "main"] =>
@@ -49,8 +54,10 @@ let post_container = (~data, ~id, ~host) => {
         Result.error("id can not be supplied");
       } else {
         let iri = gen_iri(host, id);
-        let json_with_id = update(json, ["id"], Some(string(iri)));
-        let json' = `O(get_dict(json_with_id));
+        let json = update(json, ["id"], Some(string(iri)));
+        let timestamp = get_timestamp();
+        let json = update(json, ["created"], Some(string(timestamp)));
+        let json' = `O(get_dict(json));
         Result.ok({id, json: json'});
       }
     }

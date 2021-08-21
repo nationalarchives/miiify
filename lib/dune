@@ -10,6 +10,6 @@
 
 (library
  (name miiify)
- (libraries dream irmin-unix ezjsonm atdgen uuidm)
+ (libraries dream irmin-unix ezjsonm atdgen uuidm ptime)
  (modules container data db validate schema_t schema_j))
 
