@@ -1,8 +1,10 @@
 type t;
 
-let from_post: (~data:string, ~id:list(string), ~host:string) => result(t,string);
+let post_annotation: (~data:string, ~id:list(string), ~host:string) => result(t,string);
+let post_container: (~data:string, ~id:list(string), ~host:string) => result(t,string);
 
-let from_put: (~data:string, ~id:list(string), ~host:string) => result(t, string);
+let put_annotation: (~data:string, ~id:list(string), ~host:string) => result(t, string);
+
 
 let id: (t) => list(string);
 

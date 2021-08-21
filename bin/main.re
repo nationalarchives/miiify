@@ -51,48 +51,41 @@ let run = ctx =>
   Dream.run @@
   Dream.logger @@
   Dream.router([
+    // create container
     Dream.post("/annotations/", request => {
       Dream.body(request)
       >>= {
         body => {
-          switch (Validate.basic_container(~data=body)) {
-          | Error(m) => error_response(`Bad_Request, m)
-          | Ok () =>
-            Data.from_post(
-              ~data=body,
-              ~id=[get_id(request), "main"],
-              ~host=get_host(request),
-            )
-            |> {
-              (
-                obj =>
-                  switch (obj) {
-                  | Error(m) => error_response(`Bad_Request, m)
-                  | Ok(obj) =>
-                    let key = Data.id(obj);
-                    Db.exists(~ctx=ctx.db, ~key)
-                    >>= (
-                      ok =>
-                        if (ok) {
-                          error_response(
-                            `Bad_Request,
-                            "container already exists",
-                          );
-                        } else {
-                          Db.add(
-                            ~ctx=ctx.db,
-                            ~key,
-                            ~json=Data.json(obj),
-                            ~message="POST " ++ key_to_string(Data.id(obj)),
-                          )
-                          >>= (
-                            () => Dream.json(Data.to_string(obj), ~code=201)
-                          );
-                        }
-                    );
-                  }
-              );
-            }
+          Data.post_container(
+            ~data=body,
+            ~id=[get_id(request), "main"],
+            ~host=get_host(request),
+          )
+          |> {
+            obj =>
+              switch (obj) {
+              | Error(m) => error_response(`Bad_Request, m)
+              | Ok(obj) =>
+                let key = Data.id(obj);
+                Db.exists(~ctx=ctx.db, ~key)
+                >>= (
+                  ok =>
+                    if (ok) {
+                      error_response(
+                        `Bad_Request,
+                        "container already exists",
+                      );
+                    } else {
+                      Db.add(
+                        ~ctx=ctx.db,
+                        ~key,
+                        ~json=Data.json(obj),
+                        ~message="POST " ++ key_to_string(Data.id(obj)),
+                      )
+                      >>= (() => Dream.json(Data.to_string(obj), ~code=201));
+                    }
+                );
+              };
           };
         };
       }
@@ -120,7 +113,7 @@ let run = ctx =>
       >>= {
         body => {
           let container_id = Dream.param("container_id", request);
-          Data.from_post(
+          Data.post_annotation(
             ~data=body,
             ~id=[container_id, "collection", get_id(request)],
             ~host=get_host(request),
@@ -177,7 +170,7 @@ let run = ctx =>
           let container_id = Dream.param("container_id", request);
           let annotation_id = Dream.param("annotation_id", request);
           let key = [container_id, "collection", annotation_id];
-          Data.from_put(~data=body, ~id=key, ~host=get_host(request))
+          Data.put_annotation(~data=body, ~id=key, ~host=get_host(request))
           |> {
             obj =>
               switch (obj) {
