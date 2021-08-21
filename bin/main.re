@@ -108,6 +108,7 @@ let run = ctx =>
           };
       };
     }),
+    // add new annotation to container
     Dream.post("/annotations/:container_id/", request => {
       Dream.body(request)
       >>= {
@@ -187,7 +188,7 @@ let run = ctx =>
                           ~json=Data.json(obj),
                           ~message="PUT " ++ key_to_string(key),
                         )
-                        >>= (() => Dream.json(body));
+                        >>= (() => Dream.json(Data.to_string(obj)));
                       } else {
                         error_response(`Bad_Request, "annotation not found");
                       }
