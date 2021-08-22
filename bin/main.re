@@ -259,6 +259,26 @@ let run = ctx =>
           };
       };
     }),
+    // annotation collection
+    Dream.get("/annotations/:container_id/", request => {
+      let container_id = Dream.param("container_id", request);
+      let key = [container_id, "main"];
+      Db.exists(~ctx=ctx.db, ~key)
+      >>= {
+        ok =>
+          if (ok) {
+            Container.annotation_collection(
+              ~ctx=ctx.container,
+              ~db=ctx.db,
+              ~key,
+            )
+            >|= Ezjsonm.to_string
+            >>= Dream.json;
+          } else {
+            error_response(`Not_Found, "container not found");
+          };
+      };
+    }),
   ]) @@
   Dream.not_found;
 

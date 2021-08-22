@@ -10,28 +10,39 @@ let get_value = (term, json) => {
   Ezjsonm.(find_opt(value(json), [term]));
 };
 
-let gen_id = (id, page) => {
+let gen_id_page = (id, page) => {
   open Ezjsonm;
   let suffix = Printf.sprintf("?page=%d", page);
   Some(string(id ++ suffix));
+};
+
+let gen_id_collection = id => {
+  Ezjsonm.(Some(string(id ++ "/")));
 };
 
 let gen_type_page = () => {
   Some(Ezjsonm.string("AnnotationPage"));
 };
 
+let gen_type_collection = () => {
+  Some(Ezjsonm.strings(["BasicContainer", "AnnotationCollection"]));
+};
+
 let gen_total = count => {
   Some(Ezjsonm.int(count));
 };
 
-let gen_part_of = (id, count, main) => {
+let gen_part_of = (id_value, count, main) => {
   open Ezjsonm;
+  let id = gen_id_collection(id_value);
   let created = get_value("created", main);
+  let modified = get_value("modified", main);
   let label = get_value("label", main);
   let total = gen_total(count);
   let json = dict([]);
   let json = update(json, ["id"], id);
   let json = update(json, ["created"], created);
+  let json = update(json, ["modified"], modified);
   let json = update(json, ["total"], total);
   let json = update(json, ["label"], label);
   Some(`O(get_dict(json)));
@@ -49,7 +60,7 @@ let gen_start_index = (page, limit) => {
 let gen_next = (id, page, count, limit) => {
   let last_page = count / limit;
   if (page < last_page) {
-    gen_id(id, page + 1);
+    gen_id_page(id, page + 1);
   } else {
     None;
   };
@@ -57,10 +68,19 @@ let gen_next = (id, page, count, limit) => {
 
 let gen_prev = (id, page) =>
   if (page > 0) {
-    gen_id(id, page - 1);
+    gen_id_page(id, page - 1);
   } else {
     None;
   };
+
+let gen_last = (id, count, limit) => {
+  let last_page = count / limit;
+  if (last_page > 0) {
+    gen_id_page(id, last_page);
+  } else {
+    None;
+  };
+};
 
 let get_string_value = (term, json) => {
   Ezjsonm.(get_string(Option.get(get_value(term, json))));
@@ -70,9 +90,9 @@ let annotation_page_response = (page, count, limit, main, collection) => {
   open Ezjsonm;
   let context = get_value("@context", main);
   let id_value = get_string_value("id", main);
-  let id = gen_id(id_value, page);
+  let id = gen_id_page(id_value, page);
   let type_page = gen_type_page();
-  let part_of = gen_part_of(id, count, main);
+  let part_of = gen_part_of(id_value, count, main);
   let start_index = gen_start_index(page, limit);
   let prev = gen_prev(id_value, page);
   let next = gen_next(id_value, page, count, limit);
@@ -129,6 +149,74 @@ let annotation_page = (~ctx, ~db, ~key, ~page) => {
                     collection,
                   ),
                 )
+            )
+          };
+      };
+    }
+  );
+};
+
+let gen_first = (id_value, count, limit, collection) => {
+  open Ezjsonm;
+  let id = gen_id_page(id_value, 0);
+  let type_page = gen_type_page();
+  let next = gen_next(id_value, 0, count, limit);
+  let items = gen_items(collection);
+  let json = dict([]);
+  let json = update(json, ["id"], id);
+  let json = update(json, ["type"], type_page);
+  let json = update(json, ["items"], items);
+  let json = update(json, ["next"], next);
+  Some(`O(get_dict(json)));
+};
+
+let annotation_collection_response = (count, limit, main, collection) => {
+  open Ezjsonm;
+  let context = get_value("@context", main);
+  let id_value = get_string_value("id", main);
+  let id = gen_id_collection(id_value);
+  let type_collection = gen_type_collection();
+  let label = get_value("label", main);
+  let first = gen_first(id_value, count, limit, collection);
+  let created = get_value("created", main);
+  let modified = get_value("modified", main);
+  let total = gen_total(count);
+  let last = gen_last(id_value, count, limit);
+  let json = dict([]);
+  let json = update(json, ["@context"], context);
+  let json = update(json, ["id"], id);
+  let json = update(json, ["type"], type_collection);
+  let json = update(json, ["label"], label);
+  let json = update(json, ["created"], created);
+  let json = update(json, ["modified"], modified);
+  let json = update(json, ["total"], total);
+  let json = update(json, ["first"], first);
+  let json = update(json, ["last"], last);
+  `O(get_dict(json));
+};
+
+let annotation_collection = (~ctx, ~db, ~key) => {
+  // get main data
+  Db.get(~ctx=db, ~key)
+  >>= (
+    main => {
+      let limit = ctx.page_limit;
+      // swap "main" for "collection"
+      let k = List.cons(List.hd(key), ["collection"]);
+      Db.count(~ctx=db, ~key=k)
+      >>= {
+        count =>
+          switch (count) {
+          | 0 =>
+            // return an empty items array
+            Lwt.return(
+              annotation_collection_response(count, limit, main, `A([])),
+            )
+          | _ =>
+            Db.get_collection(~ctx=db, ~key=k, ~offset=0, ~length=limit)
+            >|= (
+              collection =>
+                annotation_collection_response(count, limit, main, collection)
             )
           };
       };
