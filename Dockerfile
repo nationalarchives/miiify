@@ -11,21 +11,19 @@ RUN opam install . --deps-only
 
 # Build project
 ADD . .
-RUN opam exec -- dune build ./bin/main.exe
+RUN opam exec -- dune build
 
 FROM alpine as run
 
 RUN adduser miiify --disabled-password
 
-RUN apk add --update libev gmp libressl zlib openssl
+RUN apk add --update libev gmp
 
 WORKDIR /home/miiify
 
 COPY --from=build /home/opam/_build/default/bin/main.exe ./app
 
 USER miiify
-
-EXPOSE 8080
 
 ENTRYPOINT ["/home/miiify/app"]
 

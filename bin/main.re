@@ -48,7 +48,7 @@ let get_page = request => {
 };
 
 let run = ctx =>
-  Dream.run @@
+  Dream.run(~interface="0.0.0.0") @@
   Dream.logger @@
   Dream.router([
     // create container
