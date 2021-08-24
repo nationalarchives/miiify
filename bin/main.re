@@ -51,6 +51,7 @@ let run = ctx =>
   Dream.run(~interface="0.0.0.0") @@
   Dream.logger @@
   Dream.router([
+    Dream.get("/", _ => Dream.html("Welcome to miiify!")),
     // create container
     Dream.post("/annotations/", request => {
       Dream.body(request)
