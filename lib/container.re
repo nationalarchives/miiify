@@ -1,10 +1,18 @@
 open Lwt.Infix;
 
-type t = {page_limit: int};
+type t = {page_limit: int, mutable representation: string};
 
-let create = (~page_limit) => {
-  {page_limit: page_limit};
+let create = (~page_limit, ~representation) => {
+  {page_limit: page_limit, representation: representation};
 };
+
+let get_representation = (~ctx) => {
+  ctx.representation;
+}
+
+let set_representation = (~ctx, ~representation) => {
+  ctx.representation = representation;
+}
 
 let get_value = (term, json) => {
   Ezjsonm.(find_opt(value(json), [term]));
@@ -48,8 +56,12 @@ let gen_part_of = (id_value, count, main) => {
   Some(`O(get_dict(json)));
 };
 
-let gen_items = collection => {
-  Some(Ezjsonm.value(collection));
+let gen_items = (collection, representation) => {
+  switch (representation) {
+    | "PreferContainedDescriptions" => Some(Ezjsonm.value(collection));
+    | "PreferMinimalContainer" => None;
+    | _ => Some(Ezjsonm.value(collection));
+  }
 };
 
 let gen_start_index = (page, limit) => {
@@ -86,7 +98,7 @@ let get_string_value = (term, json) => {
   Ezjsonm.(get_string(Option.get(get_value(term, json))));
 };
 
-let annotation_page_response = (page, count, limit, main, collection) => {
+let annotation_page_response = (page, count, limit, main, collection, representation) => {
   open Ezjsonm;
   let context = get_value("@context", main);
   let id_value = get_string_value("id", main);
@@ -96,7 +108,7 @@ let annotation_page_response = (page, count, limit, main, collection) => {
   let start_index = gen_start_index(page, limit);
   let prev = gen_prev(id_value, page);
   let next = gen_next(id_value, page, count, limit);
-  let items = gen_items(collection);
+  let items = gen_items(collection, representation);
   let json = dict([]);
   let json = update(json, ["@context"], context);
   let json = update(json, ["id"], id);
@@ -115,6 +127,7 @@ let annotation_page = (~ctx, ~db, ~key, ~page) => {
   >>= (
     main => {
       let limit = ctx.page_limit;
+      let representation = ctx.representation;
       // swap "main" for "collection"
       let k = List.cons(List.hd(key), ["collection"]);
       Db.count(~ctx=db, ~key=k)
@@ -128,7 +141,7 @@ let annotation_page = (~ctx, ~db, ~key, ~page) => {
             // return an empty items array
             Lwt.return(
               Some(
-                annotation_page_response(page, count, limit, main, `A([])),
+                annotation_page_response(page, count, limit, main, `A([]), representation),
               ),
             )
           | _ =>
@@ -147,6 +160,7 @@ let annotation_page = (~ctx, ~db, ~key, ~page) => {
                     limit,
                     main,
                     collection,
+                    representation
                   ),
                 )
             )
@@ -156,12 +170,12 @@ let annotation_page = (~ctx, ~db, ~key, ~page) => {
   );
 };
 
-let gen_first = (id_value, count, limit, collection) => {
+let gen_first = (id_value, count, limit, collection, representation) => {
   open Ezjsonm;
   let id = gen_id_page(id_value, 0);
   let type_page = gen_type_page();
   let next = gen_next(id_value, 0, count, limit);
-  let items = gen_items(collection);
+  let items = gen_items(collection, representation);
   let json = dict([]);
   let json = update(json, ["id"], id);
   let json = update(json, ["type"], type_page);
@@ -170,14 +184,14 @@ let gen_first = (id_value, count, limit, collection) => {
   Some(`O(get_dict(json)));
 };
 
-let annotation_collection_response = (count, limit, main, collection) => {
+let annotation_collection_response = (count, limit, main, collection, representation) => {
   open Ezjsonm;
   let context = get_value("@context", main);
   let id_value = get_string_value("id", main);
   let id = gen_id_collection(id_value);
   let type_collection = gen_type_collection();
   let label = get_value("label", main);
-  let first = gen_first(id_value, count, limit, collection);
+  let first = gen_first(id_value, count, limit, collection, representation);
   let created = get_value("created", main);
   let modified = get_value("modified", main);
   let total = gen_total(count);
@@ -201,6 +215,7 @@ let annotation_collection = (~ctx, ~db, ~key) => {
   >>= (
     main => {
       let limit = ctx.page_limit;
+      let representation = ctx.representation;
       // swap "main" for "collection"
       let k = List.cons(List.hd(key), ["collection"]);
       Db.count(~ctx=db, ~key=k)
@@ -210,13 +225,13 @@ let annotation_collection = (~ctx, ~db, ~key) => {
           | 0 =>
             // return an empty items array
             Lwt.return(
-              annotation_collection_response(count, limit, main, `A([])),
+              annotation_collection_response(count, limit, main, `A([]), representation),
             )
           | _ =>
             Db.get_collection(~ctx=db, ~key=k, ~offset=0, ~length=limit)
             >|= (
               collection =>
-                annotation_collection_response(count, limit, main, collection)
+                annotation_collection_response(count, limit, main, collection, representation)
             )
           };
       };

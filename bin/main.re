@@ -47,6 +47,29 @@ let get_page = request => {
   };
 };
 
+let filter_representation = prefer => {
+  let lis = String.split_on_char(' ', prefer);
+  List.map(x => String.split_on_char('#', x), lis);
+};
+
+let strip_last_char = str =>
+  if (str == "") {
+    "";
+  } else {
+    String.sub(str, 0, String.length(str) - 1);
+  };
+
+let get_prefer = request => {
+  switch (Dream.header("prefer", request)) {
+  | None => "PreferContainedDescriptions"
+  | Some(prefer) =>
+    switch (filter_representation(prefer)) {
+    | [[_, x], ..._] => strip_last_char(x)
+    | _ => "PreferContainedDescriptions"
+    }
+  };
+};
+
 let run = ctx =>
   Dream.run(~interface="0.0.0.0") @@
   Dream.logger @@
@@ -238,6 +261,11 @@ let run = ctx =>
       let container_id = Dream.param("container_id", request);
       let key = [container_id, "main"];
       let page = get_page(request);
+      let prefer = get_prefer(request);
+      Container.set_representation(
+        ~ctx=ctx.container,
+        ~representation=prefer,
+      );
       Db.exists(~ctx=ctx.db, ~key)
       >>= {
         ok =>
@@ -263,6 +291,11 @@ let run = ctx =>
     // annotation collection
     Dream.get("/annotations/:container_id/", request => {
       let container_id = Dream.param("container_id", request);
+      let prefer = get_prefer(request);
+      Container.set_representation(
+        ~ctx=ctx.container,
+        ~representation=prefer,
+      );
       let key = [container_id, "main"];
       Db.exists(~ctx=ctx.db, ~key)
       >>= {
@@ -285,7 +318,11 @@ let run = ctx =>
 
 let init = () => {
   db: Db.create(~fname="db"),
-  container: Container.create(~page_limit=200),
+  container:
+    Container.create(
+      ~page_limit=200,
+      ~representation="PreferContainedDescriptions",
+    ),
 };
 
 run(init());
