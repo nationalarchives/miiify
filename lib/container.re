@@ -1,18 +1,21 @@
 open Lwt.Infix;
 
-type t = {page_limit: int, mutable representation: string};
+type t = {
+  page_limit: int,
+  mutable representation: string,
+};
 
 let create = (~page_limit, ~representation) => {
-  {page_limit: page_limit, representation: representation};
+  {page_limit, representation};
 };
 
 let get_representation = (~ctx) => {
   ctx.representation;
-}
+};
 
 let set_representation = (~ctx, ~representation) => {
   ctx.representation = representation;
-}
+};
 
 let get_value = (term, json) => {
   Ezjsonm.(find_opt(value(json), [term]));
@@ -56,12 +59,19 @@ let gen_part_of = (id_value, count, main) => {
   Some(`O(get_dict(json)));
 };
 
+let gen_id_items = collection => {
+  Ezjsonm.(
+    list(x => x, get_list(x => find(x, ["id"]), value(collection)))
+  );
+};
+
 let gen_items = (collection, representation) => {
   switch (representation) {
-    | "PreferContainedDescriptions" => Some(Ezjsonm.value(collection));
-    | "PreferMinimalContainer" => None;
-    | _ => Some(Ezjsonm.value(collection));
-  }
+  | "PreferContainedDescriptions" => Some(Ezjsonm.value(collection))
+  | "PreferContainedIRIs" => Some(gen_id_items(collection))
+  | "PreferMinimalContainer" => None
+  | _ => Some(Ezjsonm.value(collection))
+  };
 };
 
 let gen_start_index = (page, limit) => {
@@ -98,7 +108,8 @@ let get_string_value = (term, json) => {
   Ezjsonm.(get_string(Option.get(get_value(term, json))));
 };
 
-let annotation_page_response = (page, count, limit, main, collection, representation) => {
+let annotation_page_response =
+    (page, count, limit, main, collection, representation) => {
   open Ezjsonm;
   let context = get_value("@context", main);
   let id_value = get_string_value("id", main);
@@ -141,7 +152,14 @@ let annotation_page = (~ctx, ~db, ~key, ~page) => {
             // return an empty items array
             Lwt.return(
               Some(
-                annotation_page_response(page, count, limit, main, `A([]), representation),
+                annotation_page_response(
+                  page,
+                  count,
+                  limit,
+                  main,
+                  `A([]),
+                  representation,
+                ),
               ),
             )
           | _ =>
@@ -160,7 +178,7 @@ let annotation_page = (~ctx, ~db, ~key, ~page) => {
                     limit,
                     main,
                     collection,
-                    representation
+                    representation,
                   ),
                 )
             )
@@ -184,7 +202,8 @@ let gen_first = (id_value, count, limit, collection, representation) => {
   Some(`O(get_dict(json)));
 };
 
-let annotation_collection_response = (count, limit, main, collection, representation) => {
+let annotation_collection_response =
+    (count, limit, main, collection, representation) => {
   open Ezjsonm;
   let context = get_value("@context", main);
   let id_value = get_string_value("id", main);
@@ -225,13 +244,25 @@ let annotation_collection = (~ctx, ~db, ~key) => {
           | 0 =>
             // return an empty items array
             Lwt.return(
-              annotation_collection_response(count, limit, main, `A([]), representation),
+              annotation_collection_response(
+                count,
+                limit,
+                main,
+                `A([]),
+                representation,
+              ),
             )
           | _ =>
             Db.get_collection(~ctx=db, ~key=k, ~offset=0, ~length=limit)
             >|= (
               collection =>
-                annotation_collection_response(count, limit, main, collection, representation)
+                annotation_collection_response(
+                  count,
+                  limit,
+                  main,
+                  collection,
+                  representation,
+                )
             )
           };
       };

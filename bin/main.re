@@ -47,7 +47,7 @@ let get_page = request => {
   };
 };
 
-let filter_representation = prefer => {
+let process_representation = prefer => {
   let lis = String.split_on_char(' ', prefer);
   List.map(x => String.split_on_char('#', x), lis);
 };
@@ -63,7 +63,9 @@ let get_prefer = request => {
   switch (Dream.header("prefer", request)) {
   | None => "PreferContainedDescriptions"
   | Some(prefer) =>
-    switch (filter_representation(prefer)) {
+    // we will just use the first preference if multiple exist
+    switch (process_representation(prefer)) {
+    // the last char is the end quote
     | [[_, x], ..._] => strip_last_char(x)
     | _ => "PreferContainedDescriptions"
     }
