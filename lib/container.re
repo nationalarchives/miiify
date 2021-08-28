@@ -59,18 +59,22 @@ let gen_part_of = (id_value, count, main) => {
   Some(`O(get_dict(json)));
 };
 
-let gen_id_items = collection => {
+let gen_prefer_contained_iris = collection => {
   Ezjsonm.(
-    list(x => x, get_list(x => find(x, ["id"]), value(collection)))
+    Some(list(x => x, get_list(x => find(x, ["id"]), value(collection))))
   );
 };
 
+let gen_prefer_contained_descriptions = collection => {
+  Some(Ezjsonm.value(collection))
+}
+
 let gen_items = (collection, representation) => {
   switch (representation) {
-  | "PreferContainedDescriptions" => Some(Ezjsonm.value(collection))
-  | "PreferContainedIRIs" => Some(gen_id_items(collection))
+  | "PreferContainedDescriptions" => gen_prefer_contained_descriptions(collection)
+  | "PreferContainedIRIs" => gen_prefer_contained_iris(collection)
   | "PreferMinimalContainer" => None
-  | _ => Some(Ezjsonm.value(collection))
+  | _ => gen_prefer_contained_descriptions(collection)
   };
 };
 
