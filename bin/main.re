@@ -72,11 +72,78 @@ let get_prefer = request => {
   };
 };
 
+let root_message = "Welcome to miiify!";
+
+let html_headers = body => {
+  let content_length = Printf.sprintf("%d", String.length(body));
+  let content_type = ("Content-Type", "text/html; charset=utf-8");
+  [content_type, ("Content-length", content_length)];
+};
+
+let html_response = body => {
+  Dream.respond(~headers=html_headers(body), body);
+};
+
+let html_empty_response = body => {
+  Dream.empty(~headers=html_headers(body), `OK);
+};
+
+let get_root = (body, request) => {
+  switch (Dream.method(request)) {
+  | `GET => html_response(body)
+  | `HEAD => html_empty_response(body)
+  | _ => error_response(`Method_Not_Allowed, "unsupported method")
+  };
+};
+
+let json_headers = body => {
+  let content_length = Printf.sprintf("%d", String.length(body));
+  let content_type = (
+    "Content-Type",
+    "application/ld+json; profile=\"http://www.w3.org/ns/anno.jsonld\"",
+  );
+  [content_type, ("Content-length", content_length)];
+};
+
+let json_response = body => {
+  Dream.respond(~headers=json_headers(body), body);
+};
+
+let json_empty_response = body => {
+  Dream.empty(~headers=json_headers(body), `OK);
+};
+
+let get_annotation = (ctx, request) => {
+  let container_id = Dream.param("container_id", request);
+  let annotation_id = Dream.param("annotation_id", request);
+  let key = [container_id, "collection", annotation_id];
+  Db.exists(~ctx=ctx.db, ~key)
+  >>= {
+    ok =>
+      if (ok) {
+        Db.get(~ctx=ctx.db, ~key)
+        >|= Ezjsonm.to_string
+        >>= (
+          resp => {
+            switch (Dream.method(request)) {
+            | `GET => json_response(resp)
+            | `HEAD => json_empty_response(resp)
+            | _ => error_response(`Method_Not_Allowed, "unsupported method")
+            };
+          }
+        );
+      } else {
+        error_response(`Not_Found, "annotation not found");
+      };
+  };
+};
+
 let run = ctx =>
   Dream.run(~interface="0.0.0.0") @@
   Dream.logger @@
   Dream.router([
-    Dream.get("/", _ => Dream.html("Welcome to miiify!")),
+    Dream.get("/", get_root(root_message)),
+    Dream.head("/", get_root(root_message)),
     // create container
     Dream.post("/annotations/", request => {
       Dream.body(request)
@@ -244,20 +311,14 @@ let run = ctx =>
           };
       };
     }),
-    Dream.get("/annotations/:container_id/:annotation_id", request => {
-      let container_id = Dream.param("container_id", request);
-      let annotation_id = Dream.param("annotation_id", request);
-      let key = [container_id, "collection", annotation_id];
-      Db.exists(~ctx=ctx.db, ~key)
-      >>= {
-        ok =>
-          if (ok) {
-            Db.get(~ctx=ctx.db, ~key) >|= Ezjsonm.to_string >>= Dream.json;
-          } else {
-            error_response(`Not_Found, "annotation not found");
-          };
-      };
-    }),
+    Dream.get(
+      "/annotations/:container_id/:annotation_id",
+      get_annotation(ctx),
+    ),
+    Dream.head(
+      "/annotations/:container_id/:annotation_id",
+      get_annotation(ctx),
+    ),
     // annotation pages
     Dream.get("/annotations/:container_id", request => {
       let container_id = Dream.param("container_id", request);
