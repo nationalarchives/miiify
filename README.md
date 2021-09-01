@@ -10,4 +10,8 @@ http :/annotations/my-container/foobar
 cd db
 git log
 git show
+docker run -v ~/git/miiify/db:/db \
+           -p 7777:80 \
+           -it jonashaag/klaus:latest \
+           klaus --host 0.0.0.0 --port 80 /db
 ```
