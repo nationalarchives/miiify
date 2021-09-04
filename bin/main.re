@@ -105,12 +105,22 @@ let json_headers = body => {
   [content_type, ("Content-length", content_length)];
 };
 
-let json_response = body => {
-  Dream.respond(~headers=json_headers(body), body);
+let json_body_response = body => {
+  let resp = Ezjsonm.to_string(body);
+  Dream.respond(~headers=json_headers(resp), resp);
 };
 
 let json_empty_response = body => {
-  Dream.empty(~headers=json_headers(body), `OK);
+  let resp = Ezjsonm.to_string(body);
+  Dream.empty(~headers=json_headers(resp), `OK);
+};
+
+let json_response = (request, body) => {
+  switch (Dream.method(request)) {
+  | `HEAD => json_empty_response(body)
+  | `GET => json_body_response(body)
+  | _ => error_response(`Method_Not_Allowed, "unsupported method")
+  };
 };
 
 let get_annotation = (ctx, request) => {
@@ -121,19 +131,50 @@ let get_annotation = (ctx, request) => {
   >>= {
     ok =>
       if (ok) {
-        Db.get(~ctx=ctx.db, ~key)
-        >|= Ezjsonm.to_string
-        >>= (
-          resp => {
-            switch (Dream.method(request)) {
-            | `GET => json_response(resp)
-            | `HEAD => json_empty_response(resp)
-            | _ => error_response(`Method_Not_Allowed, "unsupported method")
-            };
-          }
-        );
+        Db.get(~ctx=ctx.db, ~key) >>= json_response(request);
       } else {
         error_response(`Not_Found, "annotation not found");
+      };
+  };
+};
+
+let get_annotation_pages = (ctx, request) => {
+  let container_id = Dream.param("container_id", request);
+  let key = [container_id, "main"];
+  let page = get_page(request);
+  let prefer = get_prefer(request);
+  Container.set_representation(~ctx=ctx.container, ~representation=prefer);
+  Db.exists(~ctx=ctx.db, ~key)
+  >>= {
+    ok =>
+      if (ok) {
+        Container.annotation_page(~ctx=ctx.container, ~db=ctx.db, ~key, ~page)
+        >>= (
+          page =>
+            switch (page) {
+            | Some(page) => json_response(request, page)
+            | None => error_response(`Not_Found, "page not found")
+            }
+        );
+      } else {
+        error_response(`Not_Found, "container not found");
+      };
+  };
+};
+
+let get_annotation_collection = (ctx, request) => {
+  let container_id = Dream.param("container_id", request);
+  let prefer = get_prefer(request);
+  Container.set_representation(~ctx=ctx.container, ~representation=prefer);
+  let key = [container_id, "main"];
+  Db.exists(~ctx=ctx.db, ~key)
+  >>= {
+    ok =>
+      if (ok) {
+        Container.annotation_collection(~ctx=ctx.container, ~db=ctx.db, ~key)
+        >>= json_response(request);
+      } else {
+        error_response(`Not_Found, "container not found");
       };
   };
 };
@@ -320,62 +361,14 @@ let run = ctx =>
       get_annotation(ctx),
     ),
     // annotation pages
-    Dream.get("/annotations/:container_id", request => {
-      let container_id = Dream.param("container_id", request);
-      let key = [container_id, "main"];
-      let page = get_page(request);
-      let prefer = get_prefer(request);
-      Container.set_representation(
-        ~ctx=ctx.container,
-        ~representation=prefer,
-      );
-      Db.exists(~ctx=ctx.db, ~key)
-      >>= {
-        ok =>
-          if (ok) {
-            Container.annotation_page(
-              ~ctx=ctx.container,
-              ~db=ctx.db,
-              ~key,
-              ~page,
-            )
-            >>= (
-              page =>
-                switch (page) {
-                | Some(page) => Dream.json(Ezjsonm.to_string(page))
-                | None => error_response(`Not_Found, "page not found")
-                }
-            );
-          } else {
-            error_response(`Not_Found, "container not found");
-          };
-      };
-    }),
+    Dream.get("/annotations/:container_id", get_annotation_pages(ctx)),
+    Dream.head("/annotations/:container_id", get_annotation_pages(ctx)),
     // annotation collection
-    Dream.get("/annotations/:container_id/", request => {
-      let container_id = Dream.param("container_id", request);
-      let prefer = get_prefer(request);
-      Container.set_representation(
-        ~ctx=ctx.container,
-        ~representation=prefer,
-      );
-      let key = [container_id, "main"];
-      Db.exists(~ctx=ctx.db, ~key)
-      >>= {
-        ok =>
-          if (ok) {
-            Container.annotation_collection(
-              ~ctx=ctx.container,
-              ~db=ctx.db,
-              ~key,
-            )
-            >|= Ezjsonm.to_string
-            >>= Dream.json;
-          } else {
-            error_response(`Not_Found, "container not found");
-          };
-      };
-    }),
+    Dream.get("/annotations/:container_id/", get_annotation_collection(ctx)),
+    Dream.head(
+      "/annotations/:container_id/",
+      get_annotation_collection(ctx),
+    ),
   ]) @@
   Dream.not_found;
 
