@@ -179,195 +179,200 @@ let get_annotation_collection = (ctx, request) => {
   };
 };
 
-let run = ctx =>
-  Dream.run(~interface="0.0.0.0") @@
-  Dream.logger @@
-  Dream.router([
-    Dream.get("/", get_root(root_message)),
-    Dream.head("/", get_root(root_message)),
-    // create container
-    Dream.post("/annotations/", request => {
-      Dream.body(request)
-      >>= {
-        body => {
-          Data.post_container(
-            ~data=body,
-            ~id=[get_id(request), "main"],
-            ~host=get_host(request),
-          )
-          |> {
-            obj =>
-              switch (obj) {
-              | Error(m) => error_response(`Bad_Request, m)
-              | Ok(obj) =>
-                let key = Data.id(obj);
-                Db.exists(~ctx=ctx.db, ~key)
-                >>= (
-                  ok =>
-                    if (ok) {
-                      error_response(
-                        `Bad_Request,
-                        "container already exists",
-                      );
-                    } else {
-                      Db.add(
-                        ~ctx=ctx.db,
-                        ~key,
-                        ~json=Data.json(obj),
-                        ~message="POST " ++ key_to_string(Data.id(obj)),
-                      )
-                      >>= (() => Dream.json(Data.to_string(obj), ~code=201));
-                    }
-                );
-              };
-          };
-        };
-      }
-    }),
-    Dream.delete("/annotations/:container_id", request => {
-      let container_id = Dream.param("container_id", request);
-      let key = [container_id];
-      Db.exists(~ctx=ctx.db, ~key)
-      >>= {
-        ok =>
-          if (ok) {
-            Db.delete(
-              ~ctx=ctx.db,
-              ~key,
-              ~message="DELETE " ++ key_to_string(key),
-            )
-            >>= (() => Dream.empty(`No_Content));
-          } else {
-            error_response(`Not_Found, "container not found");
+let delete_container = (ctx, request) => {
+  let container_id = Dream.param("container_id", request);
+  let key = [container_id];
+  Db.exists(~ctx=ctx.db, ~key)
+  >>= {
+    yes =>
+      if (yes) {
+        Db.delete(
+          ~ctx=ctx.db,
+          ~key,
+          ~message="DELETE " ++ key_to_string(key),
+        )
+        >>= (() => Dream.empty(`No_Content));
+      } else {
+        error_response(`Not_Found, "container not found");
+      };
+  };
+};
+
+let post_container = (ctx, request) => {
+  Dream.body(request)
+  >>= {
+    body => {
+      Data.post_container(
+        ~data=body,
+        ~id=[get_id(request), "main"],
+        ~host=get_host(request),
+      )
+      |> {
+        obj =>
+          switch (obj) {
+          | Error(m) => error_response(`Bad_Request, m)
+          | Ok(obj) =>
+            let key = Data.id(obj);
+            Db.exists(~ctx=ctx.db, ~key)
+            >>= (
+              ok =>
+                if (ok) {
+                  error_response(`Bad_Request, "container already exists");
+                } else {
+                  Db.add(
+                    ~ctx=ctx.db,
+                    ~key,
+                    ~json=Data.json(obj),
+                    ~message="POST " ++ key_to_string(Data.id(obj)),
+                  )
+                  >>= (() => Dream.json(Data.to_string(obj), ~code=201));
+                }
+            );
           };
       };
-    }),
-    // add new annotation to container
-    Dream.post("/annotations/:container_id/", request => {
-      Dream.body(request)
-      >>= {
-        body => {
-          let container_id = Dream.param("container_id", request);
-          Data.post_annotation(
-            ~data=body,
-            ~id=[container_id, "collection", get_id(request)],
-            ~host=get_host(request),
-          )
-          |> {
-            obj =>
-              switch (obj) {
-              | Error(m) => error_response(`Bad_Request, m)
-              | Ok(obj) =>
-                let key = Data.id(obj);
-                // container must exist already
-                Db.exists(~ctx=ctx.db, ~key=[container_id])
-                >>= (
-                  ok =>
-                    if (ok) {
-                      // annotation can't exist already
-                      Db.exists(~ctx=ctx.db, ~key)
-                      >>= (
-                        ok =>
-                          if (ok) {
-                            error_response(
-                              `Bad_Request,
-                              "annotation already exists",
-                            );
-                          } else {
-                            Db.add(
-                              ~ctx=ctx.db,
-                              ~key,
-                              ~json=Data.json(obj),
-                              ~message="POST " ++ key_to_string(key),
-                            )
-                            >>= (
-                              () =>
-                                Dream.json(Data.to_string(obj), ~code=201)
-                            );
-                          }
-                      );
-                    } else {
-                      error_response(
-                        `Bad_Request,
-                        "container does not exist",
-                      );
-                    }
-                );
-              };
-          };
-        };
-      }
-    }),
-    Dream.put("/annotations/:container_id/:annotation_id", request => {
-      Dream.body(request)
-      >>= {
-        body => {
-          let container_id = Dream.param("container_id", request);
-          let annotation_id = Dream.param("annotation_id", request);
-          let key = [container_id, "collection", annotation_id];
-          Data.put_annotation(~data=body, ~id=key, ~host=get_host(request))
-          |> {
-            obj =>
-              switch (obj) {
-              | Error(m) => error_response(`Bad_Request, m)
-              | Ok(obj) =>
-                Db.exists(~ctx=ctx.db, ~key)
-                >>= {
-                  (
+    };
+  };
+};
+
+let delete_annotation = (ctx, request) => {
+  let container_id = Dream.param("container_id", request);
+  let annotation_id = Dream.param("annotation_id", request);
+  let key = [container_id, "collection", annotation_id];
+  Db.exists(~ctx=ctx.db, ~key)
+  >>= {
+    ok =>
+      if (ok) {
+        Db.delete(
+          ~ctx=ctx.db,
+          ~key,
+          ~message="DELETE " ++ key_to_string(key),
+        )
+        >>= (() => Dream.empty(`No_Content));
+      } else {
+        error_response(`Not_Found, "annotation not found");
+      };
+  };
+};
+
+let post_annotation = (ctx, request) => {
+  Dream.body(request)
+  >>= {
+    body => {
+      let container_id = Dream.param("container_id", request);
+      Data.post_annotation(
+        ~data=body,
+        ~id=[container_id, "collection", get_id(request)],
+        ~host=get_host(request),
+      )
+      |> {
+        obj =>
+          switch (obj) {
+          | Error(m) => error_response(`Bad_Request, m)
+          | Ok(obj) =>
+            let key = Data.id(obj);
+            // container must exist already
+            Db.exists(~ctx=ctx.db, ~key=[container_id])
+            >>= (
+              ok =>
+                if (ok) {
+                  // annotation can't exist already
+                  Db.exists(~ctx=ctx.db, ~key)
+                  >>= (
                     ok =>
                       if (ok) {
+                        error_response(
+                          `Bad_Request,
+                          "annotation already exists",
+                        );
+                      } else {
                         Db.add(
                           ~ctx=ctx.db,
                           ~key,
                           ~json=Data.json(obj),
-                          ~message="PUT " ++ key_to_string(key),
+                          ~message="POST " ++ key_to_string(key),
                         )
-                        >>= (() => Dream.json(Data.to_string(obj)));
-                      } else {
-                        error_response(`Bad_Request, "annotation not found");
+                        >>= (
+                          () => Dream.json(Data.to_string(obj), ~code=201)
+                        );
                       }
                   );
+                } else {
+                  error_response(`Bad_Request, "container does not exist");
                 }
-              };
+            );
           };
-        };
-      }
-    }),
-    Dream.delete("/annotations/:container_id/:annotation_id", request => {
+      };
+    };
+  };
+};
+
+let put_annotation = (ctx, request) => {
+  Dream.body(request)
+  >>= {
+    body => {
       let container_id = Dream.param("container_id", request);
       let annotation_id = Dream.param("annotation_id", request);
       let key = [container_id, "collection", annotation_id];
-      Db.exists(~ctx=ctx.db, ~key)
-      >>= {
-        ok =>
-          if (ok) {
-            Db.delete(
-              ~ctx=ctx.db,
-              ~key,
-              ~message="DELETE " ++ key_to_string(key),
-            )
-            >>= (() => Dream.empty(`No_Content));
-          } else {
-            error_response(`Not_Found, "annotation not found");
+      Data.put_annotation(~data=body, ~id=key, ~host=get_host(request))
+      |> {
+        obj =>
+          switch (obj) {
+          | Error(m) => error_response(`Bad_Request, m)
+          | Ok(obj) =>
+            Db.exists(~ctx=ctx.db, ~key)
+            >>= {
+              (
+                ok =>
+                  if (ok) {
+                    Db.add(
+                      ~ctx=ctx.db,
+                      ~key,
+                      ~json=Data.json(obj),
+                      ~message="PUT " ++ key_to_string(key),
+                    )
+                    >>= (() => Dream.json(Data.to_string(obj)));
+                  } else {
+                    error_response(`Bad_Request, "annotation not found");
+                  }
+              );
+            }
           };
       };
-    }),
+    };
+  };
+};
+
+let run = ctx =>
+  Dream.run(~interface="0.0.0.0") @@
+  Dream.logger @@
+  Dream.router([
+    Dream.head(
+      "/annotations/:container_id/:annotation_id",
+      get_annotation(ctx),
+    ),
+    Dream.head("/annotations/:container_id", get_annotation_pages(ctx)),
+    Dream.head(
+      "/annotations/:container_id/",
+      get_annotation_collection(ctx),
+    ),
+    Dream.head("/", get_root(root_message)),
+    Dream.get("/", get_root(root_message)),
     Dream.get(
       "/annotations/:container_id/:annotation_id",
       get_annotation(ctx),
     ),
-    Dream.head(
-      "/annotations/:container_id/:annotation_id",
-      get_annotation(ctx),
-    ),
-    // annotation pages
     Dream.get("/annotations/:container_id", get_annotation_pages(ctx)),
-    Dream.head("/annotations/:container_id", get_annotation_pages(ctx)),
-    // annotation collection
     Dream.get("/annotations/:container_id/", get_annotation_collection(ctx)),
-    Dream.head(
-      "/annotations/:container_id/",
-      get_annotation_collection(ctx),
+    Dream.post("/annotations/", post_container(ctx)),
+    Dream.post("/annotations/:container_id/", post_container(ctx)),
+    Dream.put(
+      "/annotations/:container_id/:annotation_id",
+      put_annotation(ctx),
+    ),
+    Dream.delete("/annotations/:container_id", delete_container(ctx)),
+    Dream.delete(
+      "/annotations/:container_id/:annotation_id",
+      delete_annotation(ctx),
     ),
   ]) @@
   Dream.not_found;
