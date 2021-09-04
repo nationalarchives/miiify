@@ -105,9 +105,9 @@ let json_headers = body => {
   [content_type, ("Content-length", content_length)];
 };
 
-let json_body_response = body => {
+let json_body_response = (body, ~code=200, ()) => {
   let resp = Ezjsonm.to_string(body);
-  Dream.respond(~headers=json_headers(resp), resp);
+  Dream.respond(~headers=json_headers(resp), resp, ~code);
 };
 
 let json_empty_response = body => {
@@ -118,7 +118,9 @@ let json_empty_response = body => {
 let json_response = (request, body) => {
   switch (Dream.method(request)) {
   | `HEAD => json_empty_response(body)
-  | `GET => json_body_response(body)
+  | `GET => json_body_response(body, ())
+  | `PUT => json_body_response(body, ())
+  | `POST => json_body_response(body, ~code=201, ())
   | _ => error_response(`Method_Not_Allowed, "unsupported method")
   };
 };
@@ -129,8 +131,8 @@ let get_annotation = (ctx, request) => {
   let key = [container_id, "collection", annotation_id];
   Db.exists(~ctx=ctx.db, ~key)
   >>= {
-    ok =>
-      if (ok) {
+    yes =>
+      if (yes) {
         Db.get(~ctx=ctx.db, ~key) >>= json_response(request);
       } else {
         error_response(`Not_Found, "annotation not found");
@@ -146,8 +148,8 @@ let get_annotation_pages = (ctx, request) => {
   Container.set_representation(~ctx=ctx.container, ~representation=prefer);
   Db.exists(~ctx=ctx.db, ~key)
   >>= {
-    ok =>
-      if (ok) {
+    yes =>
+      if (yes) {
         Container.annotation_page(~ctx=ctx.container, ~db=ctx.db, ~key, ~page)
         >>= (
           page =>
@@ -169,8 +171,8 @@ let get_annotation_collection = (ctx, request) => {
   let key = [container_id, "main"];
   Db.exists(~ctx=ctx.db, ~key)
   >>= {
-    ok =>
-      if (ok) {
+    yes =>
+      if (yes) {
         Container.annotation_collection(~ctx=ctx.container, ~db=ctx.db, ~key)
         >>= json_response(request);
       } else {
@@ -215,8 +217,8 @@ let post_container = (ctx, request) => {
             let key = Data.id(obj);
             Db.exists(~ctx=ctx.db, ~key)
             >>= (
-              ok =>
-                if (ok) {
+              yes =>
+                if (yes) {
                   error_response(`Bad_Request, "container already exists");
                 } else {
                   Db.add(
@@ -225,7 +227,7 @@ let post_container = (ctx, request) => {
                     ~json=Data.json(obj),
                     ~message="POST " ++ key_to_string(Data.id(obj)),
                   )
-                  >>= (() => Dream.json(Data.to_string(obj), ~code=201));
+                  >>= (() => json_response(request, Data.json(obj)));
                 }
             );
           };
@@ -240,8 +242,8 @@ let delete_annotation = (ctx, request) => {
   let key = [container_id, "collection", annotation_id];
   Db.exists(~ctx=ctx.db, ~key)
   >>= {
-    ok =>
-      if (ok) {
+    yes =>
+      if (yes) {
         Db.delete(
           ~ctx=ctx.db,
           ~key,
@@ -273,13 +275,13 @@ let post_annotation = (ctx, request) => {
             // container must exist already
             Db.exists(~ctx=ctx.db, ~key=[container_id])
             >>= (
-              ok =>
-                if (ok) {
+              yes =>
+                if (yes) {
                   // annotation can't exist already
                   Db.exists(~ctx=ctx.db, ~key)
                   >>= (
-                    ok =>
-                      if (ok) {
+                    yes =>
+                      if (yes) {
                         error_response(
                           `Bad_Request,
                           "annotation already exists",
@@ -291,9 +293,7 @@ let post_annotation = (ctx, request) => {
                           ~json=Data.json(obj),
                           ~message="POST " ++ key_to_string(key),
                         )
-                        >>= (
-                          () => Dream.json(Data.to_string(obj), ~code=201)
-                        );
+                        >>= (() => json_response(request, Data.json(obj)));
                       }
                   );
                 } else {
@@ -322,15 +322,15 @@ let put_annotation = (ctx, request) => {
             Db.exists(~ctx=ctx.db, ~key)
             >>= {
               (
-                ok =>
-                  if (ok) {
+                yes =>
+                  if (yes) {
                     Db.add(
                       ~ctx=ctx.db,
                       ~key,
                       ~json=Data.json(obj),
                       ~message="PUT " ++ key_to_string(key),
                     )
-                    >>= (() => Dream.json(Data.to_string(obj)));
+                    >>= (() => json_response(request, Data.json(obj)));
                   } else {
                     error_response(`Bad_Request, "annotation not found");
                   }
@@ -364,7 +364,7 @@ let run = ctx =>
     Dream.get("/annotations/:container_id", get_annotation_pages(ctx)),
     Dream.get("/annotations/:container_id/", get_annotation_collection(ctx)),
     Dream.post("/annotations/", post_container(ctx)),
-    Dream.post("/annotations/:container_id/", post_container(ctx)),
+    Dream.post("/annotations/:container_id/", post_annotation(ctx)),
     Dream.put(
       "/annotations/:container_id/:annotation_id",
       put_annotation(ctx),
