@@ -58,3 +58,27 @@ let get_collection = (~ctx, ~key, ~offset, ~length) => {
 let count = (~ctx, ~key) => {
   ctx.db >>= (branch => Store.list(branch, key) >|= List.length);
 };
+
+let get_hash = (~ctx, ~key) => {
+  ctx.db
+  >>= (branch => Store.hash(branch, key))
+  >|= (
+    hash =>
+      switch (hash) {
+      | Some(hash) => Some(Store.Git.Hash.to_hex(hash));
+      | None => None;
+      }
+  );
+};
+
+let compare_hash = (~ctx, ~key, ~hash) => {
+  ctx.db
+  >>= (branch => Store.hash(branch, key))
+  >|= (
+    hash' =>
+      switch (hash') {
+      | Some(hash') => Store.Git.Hash.to_hex(hash') == hash
+      | None => false
+      }
+  );
+};
