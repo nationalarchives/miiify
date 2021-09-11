@@ -12,10 +12,10 @@ let crud = () => {
   let ctx = create(~fname="db");
   add(~ctx, ~key, ~json=j1, ~message="CREATE")
   >>= (() => count(~ctx, ~key) >>= (n => printf("%d\n", n)))
-  >>= (() => get(~ctx, ~key) >>= (j => printf("%s\n", to_string(j))))
+  >>= (() => get(~ctx, ~key) >>= (j => printf("%s\n", value_to_string(j))))
   >>= (() => add(~ctx, ~key, ~json=j2, ~message="UPDATE"))
   >>= (() => count(~ctx, ~key) >>= (n => printf("%d\n", n)))
-  >>= (() => get(~ctx, ~key) >>= (j => printf("%s\n", to_string(j))))
+  >>= (() => get(~ctx, ~key) >>= (j => printf("%s\n", value_to_string(j))))
   >>= (() => delete(~ctx, ~key, ~message="DELETE"))
   >>= (() => count(~ctx, ~key) >>= (n => printf("%d\n", n)));
 };

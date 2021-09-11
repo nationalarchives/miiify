@@ -8,6 +8,6 @@ let put_annotation: (~data:string, ~id:list(string), ~host:string) => result(t, 
 
 let id: (t) => list(string);
 
-let json: (t) => Ezjsonm.t;
+let json: (t) => Ezjsonm.value;
 
 let to_string: (t) => string;

@@ -177,13 +177,27 @@ let post_annotation = (ctx, request) => {
                           "annotation already exists",
                         );
                       } else {
+                        let modified_key = [container_id, "main", "modified"];
                         Db.add(
+                          // first modify main part of container with timestamp
                           ~ctx=ctx.db,
-                          ~key,
-                          ~json=Data.json(obj),
-                          ~message="POST " ++ key_to_string(key),
+                          ~key=modified_key,
+                          ~json=Ezjsonm.string(get_timestamp()),
+                          ~message="POST " ++ key_to_string(modified_key),
                         )
-                        >>= (() => json_response(request, Data.json(obj)));
+                        >>= (
+                          () =>
+                            Db.add(
+                              // add to collection part of container
+                              ~ctx=ctx.db,
+                              ~key,
+                              ~json=Data.json(obj),
+                              ~message="POST " ++ key_to_string(key),
+                            )
+                            >>= (
+                              () => json_response(request, Data.json(obj))
+                            )
+                        );
                       }
                   );
                 } else {

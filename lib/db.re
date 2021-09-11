@@ -16,7 +16,6 @@ let create = (~fname) => {
 };
 
 let add = (~ctx, ~key, ~json, ~message) => {
-  let json = Ezjsonm.value(json);
   ctx.db
   >>= {
     branch => Proj.set(branch, key, json, ~info=info(message));
@@ -24,11 +23,7 @@ let add = (~ctx, ~key, ~json, ~message) => {
 };
 
 let get = (~ctx, ~key) => {
-  ctx.db
-  >>= {
-    branch =>
-      Proj.get(branch, key) >|= (json => `O(Ezjsonm.get_dict(json)));
-  };
+  ctx.db >>= (branch => Proj.get(branch, key));
 };
 
 let delete = (~ctx, ~key, ~message) => {
@@ -65,8 +60,8 @@ let get_hash = (~ctx, ~key) => {
   >|= (
     hash =>
       switch (hash) {
-      | Some(hash) => Some(Store.Git.Hash.to_hex(hash));
-      | None => None;
+      | Some(hash) => Some(Store.Git.Hash.to_hex(hash))
+      | None => None
       }
   );
 };

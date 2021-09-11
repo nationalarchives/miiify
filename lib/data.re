@@ -2,7 +2,7 @@ open Ezjsonm;
 
 type t = {
   id: list(string),
-  json: Ezjsonm.t,
+  json: Ezjsonm.value,
 };
 
 let get_timestamp = () => {
@@ -37,8 +37,7 @@ let post = (~data, ~id, ~host) => {
       let timestamp = get_timestamp();
       let json = update(json, ["id"], Some(string(iri)));
       let json = update(json, ["created"], Some(string(timestamp)));
-      let json' = `O(get_dict(json));
-      Result.ok({id, json: json'});
+      Result.ok({id, json});
     }
   };
 };
@@ -70,8 +69,7 @@ let put_annotation = (~data, ~id, ~host) => {
         if (iri == iri') {
           let timestamp = get_timestamp();
           let json = update(json, ["modified"], Some(string(timestamp)));
-          let json' = `O(get_dict(json));
-          Result.ok({id, json: json'});
+          Result.ok({id, json});
         } else {
           Result.error("id in body does not match");
         }
@@ -87,5 +85,5 @@ let json = r => r.json;
 
 // utility
 let to_string = r => {
-  Ezjsonm.to_string(r.json);
+  Ezjsonm.value_to_string(r.json);
 };

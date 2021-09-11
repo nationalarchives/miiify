@@ -3,6 +3,11 @@ let root_message = "Welcome to miiify!";
 let gen_uuid = () =>
   Uuidm.v4_gen(Random.State.make_self_init(), ()) |> Uuidm.to_string;
 
+let get_timestamp = () => {
+  let t = Ptime_clock.now();
+  Ptime.to_rfc3339(t, ~tz_offset_s=0);
+};
+
 let get_id = request => {
   switch (Dream.header("Slug", request)) {
   | None => gen_uuid()
@@ -90,12 +95,12 @@ let json_headers = body => {
 };
 
 let json_body_response = (body, ~code=200, ()) => {
-  let resp = Ezjsonm.to_string(body);
+  let resp = Ezjsonm.value_to_string(body);
   Dream.respond(~headers=json_headers(resp), resp, ~code);
 };
 
 let json_empty_response = body => {
-  let resp = Ezjsonm.to_string(body);
+  let resp = Ezjsonm.value_to_string(body);
   Dream.empty(~headers=json_headers(resp), `OK);
 };
 

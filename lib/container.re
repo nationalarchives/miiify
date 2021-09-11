@@ -18,7 +18,7 @@ let set_representation = (~ctx, ~representation) => {
 };
 
 let get_value = (term, json) => {
-  Ezjsonm.(find_opt(value(json), [term]));
+  Ezjsonm.(find_opt(json, [term]));
 };
 
 let gen_id_page = (id, page) => {
@@ -56,17 +56,17 @@ let gen_part_of = (id_value, count, main) => {
   let json = update(json, ["modified"], modified);
   let json = update(json, ["total"], total);
   let json = update(json, ["label"], label);
-  Some(`O(get_dict(json)));
+  Some(json);
 };
 
 let gen_prefer_contained_iris = collection => {
   Ezjsonm.(
-    Some(list(x => x, get_list(x => find(x, ["id"]), value(collection))))
+    Some(list(x => x, get_list(x => find(x, ["id"]), collection)))
   );
 };
 
 let gen_prefer_contained_descriptions = collection => {
-  Some(Ezjsonm.value(collection))
+  Some(collection)
 }
 
 let gen_items = (collection, representation) => {
@@ -133,7 +133,7 @@ let annotation_page_response =
   let json = update(json, ["prev"], prev);
   let json = update(json, ["next"], next);
   let json = update(json, ["items"], items);
-  `O(get_dict(json));
+  json;
 };
 
 let annotation_page = (~ctx, ~db, ~key, ~page) => {
@@ -203,7 +203,7 @@ let gen_first = (id_value, count, limit, collection, representation) => {
   let json = update(json, ["type"], type_page);
   let json = update(json, ["items"], items);
   let json = update(json, ["next"], next);
-  Some(`O(get_dict(json)));
+  Some(json);
 };
 
 let annotation_collection_response =
@@ -229,7 +229,7 @@ let annotation_collection_response =
   let json = update(json, ["total"], total);
   let json = update(json, ["first"], first);
   let json = update(json, ["last"], last);
-  `O(get_dict(json));
+  json;
 };
 
 let annotation_collection = (~ctx, ~db, ~key) => {
