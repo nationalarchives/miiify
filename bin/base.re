@@ -85,31 +85,35 @@ let html_empty_response = body => {
   Dream.empty(~headers=html_headers(body), `OK);
 };
 
-let json_headers = body => {
+let json_headers = (body, etag) => {
   let content_length = Printf.sprintf("%d", String.length(body));
   let content_type = (
     "Content-Type",
     "application/ld+json; profile=\"http://www.w3.org/ns/anno.jsonld\"",
   );
-  [content_type, ("Content-length", content_length)];
+  let default_header = [content_type, ("Content-length", content_length)];
+  switch (etag) {
+    | None => default_header;
+    | Some(etag) => List.cons(("ETag", "\"" ++ etag ++ "\"" ), default_header)
+  }
 };
 
-let json_body_response = (body, ~code=200, ()) => {
+let json_body_response = (~body, ~etag, ~code=200, ()) => {
   let resp = Ezjsonm.value_to_string(body);
-  Dream.respond(~headers=json_headers(resp), resp, ~code);
+  Dream.respond(~headers=json_headers(resp, etag), resp, ~code);
 };
 
-let json_empty_response = body => {
+let json_empty_response = (~body, ~etag, ()) => {
   let resp = Ezjsonm.value_to_string(body);
-  Dream.empty(~headers=json_headers(resp), `OK);
+  Dream.empty(~headers=json_headers(resp, etag), `OK);
 };
 
-let json_response = (request, body) => {
+let json_response = (~request, ~body, ~etag=None, ()) => {
   switch (Dream.method(request)) {
-  | `HEAD => json_empty_response(body)
-  | `GET => json_body_response(body, ())
-  | `PUT => json_body_response(body, ())
-  | `POST => json_body_response(body, ~code=201, ())
+  | `HEAD => json_empty_response(~body, ~etag, ())
+  | `GET => json_body_response(~body, ~etag, ())
+  | `PUT => json_body_response(~body, ~etag, ())
+  | `POST => json_body_response(~body, ~etag, ~code=201, ())
   | _ => error_response(`Method_Not_Allowed, "unsupported method")
   };
 };

@@ -19,13 +19,14 @@ let get_annotation = (ctx, request) => {
   let container_id = Dream.param("container_id", request);
   let annotation_id = Dream.param("annotation_id", request);
   let key = [container_id, "collection", annotation_id];
-  Db.exists(~ctx=ctx.db, ~key)
+  Db.get_hash(~ctx=ctx.db, ~key)
   >>= {
-    yes =>
-      if (yes) {
-        Db.get(~ctx=ctx.db, ~key) >>= json_response(request);
-      } else {
-        error_response(`Not_Found, "annotation not found");
+    etag =>
+      switch (etag) {
+      | Some(etag) =>
+        Db.get(~ctx=ctx.db, ~key)
+        >>= (body => json_response(~request, ~body, ~etag=Some(etag), ()))
+      | None => error_response(`Not_Found, "annotation not found")
       };
   };
 };
@@ -36,20 +37,21 @@ let get_annotation_pages = (ctx, request) => {
   let page = get_page(request);
   let prefer = get_prefer(request);
   Container.set_representation(~ctx=ctx.container, ~representation=prefer);
-  Db.exists(~ctx=ctx.db, ~key)
+  Db.get_hash(~ctx=ctx.db, ~key)
   >>= {
-    yes =>
-      if (yes) {
+    etag =>
+      switch (etag) {
+      | Some(etag) =>
         Container.annotation_page(~ctx=ctx.container, ~db=ctx.db, ~key, ~page)
         >>= (
           page =>
             switch (page) {
-            | Some(page) => json_response(request, page)
+            | Some(page) =>
+              json_response(~request, ~body=page, ~etag=Some(etag), ())
             | None => error_response(`Not_Found, "page not found")
             }
-        );
-      } else {
-        error_response(`Not_Found, "container not found");
+        )
+      | None => error_response(`Not_Found, "container not found")
       };
   };
 };
@@ -59,14 +61,14 @@ let get_annotation_collection = (ctx, request) => {
   let prefer = get_prefer(request);
   Container.set_representation(~ctx=ctx.container, ~representation=prefer);
   let key = [container_id, "main"];
-  Db.exists(~ctx=ctx.db, ~key)
+  Db.get_hash(~ctx=ctx.db, ~key)
   >>= {
-    yes =>
-      if (yes) {
+    etag =>
+      switch (etag) {
+      | Some(etag) =>
         Container.annotation_collection(~ctx=ctx.container, ~db=ctx.db, ~key)
-        >>= json_response(request);
-      } else {
-        error_response(`Not_Found, "container not found");
+        >>= (body => json_response(~request, ~body, ~etag=Some(etag), ()))
+      | None => error_response(`Not_Found, "container not found")
       };
   };
 };
@@ -117,7 +119,9 @@ let post_container = (ctx, request) => {
                     ~json=Data.json(obj),
                     ~message="POST " ++ key_to_string(Data.id(obj)),
                   )
-                  >>= (() => json_response(request, Data.json(obj)));
+                  >>= (
+                    () => json_response(~request, ~body=Data.json(obj), ())
+                  );
                 }
             );
           };
@@ -195,7 +199,12 @@ let post_annotation = (ctx, request) => {
                               ~message="POST " ++ key_to_string(key),
                             )
                             >>= (
-                              () => json_response(request, Data.json(obj))
+                              () =>
+                                json_response(
+                                  ~request,
+                                  ~body=Data.json(obj),
+                                  (),
+                                )
                             )
                         );
                       }
@@ -234,7 +243,9 @@ let put_annotation = (ctx, request) => {
                       ~json=Data.json(obj),
                       ~message="PUT " ++ key_to_string(key),
                     )
-                    >>= (() => json_response(request, Data.json(obj)));
+                    >>= (
+                      () => json_response(~request, ~body=Data.json(obj), ())
+                    );
                   } else {
                     error_response(`Bad_Request, "annotation not found");
                   }
