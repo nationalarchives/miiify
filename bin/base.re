@@ -15,6 +15,10 @@ let get_id = request => {
   };
 };
 
+let get_if_none_match = request => {
+  Dream.header("If-None-Match", request)
+}
+
 let get_host = request => {
   Option.get(Dream.header("Host", request));
 };

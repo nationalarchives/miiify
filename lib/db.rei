@@ -15,5 +15,3 @@ let get_collection: (~ctx: t, ~key: list(string), ~offset: int, ~length: int) =>
 let count: (~ctx: t, ~key: list(string)) => Lwt.t(int);
 
 let get_hash: (~ctx: t, ~key: list(string)) => Lwt.t(option(string));
-
-let compare_hash: (~ctx: t, ~key: list(string), ~hash: string) => Lwt.t(bool);

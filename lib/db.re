@@ -66,14 +66,3 @@ let get_hash = (~ctx, ~key) => {
   );
 };
 
-let compare_hash = (~ctx, ~key, ~hash) => {
-  ctx.db
-  >>= (branch => Store.hash(branch, key))
-  >|= (
-    hash' =>
-      switch (hash') {
-      | Some(hash') => Store.Git.Hash.to_hex(hash') == hash
-      | None => false
-      }
-  );
-};

@@ -21,11 +21,15 @@ let get_annotation = (ctx, request) => {
   let key = [container_id, "collection", annotation_id];
   Db.get_hash(~ctx=ctx.db, ~key)
   >>= {
-    etag =>
-      switch (etag) {
-      | Some(etag) =>
-        Db.get(~ctx=ctx.db, ~key)
-        >>= (body => json_response(~request, ~body, ~etag=Some(etag), ()))
+    hash =>
+      switch (hash) {
+      | Some(hash) =>
+        switch (get_if_none_match(request)) {
+        | Some(etag) when hash == etag => Dream.empty(`Not_Modified)
+        | _ =>
+          Db.get(~ctx=ctx.db, ~key)
+          >>= (body => json_response(~request, ~body, ~etag=Some(hash), ()))
+        }
       | None => error_response(`Not_Found, "annotation not found")
       };
   };
@@ -39,18 +43,27 @@ let get_annotation_pages = (ctx, request) => {
   Container.set_representation(~ctx=ctx.container, ~representation=prefer);
   Db.get_hash(~ctx=ctx.db, ~key)
   >>= {
-    etag =>
-      switch (etag) {
-      | Some(etag) =>
-        Container.annotation_page(~ctx=ctx.container, ~db=ctx.db, ~key, ~page)
-        >>= (
-          page =>
-            switch (page) {
-            | Some(page) =>
-              json_response(~request, ~body=page, ~etag=Some(etag), ())
-            | None => error_response(`Not_Found, "page not found")
-            }
-        )
+    hash =>
+      switch (hash) {
+      | Some(hash) =>
+        switch (get_if_none_match(request)) {
+        | Some(etag) when hash == etag => Dream.empty(`Not_Modified)
+        | _ =>
+          Container.annotation_page(
+            ~ctx=ctx.container,
+            ~db=ctx.db,
+            ~key,
+            ~page,
+          )
+          >>= (
+            page =>
+              switch (page) {
+              | Some(page) =>
+                json_response(~request, ~body=page, ~etag=Some(hash), ())
+              | None => error_response(`Not_Found, "page not found")
+              }
+          )
+        }
       | None => error_response(`Not_Found, "container not found")
       };
   };
@@ -63,11 +76,19 @@ let get_annotation_collection = (ctx, request) => {
   let key = [container_id, "main"];
   Db.get_hash(~ctx=ctx.db, ~key)
   >>= {
-    etag =>
-      switch (etag) {
-      | Some(etag) =>
-        Container.annotation_collection(~ctx=ctx.container, ~db=ctx.db, ~key)
-        >>= (body => json_response(~request, ~body, ~etag=Some(etag), ()))
+    hash =>
+      switch (hash) {
+      | Some(hash) =>
+        switch (get_if_none_match(request)) {
+        | Some(etag) when hash == etag => Dream.empty(`Not_Modified)
+        | _ =>
+          Container.annotation_collection(
+            ~ctx=ctx.container,
+            ~db=ctx.db,
+            ~key,
+          )
+          >>= (body => json_response(~request, ~body, ~etag=Some(hash), ()))
+        }
       | None => error_response(`Not_Found, "container not found")
       };
   };
