@@ -97,18 +97,30 @@ let get_annotation_collection = (ctx, request) => {
 let delete_container = (ctx, request) => {
   let container_id = Dream.param("container_id", request);
   let key = [container_id];
-  Db.exists(~ctx=ctx.db, ~key)
+  let main_key = [container_id, "main"];
+  Db.get_hash(~ctx=ctx.db, ~key=main_key)
   >>= {
-    yes =>
-      if (yes) {
-        Db.delete(
-          ~ctx=ctx.db,
-          ~key,
-          ~message="DELETE " ++ key_to_string(key),
-        )
-        >>= (() => Dream.empty(`No_Content));
-      } else {
-        error_response(`Not_Found, "container not found");
+    hash =>
+      switch (hash) {
+      | Some(hash) =>
+        switch (get_if_match(request)) {
+        | Some(etag) when hash == etag =>
+          Db.delete(
+            ~ctx=ctx.db,
+            ~key,
+            ~message="DELETE " ++ key_to_string(key),
+          )
+          >>= (() => Dream.empty(`No_Content))
+        | None =>
+          Db.delete(
+            ~ctx=ctx.db,
+            ~key,
+            ~message="DELETE without etag " ++ key_to_string(key),
+          )
+          >>= (() => Dream.empty(`No_Content))
+        | _ => Dream.empty(`Precondition_Failed)
+        }
+      | None => error_response(`Not_Found, "container not found")
       };
   };
 };
@@ -155,18 +167,29 @@ let delete_annotation = (ctx, request) => {
   let container_id = Dream.param("container_id", request);
   let annotation_id = Dream.param("annotation_id", request);
   let key = [container_id, "collection", annotation_id];
-  Db.exists(~ctx=ctx.db, ~key)
+  Db.get_hash(~ctx=ctx.db, ~key)
   >>= {
-    yes =>
-      if (yes) {
-        Db.delete(
-          ~ctx=ctx.db,
-          ~key,
-          ~message="DELETE " ++ key_to_string(key),
-        )
-        >>= (() => Dream.empty(`No_Content));
-      } else {
-        error_response(`Not_Found, "annotation not found");
+    hash =>
+      switch (hash) {
+      | Some(hash) =>
+        switch (get_if_match(request)) {
+        | Some(etag) when hash == etag =>
+          Db.delete(
+            ~ctx=ctx.db,
+            ~key,
+            ~message="DELETE " ++ key_to_string(key),
+          )
+          >>= (() => Dream.empty(`No_Content))
+        | None =>
+          Db.delete(
+            ~ctx=ctx.db,
+            ~key,
+            ~message="DELETE without etag " ++ key_to_string(key),
+          )
+          >>= (() => Dream.empty(`No_Content))
+        | _ => Dream.empty(`Precondition_Failed)
+        }
+      | None => error_response(`Not_Found, "annotation not found")
       };
   };
 };
