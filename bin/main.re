@@ -276,22 +276,39 @@ let put_annotation = (ctx, request) => {
           switch (obj) {
           | Error(m) => error_response(`Bad_Request, m)
           | Ok(obj) =>
-            Db.exists(~ctx=ctx.db, ~key)
+            Db.get_hash(~ctx=ctx.db, ~key)
             >>= {
               (
-                yes =>
-                  if (yes) {
-                    Db.add(
-                      ~ctx=ctx.db,
-                      ~key,
-                      ~json=Data.json(obj),
-                      ~message="PUT " ++ key_to_string(key),
-                    )
-                    >>= (
-                      () => json_response(~request, ~body=Data.json(obj), ())
-                    );
-                  } else {
-                    error_response(`Bad_Request, "annotation not found");
+                hash =>
+                  switch (hash) {
+                  | Some(hash) =>
+                    switch (get_if_match(request)) {
+                    | Some(etag) when hash == etag =>
+                      Db.add(
+                        ~ctx=ctx.db,
+                        ~key,
+                        ~json=Data.json(obj),
+                        ~message="PUT " ++ key_to_string(key),
+                      )
+                      >>= (
+                        () =>
+                          json_response(~request, ~body=Data.json(obj), ())
+                      )
+                    | None =>
+                      Db.add(
+                        ~ctx=ctx.db,
+                        ~key,
+                        ~json=Data.json(obj),
+                        ~message="PUT without etag " ++ key_to_string(key),
+                      )
+                      >>= (
+                        () =>
+                          json_response(~request, ~body=Data.json(obj), ())
+                      )
+                    | _ => Dream.empty(`Precondition_Failed)
+                    }
+                  | None =>
+                    error_response(`Bad_Request, "annotation not found")
                   }
               );
             }
