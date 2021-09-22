@@ -322,34 +322,39 @@ let run = ctx =>
   Dream.run(~interface="0.0.0.0") @@
   Dream.logger @@
   Dream.router([
+    // route path
+    Dream.head("/", get_root(root_message)),
+    Dream.get("/", get_root(root_message)),
+    // create containers
+    Dream.post("/annotations/", post_container(ctx)),
+    // annotations
     Dream.head(
       "/annotations/:container_id/:annotation_id",
       get_annotation(ctx),
     ),
-    Dream.head("/annotations/:container_id", get_annotation_pages(ctx)),
-    Dream.head(
-      "/annotations/:container_id/",
-      get_annotation_collection(ctx),
-    ),
-    Dream.head("/", get_root(root_message)),
-    Dream.get("/", get_root(root_message)),
     Dream.get(
       "/annotations/:container_id/:annotation_id",
       get_annotation(ctx),
     ),
-    Dream.get("/annotations/:container_id", get_annotation_pages(ctx)),
-    Dream.get("/annotations/:container_id/", get_annotation_collection(ctx)),
-    Dream.post("/annotations/", post_container(ctx)),
-    Dream.post("/annotations/:container_id/", post_annotation(ctx)),
     Dream.put(
       "/annotations/:container_id/:annotation_id",
       put_annotation(ctx),
     ),
-    Dream.delete("/annotations/:container_id", delete_container(ctx)),
     Dream.delete(
       "/annotations/:container_id/:annotation_id",
       delete_annotation(ctx),
     ),
+    // container collections
+    Dream.head(
+      "/annotations/:container_id/",
+      get_annotation_collection(ctx),
+    ),
+    Dream.get("/annotations/:container_id/", get_annotation_collection(ctx)),
+    Dream.post("/annotations/:container_id/", post_annotation(ctx)),
+    Dream.delete("/annotations/:container_id/", delete_container(ctx)),
+    // container pages
+    Dream.head("/annotations/:container_id", get_annotation_pages(ctx)),
+    Dream.get("/annotations/:container_id", get_annotation_pages(ctx)),
   ]) @@
   Dream.not_found;
 
