@@ -86,6 +86,16 @@ let html_headers = body => {
   [content_type, ("Content-length", content_length)];
 };
 
+let options_headers = (lis) => {
+  let meths = List.fold_left((x, y) => x ++ y ++ " ", "", lis);
+  let allow = ("Allow", String.trim(meths));
+  [allow];
+};
+
+let options_response = options => {
+  Dream.empty(~headers=options_headers(options), `No_Content);
+};
+
 let html_response = body => {
   Dream.respond(~headers=html_headers(body), body);
 };

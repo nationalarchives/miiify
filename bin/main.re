@@ -323,11 +323,14 @@ let run = ctx =>
   Dream.logger @@
   Dream.router([
     // route path
+    Dream.options("/", _ => options_response(["OPTIONS", "HEAD", "GET"])),
     Dream.head("/", get_root(root_message)),
     Dream.get("/", get_root(root_message)),
     // create containers
+    Dream.options("/annotations/", _ => options_response(["OPTIONS", "POST"])),
     Dream.post("/annotations/", post_container(ctx)),
     // annotations
+    Dream.options("/annotations/:container_id/:annotation_id", _ => options_response(["OPTIONS", "HEAD", "GET", "PUT", "DELETE"])),
     Dream.head(
       "/annotations/:container_id/:annotation_id",
       get_annotation(ctx),
@@ -345,6 +348,7 @@ let run = ctx =>
       delete_annotation(ctx),
     ),
     // container collections
+    Dream.options("/annotations/:container_id/", _ => options_response(["OPTIONS", "HEAD", "GET", "POST", "DELETE"])),
     Dream.head(
       "/annotations/:container_id/",
       get_annotation_collection(ctx),
@@ -353,6 +357,7 @@ let run = ctx =>
     Dream.post("/annotations/:container_id/", post_annotation(ctx)),
     Dream.delete("/annotations/:container_id/", delete_container(ctx)),
     // container pages
+    Dream.options("/annotations/:container_id", _ => options_response(["OPTIONS", "HEAD", "GET"])),    
     Dream.head("/annotations/:container_id", get_annotation_pages(ctx)),
     Dream.get("/annotations/:container_id", get_annotation_pages(ctx)),
   ]) @@
