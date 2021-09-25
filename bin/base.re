@@ -166,7 +166,7 @@ let json_body_response = (~body, ~etag, ~code=200, ()) => {
   Dream.respond(~headers=json_headers(resp, link, etag), resp, ~code);
 };
 
-let json_empty_response = (~body, ~etag, ()) => {
+let json_empty_response = (~body, ~etag) => {
   let link = gen_link_headers(body);
   let resp = Ezjsonm.value_to_string(body);
   Dream.empty(~headers=json_headers(resp, link, etag), `OK);
@@ -174,7 +174,7 @@ let json_empty_response = (~body, ~etag, ()) => {
 
 let json_response = (~request, ~body, ~etag=None, ()) => {
   switch (Dream.method(request)) {
-  | `HEAD => json_empty_response(~body, ~etag, ())
+  | `HEAD => json_empty_response(~body, ~etag)
   | `GET => json_body_response(~body, ~etag, ())
   | `PUT => json_body_response(~body, ~etag, ())
   | `POST => json_body_response(~body, ~etag, ~code=201, ())
