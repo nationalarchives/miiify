@@ -16,13 +16,12 @@ let get_id = request => {
 };
 
 let get_if_none_match = request => {
-  Dream.header("If-None-Match", request)
-}
+  Dream.header("If-None-Match", request);
+};
 
 let get_if_match = request => {
-  Dream.header("If-Match", request)
-}
-
+  Dream.header("If-Match", request);
+};
 
 let get_host = request => {
   Option.get(Dream.header("Host", request));
@@ -86,7 +85,7 @@ let html_headers = body => {
   [content_type, ("Content-length", content_length)];
 };
 
-let options_headers = (lis) => {
+let options_headers = lis => {
   let meths = List.fold_left((x, y) => x ++ y ++ " ", "", lis);
   let allow = ("Allow", String.trim(meths));
   [allow];
@@ -104,27 +103,73 @@ let html_empty_response = body => {
   Dream.empty(~headers=html_headers(body), `OK);
 };
 
-let json_headers = (body, etag) => {
-  let content_length = Printf.sprintf("%d", String.length(body));
+let gen_link_header_annotation = () => {
+  Some([("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\"")]);
+};
+
+let gen_link_header_annotation_page = () => {
+  Some([("Link", "<http://www.w3.org/ns/oa#AnnotationPage>; rel=\"type\"")]);
+};
+
+let gen_link_header_basic_container = () => {
+  Some([
+    ("Link", "<http://www.w3.org/ns/ldp#BasicContainer>; rel=\"type\""),
+    ("Link", "<http://www.w3.org/ns/oa#AnnotationCollection>; rel=\"type\""),
+    (
+      "Link",
+      "<http://www.w3.org/TR/annotation-protocol/>; \"http://www.w3.org/ns/ldp#constrainedBy\"",
+    ),
+  ]);
+};
+
+let gen_link_headers = body => {
+  Ezjsonm.(
+    switch (find_opt(body, ["type"])) {
+    | Some(`String("Annotation")) => gen_link_header_annotation()
+    | Some(`String("AnnotationPage")) => gen_link_header_annotation_page()
+    | Some(
+        `A([`String("BasicContainer"), `String("AnnotationCollection")]),
+      ) =>
+      gen_link_header_basic_container()
+    | Some(
+        `A([`String("AnnotationCollection"), `String("BasicContainer")]),
+      ) =>
+      gen_link_header_basic_container()
+    | _ => None
+    }
+  );
+};
+
+let json_headers = (content, link, etag) => {
+  let content_length = (
+    "Content-length",
+    Printf.sprintf("%d", String.length(content)),
+  );
   let content_type = (
     "Content-Type",
     "application/ld+json; profile=\"http://www.w3.org/ns/anno.jsonld\"",
   );
-  let default_header = [content_type, ("Content-length", content_length)];
+  let header =
+    switch (link) {
+    | None => [content_type, content_length]
+    | Some(link) => List.append([content_type, content_length], link)
+    };
   switch (etag) {
-    | None => default_header;
-    | Some(etag) => List.cons(("ETag", "\"" ++ etag ++ "\"" ), default_header)
-  }
+  | None => header
+  | Some(etag) => List.cons(("ETag", "\"" ++ etag ++ "\""), header)
+  };
 };
 
 let json_body_response = (~body, ~etag, ~code=200, ()) => {
+  let link = gen_link_headers(body);
   let resp = Ezjsonm.value_to_string(body);
-  Dream.respond(~headers=json_headers(resp, etag), resp, ~code);
+  Dream.respond(~headers=json_headers(resp, link, etag), resp, ~code);
 };
 
 let json_empty_response = (~body, ~etag, ()) => {
+  let link = gen_link_headers(body);
   let resp = Ezjsonm.value_to_string(body);
-  Dream.empty(~headers=json_headers(resp, etag), `OK);
+  Dream.empty(~headers=json_headers(resp, link, etag), `OK);
 };
 
 let json_response = (~request, ~body, ~etag=None, ()) => {
