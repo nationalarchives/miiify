@@ -1,0 +1,7 @@
+
+type config = {
+  ~https <ocaml default="true"> : bool;
+  ~interface <ocaml default="\"0.0.0.0\""> : string;
+  ~port <ocaml default="8080"> : int;
+  ~debug <ocaml default="false"> : bool;
+}

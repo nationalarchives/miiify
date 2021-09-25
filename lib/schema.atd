@@ -1,7 +1,0 @@
-
-
-type basic_container = {
-  _context_ <json name="@context">: string list;
-  _type_ <json name="type">: string list;
-  label: string;
-}

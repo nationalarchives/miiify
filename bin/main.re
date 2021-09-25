@@ -3,6 +3,7 @@ open Lwt.Infix;
 open Base;
 
 type t = {
+  config: Config_t.config,
   db: Db.t,
   container: Container.t,
 };
@@ -319,7 +320,7 @@ let put_annotation = (ctx, request) => {
 };
 
 let run = ctx =>
-  Dream.run(~interface="0.0.0.0") @@
+  Dream.run(~interface=ctx.config.interface) @@
   Dream.logger @@
   Dream.router([
     // route path
@@ -327,10 +328,14 @@ let run = ctx =>
     Dream.head("/", get_root(root_message)),
     Dream.get("/", get_root(root_message)),
     // create containers
-    Dream.options("/annotations/", _ => options_response(["OPTIONS", "POST"])),
+    Dream.options("/annotations/", _ =>
+      options_response(["OPTIONS", "POST"])
+    ),
     Dream.post("/annotations/", post_container(ctx)),
     // annotations
-    Dream.options("/annotations/:container_id/:annotation_id", _ => options_response(["OPTIONS", "HEAD", "GET", "PUT", "DELETE"])),
+    Dream.options("/annotations/:container_id/:annotation_id", _ =>
+      options_response(["OPTIONS", "HEAD", "GET", "PUT", "DELETE"])
+    ),
     Dream.head(
       "/annotations/:container_id/:annotation_id",
       get_annotation(ctx),
@@ -348,7 +353,9 @@ let run = ctx =>
       delete_annotation(ctx),
     ),
     // container collections
-    Dream.options("/annotations/:container_id/", _ => options_response(["OPTIONS", "HEAD", "GET", "POST", "DELETE"])),
+    Dream.options("/annotations/:container_id/", _ =>
+      options_response(["OPTIONS", "HEAD", "GET", "POST", "DELETE"])
+    ),
     Dream.head(
       "/annotations/:container_id/",
       get_annotation_collection(ctx),
@@ -357,13 +364,16 @@ let run = ctx =>
     Dream.post("/annotations/:container_id/", post_annotation(ctx)),
     Dream.delete("/annotations/:container_id/", delete_container(ctx)),
     // container pages
-    Dream.options("/annotations/:container_id", _ => options_response(["OPTIONS", "HEAD", "GET"])),    
+    Dream.options("/annotations/:container_id", _ =>
+      options_response(["OPTIONS", "HEAD", "GET"])
+    ),
     Dream.head("/annotations/:container_id", get_annotation_pages(ctx)),
     Dream.get("/annotations/:container_id", get_annotation_pages(ctx)),
   ]) @@
   Dream.not_found;
 
-let init = () => {
+let init = config => {
+  config,
   db: Db.create(~fname="db"),
   container:
     Container.create(
@@ -372,4 +382,9 @@ let init = () => {
     ),
 };
 
-run(init());
+let config = Config.parse(~data="{}");
+
+switch (config) {
+| Error(message) => failwith(message)
+| Ok(config) => run(init(config))
+};

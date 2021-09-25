@@ -1,15 +1,15 @@
 (rule
-  (targets schema_j.ml schema_j.mli)
-  (deps    schema.atd)
+  (targets config_j.ml config_j.mli)
+  (deps    config.atd)
   (action  (run atdgen -j %{deps})))
 
 (rule
-  (targets schema_t.ml schema_t.mli)
-  (deps    schema.atd)
+  (targets config_t.ml config_t.mli)
+  (deps    config.atd)
   (action  (run atdgen -t %{deps})))
 
 (library
  (name miiify)
  (libraries dream irmin-unix ezjsonm atdgen uuidm ptime)
- (modules container data db validate schema_t schema_j))
+ (modules container data db config config_t config_j))
 
