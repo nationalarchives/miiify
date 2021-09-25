@@ -12,15 +12,9 @@ let get_timestamp = () => {
 
 let get_iri = (host, id) => {
   switch (id) {
-  | [container_id, "main"] =>
-    "http://" ++ host ++ "/annotations/" ++ container_id
+  | [container_id, "main"] => host ++ "/annotations/" ++ container_id
   | [container_id, "collection", annotation_id] =>
-    "http://"
-    ++ host
-    ++ "/annotations/"
-    ++ container_id
-    ++ "/"
-    ++ annotation_id
+    host ++ "/annotations/" ++ container_id ++ "/" ++ annotation_id
   | _ => failwith("well that's embarassing")
   };
 };

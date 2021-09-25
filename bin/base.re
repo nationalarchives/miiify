@@ -23,8 +23,12 @@ let get_if_match = request => {
   Dream.header("If-Match", request);
 };
 
-let get_host = request => {
-  Option.get(Dream.header("Host", request));
+let get_host = (request) => {
+  let host = Option.get(Dream.header("Host", request));
+  switch (Dream.https(request)) {
+    | true => "https://" ++ host;
+    | false => "http://" ++ host;
+  };
 };
 
 let key_to_string = key => {

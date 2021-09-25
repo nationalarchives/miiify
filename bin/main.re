@@ -320,7 +320,7 @@ let put_annotation = (ctx, request) => {
 };
 
 let run = ctx =>
-  Dream.run(~interface=ctx.config.interface) @@
+  Dream.run(~interface=ctx.config.interface, ~https=ctx.config.https) @@
   Dream.logger @@
   Dream.router([
     // route path
@@ -382,7 +382,7 @@ let init = config => {
     ),
 };
 
-let config = Config.parse(~data="{}");
+let config = Config.parse(~data="{\"https\":false}");
 
 switch (config) {
 | Error(message) => failwith(message)
