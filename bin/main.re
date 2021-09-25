@@ -320,7 +320,12 @@ let put_annotation = (ctx, request) => {
 };
 
 let run = ctx =>
-  Dream.run(~interface=ctx.config.interface, ~https=ctx.config.https) @@
+  Dream.run(
+    ~interface=ctx.config.interface,
+    ~https=ctx.config.https,
+    ~port=ctx.config.port,
+    ~debug=ctx.config.debug,
+  ) @@
   Dream.logger @@
   Dream.router([
     // route path
