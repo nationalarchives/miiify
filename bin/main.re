@@ -40,7 +40,7 @@ let get_annotation_pages = (ctx, request) => {
   let container_id = Dream.param("container_id", request);
   let key = [container_id, "main"];
   let page = get_page(request);
-  let prefer = get_prefer(request);
+  let prefer = get_prefer(request, ctx.config.container_representation);
   Container.set_representation(~ctx=ctx.container, ~representation=prefer);
   Db.get_hash(~ctx=ctx.db, ~key)
   >>= {
@@ -72,7 +72,7 @@ let get_annotation_pages = (ctx, request) => {
 
 let get_annotation_collection = (ctx, request) => {
   let container_id = Dream.param("container_id", request);
-  let prefer = get_prefer(request);
+  let prefer = get_prefer(request, ctx.config.container_representation);
   Container.set_representation(~ctx=ctx.container, ~representation=prefer);
   let key = [container_id, "main"];
   Db.get_hash(~ctx=ctx.db, ~key)

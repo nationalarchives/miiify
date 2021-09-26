@@ -58,15 +58,15 @@ let strip_last_char = str =>
     String.sub(str, 0, String.length(str) - 1);
   };
 
-let get_prefer = request => {
+let get_prefer = (request, default) => {
   switch (Dream.header("prefer", request)) {
-  | None => "PreferContainedDescriptions"
+  | None => default
   | Some(prefer) =>
     // we will just use the first preference if multiple exist
     switch (process_representation(prefer)) {
     // the last char is the end quote
     | [[_, x], ..._] => strip_last_char(x)
-    | _ => "PreferContainedDescriptions"
+    | _ => default
     }
   };
 };
