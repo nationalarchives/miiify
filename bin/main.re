@@ -387,9 +387,31 @@ let init = config => {
     ),
 };
 
-let config = Config.parse(~data="{\"https\":false}");
+let config_file = ref("");
 
-switch (config) {
-| Error(message) => failwith(message)
-| Ok(config) => run(init(config))
+let parse_cmdline = () => {
+  let usage = "usage: " ++ Sys.argv[0];
+  let speclist = [
+    (
+      "--config",
+      Arg.Set_string(config_file),
+      ": to specify the configuration file to use",
+    ),
+  ];
+  Arg.parse(speclist, x => raise(Arg.Bad("Bad argument : " ++ x)), usage);
 };
+
+let configure = () => {
+  parse_cmdline();
+  let data =
+    switch (config_file^) {
+    | "" => "{}"
+    | fname => read_file(fname)
+    };
+  switch (Config.parse(~data)) {
+  | Error(message) => failwith(message)
+  | Ok(config) => run(init(config))
+  };
+};
+
+configure();

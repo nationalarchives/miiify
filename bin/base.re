@@ -185,3 +185,10 @@ let json_response = (~request, ~body, ~etag=None, ()) => {
   | _ => error_response(`Method_Not_Allowed, "unsupported method")
   };
 };
+
+let read_file = filename => {
+  let ch = open_in(filename);
+  let s = really_input_string(ch, in_channel_length(ch));
+  close_in(ch);
+  s;
+};
