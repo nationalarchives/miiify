@@ -1,8 +1,9 @@
 
-### Getting started
+### Quick start
 
+The following tutorial demonstrates how to interact with the server using the httpie [tool](https://httpie.io/) and Apache Benchmark [tool](https://httpd.apache.org/docs/2.4/programs/ab.html).
 
-Build from source and launch Docker container:
+Build from source and launch Docker container (note this will take some time the first run):
 ```bash
 ./deploy.sh
 ```
@@ -10,7 +11,9 @@ Build from source and launch Docker container:
 Create an annotation container:
 ```bash
 cat test/container1.json | https :/annotations/ Slug:my-container --verify=no
+```
 
+```json
 HTTP/1.1 201 Created
 Content-Type: application/ld+json; profile="http://www.w3.org/ns/anno.jsonld"
 Content-length: 257
@@ -41,7 +44,9 @@ ab -c1 -n20 -p test/annotation1.json https://localhost/annotations/my-container/
 Retrieve the contents of the container but display only the links to the annotations it contains:
 ```bash
 https ":/annotations/my-container?page=0" Prefer:'return=representation;include="http://www.w3.org/ns/oa#PreferContainedIRIs"' --verify=no
+```
 
+```json
 HTTP/1.1 200 OK
 Content-Type: application/ld+json; profile="http://www.w3.org/ns/anno.jsonld"
 Content-length: 2011
@@ -91,7 +96,9 @@ Link: <http://www.w3.org/ns/oa#AnnotationPage>; rel="type"
 Add an annotation called foobar to the container:
 ```bash
 cat test/annotation1.json | https POST :/annotations/my-container/ Slug:foobar --verify=no
+```
 
+```json
 HTTP/1.1 201 Created
 Content-Type: application/ld+json; profile="http://www.w3.org/ns/anno.jsonld"
 Content-length: 227
@@ -110,7 +117,9 @@ Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"
 Retrieve the annotation called foobar:
 ```bash
 https :/annotations/my-container/foobar --verify=no
+```
 
+```json
 HTTP/1.1 200 OK
 Content-Type: application/ld+json; profile="http://www.w3.org/ns/anno.jsonld"
 Content-length: 227
@@ -130,7 +139,9 @@ Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"
 Update the contents of the annotation called foobar:
 ```bash
 cat test/annotation2.json | https PUT :/annotations/my-container/foobar --verify=no
+```
 
+```json
 HTTP/1.1 200 OK
 Content-Type: application/ld+json; profile="http://www.w3.org/ns/anno.jsonld"
 Content-length: 228
@@ -149,7 +160,9 @@ Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"
 Retrieve the updated contents of the annotation called foobar:
 ```bash
 https :/annotations/my-container/foobar --verify=no
+```
 
+```json
 HTTP/1.1 200 OK
 Content-Type: application/ld+json; profile="http://www.w3.org/ns/anno.jsonld"
 Content-length: 228
@@ -169,7 +182,9 @@ Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"
 Examine the repository to see all the commits:
 ```bash
 cd db ; git log -n3
+```
 
+```bash
 commit 886382c41f40d1a82563fa972bb12bd1faa6fa4d (HEAD -> master)
 Author: miiify.rocks <irmin@openmirage.org>
 Date:   Sun Sep 26 20:17:18 2021 +0000
