@@ -4,7 +4,7 @@ Miiify is an experimental W3C annotation server that is based on the [Web Annota
 
 ### Quick start
 
-The following tutorial demonstrates how to interact with the server using the httpie [tool](https://httpie.io/) and Apache Benchmark [tool](https://httpd.apache.org/docs/2.4/programs/ab.html).
+The following tutorial demonstrates how to interact with the server using the httpie [tool](https://httpie.io/) and Apache Benchmark [tool](https://httpd.apache.org/docs/2.4/programs/ab.html). Note, the server is running from a self-signed certificate generated within the Docker container.
 
 Build from source and launch Docker container (note this will take some time the first run):
 ```bash
