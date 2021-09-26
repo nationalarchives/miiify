@@ -2,6 +2,11 @@
 opam-version: "2.0"
 synopsis: "W3C annotation server"
 description: "A simple W3C annotation server that stores data to git"
+maintainer: ["john.moore@nationalarchives.gov.uk"]
+authors: ["John Moore"]
+license: "MIT"
+homepage: "https://github.com/nationalarchives/miiify"
+bug-reports: "https://github.com/nationalarchives/miiify/issues"
 depends: [
   "dune" {>= "2.8"}
   "dream" {>= "1.0.0~alpha2"}
@@ -27,3 +32,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
+dev-repo: "git+https://github.com/nationalarchives/miiify.git"
