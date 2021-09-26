@@ -325,6 +325,8 @@ let run = ctx =>
     ~https=ctx.config.https,
     ~port=ctx.config.port,
     ~debug=ctx.config.debug,
+    ~certificate_file=ctx.config.certificate_file,
+    ~key_file=ctx.config.key_file
   ) @@
   Dream.logger @@
   Dream.router([
@@ -379,11 +381,11 @@ let run = ctx =>
 
 let init = config => {
   config,
-  db: Db.create(~fname="db"),
+  db: Db.create(~fname=config.repository_name),
   container:
     Container.create(
-      ~page_limit=200,
-      ~representation="PreferContainedDescriptions",
+      ~page_limit=config.container_page_limit,
+      ~representation=config.container_representation,
     ),
 };
 

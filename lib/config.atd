@@ -4,4 +4,10 @@ type config = {
   ~interface <ocaml default="\"0.0.0.0\""> : string;
   ~port <ocaml default="8080"> : int;
   ~debug <ocaml default="false"> : bool;
+  ~certificate_file <ocaml default="\"server.crt\""> : string;
+  ~key_file <ocaml default="\"server.key\""> : string;
+  ~repository_name <ocaml default="\"db\""> : string; 
+  ~repository_author <ocaml default="\"miiify.rocks\""> : string;
+  ~container_page_limit <ocaml default="200"> : int;
+  ~container_representation <ocaml default="\"PreferContainedDescriptions\""> : string;
 }
