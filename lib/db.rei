@@ -1,6 +1,6 @@
 type t;
 
-let create: (~fname: string) => t;
+let create: (~fname: string, ~author: string) => t;
 
 let add: (~ctx: t, ~key: list(string), ~json: Ezjsonm.value, ~message: string) => Lwt.t(unit);
 

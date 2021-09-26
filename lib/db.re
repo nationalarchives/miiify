@@ -4,11 +4,13 @@ module Git_store_json_value = Irmin_unix.Git.FS.KV(Irmin.Contents.Json_value);
 module Store = Git_store_json_value;
 module Proj = Irmin.Json_tree(Store);
 
-let info = message => Irmin_unix.info(~author="miiify.rocks", "%s", message);
+let repository_author = ref("miiify.rocks");
+let info = message => Irmin_unix.info(~author=repository_author^, "%s", message);
 
 type t = {db: Lwt.t(Store.t)};
 
-let create = (~fname) => {
+let create = (~fname, ~author) => {
+  repository_author := author;
   let config = Irmin_git.config(~bare=true, fname);
   let repo = Store.Repo.v(config);
   let branch = repo >>= Store.master;
