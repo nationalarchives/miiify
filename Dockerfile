@@ -7,7 +7,7 @@ WORKDIR /home/opam
 
 # Install dependencies
 ADD miiify.opam miiify.opam
-RUN opam install . --deps-only
+RUN opam install . --deps-only --unlock-base
 
 # Build project
 ADD . .
@@ -17,13 +17,15 @@ FROM alpine as run
 
 RUN adduser miiify --disabled-password
 
-RUN apk add --update libev gmp
+RUN apk add --update libev gmp openssl
 
 WORKDIR /home/miiify
 
 COPY --from=build /home/opam/_build/default/bin/main.exe ./app
 
 USER miiify
+
+RUN openssl req -x509 -newkey rsa:4096 -keyout server.key -out server.crt -days 3650 -nodes -subj "/C=UK/ST=foo/L=bar/O=baz/OU= Department/CN=example.com"
 
 ENTRYPOINT ["/home/miiify/app"]
 
