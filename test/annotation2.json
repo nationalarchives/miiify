@@ -1,6 +1,6 @@
 {
   "@context": "http://www.w3.org/ns/anno.jsonld",
-  "id": "http://localhost:8080/annotations/my-container/foobar",
+  "id": "https://localhost/annotations/my-container/foobar",
   "type": "Annotation",
   "body": "http://example.org/post2",
   "target": "http://example.com/page2"
