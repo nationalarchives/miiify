@@ -207,7 +207,7 @@ Date:   Sun Sep 26 20:16:12 2021 +0000
     POST /my-container/main/modified
 ```
 
-The latest commit message above shows that a PUT (update) was carried out to the foobar annotation but an ETag was not used. ETag support is added for supporting caching of resources as well as ensuring that an update or delete operation takes places on the intended resource without subsequent unknown modifications. ETag support works by storing the value obtained from a GET or HEAD request and then using this in future requests. For example:
+The latest commit message above shows that a PUT (update) was carried out to the foobar annotation but an ETag was not used. ETag support is added for supporting caching of resources as well as ensuring that an update or delete operation takes places on the intended resource without subsequent unknown modifications. ETag support works by storing the value obtained from a GET or HEAD request and then using this in future requests. Note that your commit hashes will be different than in these examples:
 ```bash
 https :/annotations/my-container/foobar If-None-Match:"caa80ca1e4cc5f2253df5ee35293236350b19194" --verify=no 
 ```
