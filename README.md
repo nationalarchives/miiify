@@ -182,7 +182,7 @@ Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"
 }
 ```
 
-Examine the repository to see all the commits:
+Examine the repository to see some commits:
 ```bash
 cd db ; git log -n3
 ```
@@ -221,6 +221,6 @@ To safely update the resource earlier we could have supplied the ETag as follow:
 ```bash
 cat test/annotation2.json | https PUT :/annotations/my-container/foobar If-Match: "d2194a437f6e66618ed51007c7bff0937c503e10" --verify=no
 ```
-
+This ensures we really are updating the resource that we think we are.
 
 
