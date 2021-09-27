@@ -206,3 +206,21 @@ Date:   Sun Sep 26 20:16:12 2021 +0000
 
     POST /my-container/main/modified
 ```
+
+The latest commit message above shows that a PUT (update) was carried out to the foobar annotation but an ETag was not used. ETag support is added for supporting caching of resources as well as ensuring that an update or delete operation takes places on the intended resource without subsequent unknown modifications. ETag support works by storing the value obtained from a GET or HEAD request and then using this in future requests. For example:
+```bash
+https :/annotations/my-container/foobar If-None-Match:"caa80ca1e4cc5f2253df5ee35293236350b19194" --verify=no 
+```
+If there is no change to an annotation or container collection the server will respond back with a Not Modified status to inform the client that the cached version of the response is still good to use:
+```bash
+HTTP/1.1 304 Not Modified
+Content-Length: 0
+```
+
+To safely update the resource earlier we could have supplied the ETag as follow:
+```bash
+cat test/annotation2.json | https PUT :/annotations/my-container/foobar If-Match: "d2194a437f6e66618ed51007c7bff0937c503e10" --verify=no
+```
+
+
+
