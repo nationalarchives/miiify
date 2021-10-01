@@ -98,17 +98,17 @@ describe "get foobar annotation" do
   end
 end
 
-# describe "modify foobar annotation and check for modified key" do
-#   file = File.read("annotation2.json")
-#   payload = JSON.parse(file)
-#   it "should return a 200" do
-#     put "/my-container/foobar", payload, { content_type: "application/json" }
-#     expect_status(200)
-#     expect_json_keys('', [:modified])
-#     expect_json_types(type: :string)
-#     expect_json(type: 'Annotation')
-#   end
-# end
+describe "modify foobar annotation and check for modified key" do
+  file = File.read("annotation2.json")
+  payload = JSON.parse(file)
+  it "should return a 200" do
+    put "/my-container/foobar", payload, { content_type: "application/json" }
+    expect_status(200)
+    expect_json_keys('', [:modified])
+    expect_json_types(type: :string)
+    expect_json(type: 'Annotation')
+  end
+end
 
 describe "delete foobar annotation" do
   it "should return a 204" do
