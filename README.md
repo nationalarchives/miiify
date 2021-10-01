@@ -223,4 +223,15 @@ cat test/annotation2.json | https PUT :/annotations/my-container/foobar If-Match
 ```
 This ensures we really are updating the resource that we think we are.
 
+### Testing
+
+Tests can be run using the [Airborne](https://github.com/brooklynDev/airborne) test framework:
+
+```bash
+docker-compose up -d
+cd test
+rspec integration.rb -fd
+docker-compose down
+```
+
 
