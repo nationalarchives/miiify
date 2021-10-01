@@ -3,6 +3,7 @@ require "airborne"
 Airborne.configure do |config|
   config.verify_ssl = false
   config.base_url = "https://localhost/annotations"
+  #config.base_url = "http://localhost:8080/annotations"
 end
 
 describe "create container" do
@@ -180,6 +181,34 @@ describe "check the second annotation page total and keys" do
     expect_json_keys('', [:prev])
     expect_json_types(type: :string)
     expect_json(type: 'AnnotationPage')
+  end
+end
+
+describe "get container collection items with PreferContainedIRIs" do
+  it "should return items as array of strings" do
+    get "/my-container/", { Accept: "application/json", Prefer: "return=representation;include=\"http://www.w3.org/ns/oa#PreferContainedIRIs\"" }
+    expect_json_types('first', items: :array_of_strings)
+  end
+end
+
+describe "get page items with PreferContainedIRIs" do
+  it "should return items as array of strings" do
+    get "/my-container", { Accept: "application/json", Prefer: "return=representation;include=\"http://www.w3.org/ns/oa#PreferContainedIRIs\"" }
+    expect_json_types(items: :array_of_strings)
+  end
+end
+
+describe "get container collection items with PreferContainedDescriptions" do
+  it "should return items as array of objects" do
+    get "/my-container/", { Accept: "application/json", Prefer: "return=representation;include=\"http://www.w3.org/ns/oa#PreferContainedDescriptions\"" }
+    expect_json_types('first', items: :array_of_objects)
+  end
+end
+
+describe "get page items with PreferContainedDescriptions" do
+  it "should return items as array of objects" do
+    get "/my-container", { Accept: "application/json", Prefer: "return=representation;include=\"http://www.w3.org/ns/oa#PreferContainedDescriptions\"" }
+    expect_json_types(items: :array_of_objects)
   end
 end
 
