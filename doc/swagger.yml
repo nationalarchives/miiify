@@ -1,0 +1,122 @@
+openapi: "3.0.0"
+info:
+  title: Miiify API
+  version: "v1"
+  description: "Miiify is W3C annotation server"
+servers:
+  - url: https://miiify.rocks
+paths:
+  /:
+    get:
+      tags:
+        - welcome message
+      responses:
+        "200":
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
+              examples:
+                html:
+                  summary: A welcome message
+                  value: "Welcome to miiify!"
+    head:
+      tags:
+        - welcome message
+      responses:
+        "200":
+          description: OK
+
+  /annotation/:
+    post:
+      tags:
+        - create container
+      summary: create a new container
+      description: Creates a new container to store annotations. Please refer to the Web Annotation Data Model for a description on the JSON that can be used. Currently miffy will only check the type field is valid.
+      parameters:
+        - in: header
+          name: Host
+          schema:
+            type: string
+            example: miiify.rocks
+            description: Override the default host sent from client.
+          required: false
+        - in: header
+          name: Slug
+          schema:
+            type: string
+            example: my-container
+            description: Specify the container name. If not supplied a system generated name with be used.
+          required: false
+      requestBody:
+        required: true
+        description: Basic annotation data
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/create_container"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/create_container_response"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "500":
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+              examples:
+                html:
+                  summary: A system generated error message.
+
+components:
+  schemas:
+    error:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 400
+          description: The HTTP error code
+        reason:
+          type: string
+          example: "container already exists"
+          description: Human readable error message.
+
+    create_container:
+      type: object
+      properties:
+        type:
+          type: array
+          items:
+            type: string
+            example:
+              - BasicContainer
+              - AnnotationCollection
+            description: A mandatory type for differentiating a container from an annotation.
+
+    create_container_response:
+      type: object
+      properties:
+        type:
+          type: array
+          items:
+            type: string
+            example:
+              - BasicContainer
+              - AnnotationCollection
+            description: A mandatory array type for differentiating a container from an annotation.
+        created:
+          type: string
+          example: "2021-10-02T15:57:29Z"
+          description: The same data used to create a container but with a modified key added.
