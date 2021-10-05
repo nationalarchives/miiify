@@ -10,6 +10,8 @@ paths:
     get:
       tags:
         - welcome message
+      summary: Hello Miiify!
+      description: Displays a welcome message from root path.
       responses:
         "200":
           description: OK
@@ -20,13 +22,7 @@ paths:
               examples:
                 html:
                   summary: A welcome message
-                  value: "Welcome to miiify!"
-    head:
-      tags:
-        - welcome message
-      responses:
-        "200":
-          description: OK
+                  value: "Welcome to Miiify!"
 
   /annotation/:
     post:
@@ -51,7 +47,7 @@ paths:
           required: false
       requestBody:
         required: true
-        description: Basic annotation data
+        description: Basic container data
         content:
           application/json:
             schema:
@@ -75,9 +71,161 @@ paths:
             text/html:
               schema:
                 type: string
-              examples:
-                html:
-                  summary: A system generated error message.
+                example: Something went wrong!
+
+  /annotation/{container_id}/:
+    post:
+      tags:
+        - create annotation
+      summary: add annotation to collection
+      description: Creates a new annotation and add it to the container collection. Please refer to the Web Annotation Data Model for a description on the JSON that can be used. Currently miiify will only check the type field is valid and there is no id key supplied.
+      parameters:
+        - in: header
+          name: Host
+          schema:
+            type: string
+            example: miiify.rocks
+            description: Override the default host sent from client.
+          required: false
+        - in: header
+          name: Slug
+          schema:
+            type: string
+            example: annotation1
+            description: Specify the annotation name. If not supplied a system generated name with be used.
+          required: false
+      requestBody:
+        required: true
+        description: Basic annotation data
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/create_annotation"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/create_annotation_response"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "500":
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+                example: Something went wrong!
+
+    get:
+      tags:
+        - retrieve annotation collection
+      summary: "retrieve annotation collection"
+      description: "Retrieve the annotations as a collection."
+      parameters:
+        - in: header
+          name: If-None-Match
+          schema:
+            type: string
+            example: "caa80ca1e4cc5f2253df5ee35293236350b19194"
+            description: "ETag support for supporting caching."
+          required: false
+        - in: header
+          name: Prefer
+          schema:
+            type: string
+            default: return=representation;include="http://www.w3.org/ns/oa#PreferContainedDescriptions"
+            enum:
+              - return=representation;include="http://www.w3.org/ns/oa#PreferContainedDescriptions"
+              - return=representation;include="http://www.w3.org/ns/oa#PreferContainedIRIs"
+              - return=representation;include="http://www.w3.org/ns/ldp#PreferMinimalContainer"
+            description: "ETag support for comparing uniqueness."
+          required: false
+        - name: container_id
+          in: path
+          required: true
+          description: the unique identifier of a container
+          schema:
+            type: string
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/collection"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "304":
+          description: Not Modified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "500":
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+                example: Something went wrong!
+
+    delete:
+      tags:
+        - delete container
+      summary: delete container and its collection
+      description: Deletes a container including its entire collection.
+      parameters:
+        - in: header
+          name: If-Match
+          schema:
+            type: string
+            example: "caa80ca1e4cc5f2253df5ee35293236350b19194"
+            description: "ETag support for comparing uniqueness."
+          required: false
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "412":
+          description: Precondition Failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "500":
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+                example: something went wrong!
 
 components:
   schemas:
@@ -90,7 +238,7 @@ components:
           description: The HTTP error code
         reason:
           type: string
-          example: "container already exists"
+          example: "something went wrong!"
           description: Human readable error message.
 
     create_container:
@@ -120,3 +268,35 @@ components:
           type: string
           example: "2021-10-02T15:57:29Z"
           description: The same data used to create a container but with a modified key added.
+
+    create_annotation:
+      type: object
+      properties:
+        type:
+          type: string
+          example: Annotation
+          description: A mandatory type for differentiating an annotation from a container.
+
+    create_annotation_response:
+      type: object
+      properties:
+        type:
+          type: string
+          example: Annotation
+          description: A mandatory type for differentiating an annotation from a container.
+        created:
+          type: string
+          example: "2021-10-02T15:57:29Z"
+          description: The same data used to create a container but with a modified key added.
+
+    collection:
+      type: object
+      properties:
+        type:
+          type: array
+          items:
+            type: string
+            example:
+              - BasicContainer
+              - AnnotationCollection
+            description: A mandatory array type for differentiating a container from an annotation.
