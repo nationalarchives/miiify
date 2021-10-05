@@ -245,25 +245,19 @@ components:
       type: object
       properties:
         type:
-          type: array
-          items:
-            type: string
-            example:
-              - BasicContainer
-              - AnnotationCollection
-            description: A mandatory type for differentiating a container from an annotation.
+          example:
+            - BasicContainer
+            - AnnotationCollection
+          description: A mandatory type for differentiating a container from an annotation.
 
     create_container_response:
       type: object
       properties:
         type:
-          type: array
-          items:
-            type: string
-            example:
-              - BasicContainer
-              - AnnotationCollection
-            description: A mandatory array type for differentiating a container from an annotation.
+          example:
+            - BasicContainer
+            - AnnotationCollection
+          description: A mandatory array type for differentiating a container from an annotation.
         created:
           type: string
           example: "2021-10-02T15:57:29Z"
@@ -293,10 +287,7 @@ components:
       type: object
       properties:
         type:
-          type: array
-          items:
-            type: string
-            example:
-              - BasicContainer
-              - AnnotationCollection
-            description: A mandatory array type for differentiating a container from an annotation.
+          example:
+            - BasicContainer
+            - AnnotationCollection
+          description: A mandatory array type for differentiating a container from an annotation.
