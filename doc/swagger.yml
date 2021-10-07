@@ -78,7 +78,7 @@ paths:
       tags:
         - create annotation
       summary: add annotation to collection
-      description: Creates a new annotation and add it to the container collection. Please refer to the Web Annotation Data Model for a description on the JSON that can be used. Currently miiify will only check the type field is valid and there is no id key supplied.
+      description: Creates a new annotation and adds it to the container collection. Please refer to the Web Annotation Data Model for a description on the JSON that can be used. Currently Miiify will only check the type field is valid and there is no id key supplied.
       parameters:
         - in: header
           name: Host
@@ -227,6 +227,263 @@ paths:
                 type: string
                 example: something went wrong!
 
+  /annotation/{container_id}:
+    get:
+      tags:
+        - retrieve annotation page
+      summary: "retrieve annotation page"
+      description: "An annotation collection can be broken down into a series of pages based on the default limit of 200 annotations per page."
+      parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Access individual pages.
+        - in: header
+          name: If-None-Match
+          schema:
+            type: string
+            example: "caa80ca1e4cc5f2253df5ee35293236350b19194"
+            description: "ETag support for supporting caching."
+          required: false
+        - in: header
+          name: Prefer
+          schema:
+            type: string
+            default: return=representation;include="http://www.w3.org/ns/oa#PreferContainedDescriptions"
+            enum:
+              - return=representation;include="http://www.w3.org/ns/oa#PreferContainedDescriptions"
+              - return=representation;include="http://www.w3.org/ns/oa#PreferContainedIRIs"
+              - return=representation;include="http://www.w3.org/ns/ldp#PreferMinimalContainer"
+            description: "ETag support for comparing uniqueness."
+          required: false
+        - name: container_id
+          in: path
+          required: true
+          description: the unique identifier of a container
+          schema:
+            type: string
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/page"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "304":
+          description: Not Modified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "500":
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+                example: Something went wrong!
+
+  /annotation/{container_id}/{annotation_id}:
+    get:
+      tags:
+        - retrieve annotation
+      summary: "retrieve annotation"
+      description: "Retrieve a single annotation from a container."
+      parameters:
+        - in: header
+          name: If-None-Match
+          schema:
+            type: string
+            example: "caa80ca1e4cc5f2253df5ee35293236350b19194"
+            description: "ETag support for supporting caching."
+          required: false
+        - in: header
+          name: Prefer
+          schema:
+            type: string
+            default: return=representation;include="http://www.w3.org/ns/oa#PreferContainedDescriptions"
+            enum:
+              - return=representation;include="http://www.w3.org/ns/oa#PreferContainedDescriptions"
+              - return=representation;include="http://www.w3.org/ns/oa#PreferContainedIRIs"
+              - return=representation;include="http://www.w3.org/ns/ldp#PreferMinimalContainer"
+            description: "ETag support for comparing uniqueness."
+          required: false
+        - name: container_id
+          in: path
+          required: true
+          description: the unique identifier of a container
+          schema:
+            type: string
+        - name: annotation_id
+          in: path
+          required: true
+          description: the unique identifier of an annotation
+          schema:
+            type: string
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/create_annotation_response"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "304":
+          description: Not Modified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "500":
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+                example: Something went wrong!
+    put:
+      tags:
+        - modify annotation
+      summary: "modify annotation"
+      description: "Modify a single annotation within a container. The id field within the JSON payload must match the id field in the annotation being modified."
+      parameters:
+        - in: header
+          name: Host
+          schema:
+            type: string
+            example: miiify.rocks
+            description: Override the default host sent from client.
+          required: false
+        - in: header
+          name: If-Match
+          schema:
+            type: string
+            example: "caa80ca1e4cc5f2253df5ee35293236350b19194"
+            description: "ETag support for comparing uniqueness.."
+          required: false
+        - name: container_id
+          in: path
+          required: true
+          description: the unique identifier of a container
+          schema:
+            type: string
+        - name: annotation_id
+          in: path
+          required: true
+          description: the unique identifier of an annotation
+          schema:
+            type: string
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/modify_annotation_response"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "412":
+          description: Precondition Failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "500":
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+                example: Something went wrong!
+
+    delete:
+      tags:
+        - delete annotation
+      summary: "delete annotation"
+      description: "Delete a single annotation from a container."
+      parameters:
+        - in: header
+          name: If-Match
+          schema:
+            type: string
+            example: "caa80ca1e4cc5f2253df5ee35293236350b19194"
+            description: "ETag support for comparing uniqueness.."
+          required: false
+        - name: container_id
+          in: path
+          required: true
+          description: the unique identifier of a container
+          schema:
+            type: string
+        - name: annotation_id
+          in: path
+          required: true
+          description: the unique identifier of an annotation
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "412":
+          description: Precondition Failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "500":
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+                example: Something went wrong!
+
 components:
   schemas:
     error:
@@ -261,7 +518,7 @@ components:
         created:
           type: string
           example: "2021-10-02T15:57:29Z"
-          description: The same data used to create a container but with a modified key added.
+          description: The same data used to create a container but with a created key added.
 
     create_annotation:
       type: object
@@ -281,7 +538,19 @@ components:
         created:
           type: string
           example: "2021-10-02T15:57:29Z"
-          description: The same data used to create a container but with a modified key added.
+          description: The same data used to create a container but with a created key added.
+
+    modify_annotation_response:
+      type: object
+      properties:
+        type:
+          type: string
+          example: Annotation
+          description: A mandatory type for differentiating an annotation from a container.
+        modified:
+          type: string
+          example: "2021-10-02T15:57:29Z"
+          description: The same data used to create a container but with a modified key added.          
 
     collection:
       type: object
@@ -290,4 +559,11 @@ components:
           example:
             - BasicContainer
             - AnnotationCollection
-          description: A mandatory array type for differentiating a container from an annotation.
+          description: A mandatory array type for differentiating a collection from an annotation.
+
+    page:
+      type: object
+      properties:
+        type:
+          example: AnnotationPage
+          description: A mandatory string type for differentiating a page from an annotation.
