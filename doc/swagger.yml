@@ -94,6 +94,12 @@ paths:
             example: annotation1
             description: Specify the annotation name. If not supplied a system generated name with be used.
           required: false
+        - name: container_id
+          in: path
+          required: true
+          description: the unique identifier of a container
+          schema:
+            type: string
       requestBody:
         required: true
         description: Basic annotation data
@@ -198,6 +204,12 @@ paths:
             example: "caa80ca1e4cc5f2253df5ee35293236350b19194"
             description: "ETag support for comparing uniqueness."
           required: false
+        - name: container_id
+          in: path
+          required: true
+          description: the unique identifier of a container
+          schema:
+            type: string
       responses:
         "200":
           description: OK
@@ -550,7 +562,7 @@ components:
         modified:
           type: string
           example: "2021-10-02T15:57:29Z"
-          description: The same data used to create a container but with a modified key added.          
+          description: The same data used to create a container but with a modified key added.
 
     collection:
       type: object
