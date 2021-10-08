@@ -223,6 +223,10 @@ cat test/annotation2.json | https PUT :/annotations/my-container/foobar If-Match
 ```
 This ensures we really are updating the resource that we think we are.
 
+### API
+
+The API has been described using [OpenAPI](https://github.com/nationalarchives/miiify/blob/main/doc/swagger.yml).
+
 ### Testing
 
 Tests can be run using the [Airborne](https://github.com/brooklynDev/airborne) test framework:
