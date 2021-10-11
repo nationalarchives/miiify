@@ -29,12 +29,15 @@ spec:
       containers:
         - name: miiify
           image: jptmoore/miiify
+          args: ["--config=/etc/config/config.json"]
           ports:
             - containerPort: 8080
               name: miiify
           volumeMounts:
             - name: miiify
               mountPath: /data
+            - name: miiify-config
+              mountPath: /etc/config
       securityContext:
         runAsUser: 1000
         runAsGroup: 1000
@@ -43,3 +46,6 @@ spec:
         - name: miiify
           persistentVolumeClaim:
             claimName: "miiify-pvc"
+        - name: miiify-config
+          configMap:
+            name: miiify

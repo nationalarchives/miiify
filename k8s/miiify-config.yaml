@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: miiify
+data:
+  config.json: |
+    { "repository_name": "/data/db" }
