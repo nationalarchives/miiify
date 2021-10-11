@@ -1,0 +1,12 @@
+{
+  "https": true,
+  "interface": "0.0.0.0",
+  "port": 8080,
+  "debug": false,
+  "certificate_file": "server.crt",
+  "key_file": "server.key",
+  "repository_name": "db",
+  "repository_author": "miiify.rocks",
+  "container_page_limit": 200,
+  "container_representation": "PreferContainedDescriptions"
+}
