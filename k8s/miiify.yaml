@@ -1,0 +1,45 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: miiify
+  labels:
+    app: miiify
+spec:
+  ports:
+    - port: 443
+      name: miiify
+  clusterIP: None
+  selector:
+    app: miiify
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: miiify
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: miiify
+  template:
+    metadata:
+      labels:
+        app: miiify
+    spec:
+      containers:
+        - name: miiify
+          image: jptmoore/miiify
+          ports:
+            - containerPort: 8080
+              name: miiify
+          volumeMounts:
+            - name: miiify
+              mountPath: /data
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      volumes:
+        - name: miiify
+          persistentVolumeClaim:
+            claimName: "miiify-pvc"
