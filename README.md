@@ -227,6 +227,30 @@ This ensures we really are updating the resource that we think we are.
 
 The API has been described using [OpenAPI](https://github.com/nationalarchives/miiify/blob/main/doc/swagger.yml).
 
+
+### Configuration
+
+The server can be started with the command flag ```--config=<file>``` to specify a JSON configuration file. The sample below shows all the fields with their default values when not included:
+
+```json
+{
+  "https": true,
+  "interface": "0.0.0.0",
+  "port": 8080,
+  "debug": false,
+  "certificate_file": "server.crt",
+  "key_file": "server.key",
+  "repository_name": "db",
+  "repository_author": "miiify.rocks",
+  "container_page_limit": 200,
+  "container_representation": "PreferContainedDescriptions"
+}
+```
+The default is to use HTTPS which will require certificates. For testing you can generate some self-signed certs. For example:
+```bash
+openssl req -x509 -newkey rsa:4096 -keyout server.key -out server.crt -days 3650 -nodes -subj "/C=UK/ST=foo/L=bar/O=baz/OU= Department/CN=localhost.local"
+```
+
 ### Testing
 
 Tests can be run using the [Airborne](https://github.com/brooklynDev/airborne) test framework:
