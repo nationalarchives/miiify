@@ -3,7 +3,7 @@ _transform: true
 
 services:
 - name: miiify
-  host: miiify
+  url: https://miiify
   port: 8080
   routes:
   - name: root
