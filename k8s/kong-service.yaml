@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: kong-service
+  labels:
+    app: kong
+spec:
+  ports:
+    - port: 8000
+      name: proxy
+    - port: 8443
+      name: proxy-ssl
+    # - port: 8001
+    #   name: admin-api
+    # - port: 8444
+    #   name: admin-api-ssl            
+  selector:
+    app: kong
+    tier: frontend
+  type: LoadBalancer
+  

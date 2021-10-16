@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: miiify
+  labels:
+    app: miiify
+spec:
+  ports:
+    - port: 8080
+      name: miiify
+  clusterIP: None
+  selector:
+    app: miiify
