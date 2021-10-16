@@ -51,6 +51,11 @@ spec:
                 configMapKeyRef:
                   name: kong-config
                   key: KONG_ADMIN_LISTEN_KEY
+            - name: KONG_DECLARATIVE_CONFIG
+              valueFrom:
+                configMapKeyRef:
+                  name: kong-config
+                  key: KONG_DECLARATIVE_CONFIG_KEY
           ports:
             - containerPort: 8000
               name: proxy
@@ -60,3 +65,10 @@ spec:
               name: admin-api                                  
             - containerPort: 8444
               name: admin-api-ssl
+          volumeMounts:
+            - name: kong-config
+              mountPath: /etc/config
+      volumes:
+        - name: kong-config
+          configMap:
+            name: kong-config
