@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kong-config
+data:
+  KONG_DATABASE_KEY: "off"
+  KONG_PROXY_ACCESS_LOG_KEY: "/dev/stdout"
+  KONG_ADMIN_ACCESS_LOG_KEY: "/dev/stdout"
+  KONG_PROXY_ERROR_LOG_KEY: "/dev/stderr"
+  KONG_ADMIN_ERROR_LOG_KEY: "/dev/stderr"
+  KONG_ADMIN_LISTEN_KEY: "0.0.0.0:8001, 0.0.0.0:8444 ssl"
+
