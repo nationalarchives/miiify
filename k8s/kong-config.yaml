@@ -8,6 +8,7 @@ data:
   KONG_ADMIN_ACCESS_LOG_KEY: "/dev/stdout"
   KONG_PROXY_ERROR_LOG_KEY: "/dev/stderr"
   KONG_ADMIN_ERROR_LOG_KEY: "/dev/stderr"
+  KONG_PROXY_LISTEN_KEY: "0.0.0.0:8000, 0.0.0.0:8443 ssl"
   KONG_ADMIN_LISTEN_KEY: "0.0.0.0:8001, 0.0.0.0:8444 ssl"
   KONG_DECLARATIVE_CONFIG_KEY: "/etc/config/kong.yml"
   kong.yml: |

@@ -6,9 +6,11 @@ metadata:
     app: kong
 spec:
   ports:
-    - port: 8000
+    - port: 80
+      targetPort: 8000
       name: proxy
-    - port: 8443
+    - port: 443
+      targetPort: 8443
       name: proxy-ssl
     # - port: 8001
     #   name: admin-api

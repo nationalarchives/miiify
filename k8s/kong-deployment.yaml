@@ -46,6 +46,11 @@ spec:
                 configMapKeyRef:
                   name: kong-config
                   key: KONG_ADMIN_ERROR_LOG_KEY
+            - name: KONG_PROXY_LISTEN
+              valueFrom:
+                configMapKeyRef:
+                  name: kong-config
+                  key: KONG_PROXY_LISTEN_KEY
             - name: KONG_ADMIN_LISTEN
               valueFrom:
                 configMapKeyRef:
