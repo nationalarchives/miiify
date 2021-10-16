@@ -1,0 +1,13 @@
+_format_version: "2.1"
+_transform: true
+
+services:
+- name: miiify
+  host: miiify
+  port: 8080
+  routes:
+  - name: root
+    paths:
+    - /
+
+

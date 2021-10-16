@@ -6,7 +6,7 @@ metadata:
     app: miiify
 spec:
   ports:
-    - port: 443
+    - port: 8080
       name: miiify
   clusterIP: None
   selector:
@@ -17,7 +17,7 @@ kind: Deployment
 metadata:
   name: miiify
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: miiify
