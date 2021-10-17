@@ -22,5 +22,11 @@ data:
       routes:
       - name: root
         paths:
+        - /v1
         - /
+        preserve_host: true
+        methods:
+        - GET
+        - HEAD
+        - OPTIONS
 
