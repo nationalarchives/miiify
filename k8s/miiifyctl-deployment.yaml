@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: miiifyctl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: miiifyctl
+  template:
+    metadata:
+      labels:
+        app: miiifyctl
+    spec:
+      containers:
+        - name: miiifyctl
+          image: "alpine/git"
+          command:
+            - /bin/sh
+            - "-c"
+            - "sleep infinity"
+          volumeMounts:
+            - name: miiifyctl
+              mountPath: /data
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      volumes:
+        - name: miiifyctl
+          persistentVolumeClaim:
+            claimName: "miiify-pvc"
