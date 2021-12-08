@@ -1,6 +1,10 @@
 ### Introduction
 
-Miiify is an experimental W3C annotation server that is based on the [Web Annotation Protocol](https://www.w3.org/TR/annotation-protocol/). Rather than store data in a traditional database it stores data in the Git format. This provides some interesting properties such as allowing community contributions to a main repository through a traditional GitHub pull request model instead of exposing write access through APIs. In addition, Git provides a log of all mutations to the data to improve provenance of records. This can be especially useful when the annotations start to be written by AI instead of humans. 
+Miiify is an experimental W3C annotation server that is based on the [Web Annotation Protocol](https://www.w3.org/TR/annotation-protocol/). 
+
+Rather than rely on running a centralised infrastructure, Miiify adopts a distributed approach to collaboration using a peer review process facilitated on GitHub. Each user interacts with their own instance of Miiify using a web interface that supports annotating content such as images. Contributions are then submitted back to the main GitHub repository through a pull request. 
+
+The rest of the documentation here describes the backend component of the stack which is useful for those building their own annotation interfaces.
 
 ### Quick start
 
