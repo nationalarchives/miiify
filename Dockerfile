@@ -7,7 +7,8 @@ WORKDIR /home/opam
 
 # Install dependencies
 ADD miiify.opam miiify.opam
-RUN opam install . --deps-only --unlock-base
+RUN opam pin add -n reason https://github.com/reasonml/reason.git
+RUN opam install . --deps-only
 
 # Build project
 ADD . .
