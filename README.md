@@ -252,7 +252,10 @@ The server can be started with the command flag ```--config=<file>``` to specify
 ```
 The default is to use HTTPS which will require certificates. For testing you can generate some self-signed certs. For example:
 ```bash
-openssl req -x509 -newkey rsa:4096 -keyout server.key -out server.crt -days 3650 -nodes -subj "/C=UK/ST=foo/L=bar/O=baz/OU= Department/CN=localhost.local"
+openssl req -x509 -out server.crt -keyout server.key \
+  -newkey rsa:2048 -nodes -sha256 \
+  -subj '/CN=localhost' -extensions EXT -config <( \
+   printf "[dn]\nCN=localhost\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:localhost\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
 ```
 
 ### Testing
