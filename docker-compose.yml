@@ -6,8 +6,8 @@ services:
     ports:
       - "80:8080"
       - "443:8080"
-    volumes:
-      - ./db:/home/miiify/db
+#    volumes:
+#      - ./db:/home/miiify/db
     restart: always
 #    logging:
 #      driver: ${LOGGING_DRIVER:-json-file}
