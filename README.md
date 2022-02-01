@@ -4,6 +4,13 @@ Miiify is an experimental W3C annotation server that is based on the [Web Annota
 
 Rather than rely on running a centralised infrastructure, Miiify adopts a distributed approach to collaboration using a peer review process facilitated on GitHub. Each user interacts with their own instance of Miiify using a web interface that supports annotating content such as images. Contributions are then submitted back to the main GitHub repository through a pull request. An example annotation [app](https://github.com/jptmoore/miiifyapp) and [annotation](https://github.com/jptmoore/annotations) repo is available for testing. The rest of the documentation here describes the backend component of the stack which is useful for those building their own annotation interfaces.
 
+### Features
+
+* Talks native git (no database required)
+* No requirement to support user authentication or accounts
+* Light-weight (docker image less than 60MB)
+* Browsable JSON content
+
 ### Quick start
 
 The following tutorial demonstrates how to interact with the server using the httpie [tool](https://httpie.io/) and Apache Benchmark [tool](https://httpd.apache.org/docs/2.4/programs/ab.html). Note, the server is running from a self-signed certificate generated within the Docker container.
