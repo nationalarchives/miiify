@@ -9,23 +9,23 @@ let get_timestamp = () => {
 };
 
 let get_id = request => {
-  switch (Dream.header("Slug", request)) {
+  switch (Dream.header(request, "Slug")) {
   | None => gen_uuid()
   | Some(slug) => slug
   };
 };
 
 let get_if_none_match = request => {
-  Dream.header("If-None-Match", request);
+  Dream.header(request, "If-None-Match");
 };
 
 let get_if_match = request => {
-  Dream.header("If-Match", request);
+  Dream.header(request, "If-Match");
 };
 
 let get_host = (request) => {
-  let host = Option.get(Dream.header("Host", request));
-  switch (Dream.https(request)) {
+  let host = Option.get(Dream.header(request, "Host"));
+  switch (Dream.tls(request)) {
     | true => "https://" ++ host;
     | false => "http://" ++ host;
   };
@@ -36,7 +36,7 @@ let key_to_string = key => {
 };
 
 let get_page = request => {
-  switch (Dream.query("page", request)) {
+  switch (Dream.query(request, "page")) {
   | None => 0
   | Some(page) =>
     switch (int_of_string_opt(page)) {
@@ -59,7 +59,7 @@ let strip_last_char = str =>
   };
 
 let get_prefer = (request, default) => {
-  switch (Dream.header("prefer", request)) {
+  switch (Dream.header(request, "prefer")) {
   | None => default
   | Some(prefer) =>
     // we will just use the first preference if multiple exist

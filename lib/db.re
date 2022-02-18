@@ -13,7 +13,7 @@ let create = (~fname, ~author) => {
   repository_author := author;
   let config = Irmin_git.config(~bare=true, fname);
   let repo = Store.Repo.v(config);
-  let branch = repo >>= Store.master;
+  let branch = repo >>= Store.main;
   {db: branch};
 };
 
