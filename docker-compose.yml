@@ -2,6 +2,7 @@ version: "3"
 
 services:
   web:
+    image: jptmoore/miiify
     build: .
     ports:
       - "80:8080"
