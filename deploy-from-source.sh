@@ -3,6 +3,6 @@
 set -e
 set -x
 
-docker-compose up
+docker-compose build
 docker-compose down
 LOGGING_DRIVER=journald docker-compose up --detach

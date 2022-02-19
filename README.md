@@ -15,9 +15,14 @@ Rather than rely on running a centralised infrastructure, Miiify adopts a distri
 
 The following tutorial demonstrates how to interact with the server using the httpie [tool](https://httpie.io/) and Apache Benchmark [tool](https://httpd.apache.org/docs/2.4/programs/ab.html). Note, the server is running from a self-signed certificate generated within the Docker container.
 
-Build from source and launch Docker container (note this will take some time the first run):
+Run pre-built Docker image:
 ```bash
 ./deploy.sh
+```
+
+Build from source and launch Docker container (note this will take some time the first run and sometimes breaks on build changes):
+```bash
+./deploy-from-source.sh
 ```
 
 Create an annotation container:
