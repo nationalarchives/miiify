@@ -248,10 +248,9 @@ The server can be started with the command flag ```--config=<file>``` to specify
 
 ```json
 {
-  "https": true,
+  "tls": true,
   "interface": "0.0.0.0",
   "port": 8080,
-  "debug": false,
   "certificate_file": "server.crt",
   "key_file": "server.key",
   "repository_name": "db",
