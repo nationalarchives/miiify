@@ -17,8 +17,8 @@ let get_root = (body, request) => {
 };
 
 let get_annotation = (ctx, request) => {
-  let container_id = Dream.param("container_id", request);
-  let annotation_id = Dream.param("annotation_id", request);
+  let container_id = Dream.param(request, "container_id");
+  let annotation_id = Dream.param(request, "annotation_id");
   let key = [container_id, "collection", annotation_id];
   Db.get_hash(~ctx=ctx.db, ~key)
   >>= {
@@ -37,7 +37,7 @@ let get_annotation = (ctx, request) => {
 };
 
 let get_annotation_pages = (ctx, request) => {
-  let container_id = Dream.param("container_id", request);
+  let container_id = Dream.param(request, "container_id");
   let key = [container_id, "main"];
   let page = get_page(request);
   let prefer = get_prefer(request, ctx.config.container_representation);
@@ -71,7 +71,7 @@ let get_annotation_pages = (ctx, request) => {
 };
 
 let get_annotation_collection = (ctx, request) => {
-  let container_id = Dream.param("container_id", request);
+  let container_id = Dream.param(request, "container_id");
   let prefer = get_prefer(request, ctx.config.container_representation);
   Container.set_representation(~ctx=ctx.container, ~representation=prefer);
   let key = [container_id, "main"];
@@ -96,7 +96,7 @@ let get_annotation_collection = (ctx, request) => {
 };
 
 let delete_container = (ctx, request) => {
-  let container_id = Dream.param("container_id", request);
+  let container_id = Dream.param(request, "container_id");
   let key = [container_id];
   let main_key = [container_id, "main"];
   Db.get_hash(~ctx=ctx.db, ~key=main_key)
@@ -165,8 +165,8 @@ let post_container = (ctx, request) => {
 };
 
 let delete_annotation = (ctx, request) => {
-  let container_id = Dream.param("container_id", request);
-  let annotation_id = Dream.param("annotation_id", request);
+  let container_id = Dream.param(request, "container_id");
+  let annotation_id = Dream.param(request, "annotation_id");
   let key = [container_id, "collection", annotation_id];
   Db.get_hash(~ctx=ctx.db, ~key)
   >>= {
@@ -199,7 +199,7 @@ let post_annotation = (ctx, request) => {
   Dream.body(request)
   >>= {
     body => {
-      let container_id = Dream.param("container_id", request);
+      let container_id = Dream.param(request, "container_id");
       Data.post_annotation(
         ~data=body,
         ~id=[container_id, "collection", get_id(request)],
@@ -268,8 +268,8 @@ let put_annotation = (ctx, request) => {
   Dream.body(request)
   >>= {
     body => {
-      let container_id = Dream.param("container_id", request);
-      let annotation_id = Dream.param("annotation_id", request);
+      let container_id = Dream.param(request, "container_id");
+      let annotation_id = Dream.param(request, "annotation_id");
       let key = [container_id, "collection", annotation_id];
       Data.put_annotation(~data=body, ~id=key, ~host=get_host(request))
       |> {
@@ -322,9 +322,8 @@ let put_annotation = (ctx, request) => {
 let run = ctx =>
   Dream.run(
     ~interface=ctx.config.interface,
-    ~https=ctx.config.https,
+    ~tls=ctx.config.tls,
     ~port=ctx.config.port,
-    ~debug=ctx.config.debug,
     ~certificate_file=ctx.config.certificate_file,
     ~key_file=ctx.config.key_file,
   ) @@
@@ -376,8 +375,7 @@ let run = ctx =>
     ),
     Dream.head("/annotations/:container_id", get_annotation_pages(ctx)),
     Dream.get("/annotations/:container_id", get_annotation_pages(ctx)),
-  ]) @@
-  Dream.not_found;
+  ])
 
 let init = config => {
   config,
