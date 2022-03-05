@@ -6,12 +6,12 @@ metadata:
     app: kong
 spec:
   ports:
-    - port: 80
+    - port: {{ .Values.service.port }}
       targetPort: 8000
       name: proxy
-    - port: 443
-      targetPort: 8443
-      name: proxy-ssl
+    # - port: 443
+    #   targetPort: 8443
+    #   name: proxy-ssl
     # - port: 8001
     #   name: admin-api
     # - port: 8444

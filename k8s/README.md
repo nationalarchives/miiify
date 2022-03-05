@@ -11,14 +11,14 @@ minikube start
 ### Deploy with helm
 
 ```
-helm install kong kong
+helm install kong kong --set service.port=5000
 helm install miiify miiify
 helm install miiifyctl miiifyctl
 ```
 
 ### Start minikube tunnel
 
-Running on port 80 so requires sudo access.
+Running on port 5000.
 
 ```
 minikube tunnel
@@ -27,7 +27,7 @@ minikube tunnel
 ### Test the deployment
 
 ```
-http :
+http :5000
 ```
 
 ```
