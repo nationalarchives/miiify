@@ -80,6 +80,6 @@ kubectl rollout restart deployment miiify
 Get the total number of annotations available.
 
 ```
-http :/annotations/demo/ | jq -r '.total'
+http :5000/annotations/demo/ | jq -r '.total'
 ```
 
