@@ -17,6 +17,7 @@ The following tutorial demonstrates how to interact with the server using the ht
 
 Run pre-built Docker image:
 ```bash
+docker pull jptmoore/miiify
 ./deploy.sh
 ```
 
