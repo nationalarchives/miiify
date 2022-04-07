@@ -9,13 +9,13 @@ homepage: "https://github.com/nationalarchives/miiify"
 bug-reports: "https://github.com/nationalarchives/miiify/issues"
 depends: [
   "dune" {>= "2.8"}
-  "dream" {>= "1.0.0~alpha2"}
+  "dream" {>= "1.0.0~alpha4"}
   "ezjsonm" {>= "1.2.0"}
-  "irmin-unix" {>= "2.7.2"}
+  "irmin-unix" {= "2.9.0"}
   "atdgen" {>= "2.2.1"}
   "ptime" {>= "0.8.5"}
   "uuidm" {>= "0.9.7"}
-  "reason" {>= "3.7.0"}
+  "reason" {>= "3.8.0"}
   "odoc" {with-doc}
 ]
 build: [
