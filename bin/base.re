@@ -23,11 +23,17 @@ let get_if_match = request => {
   Dream.header(request, "If-Match");
 };
 
-let get_host = (request) => {
-  let host = Option.get(Dream.header(request, "Host"));
-  switch (Dream.tls(request)) {
-    | true => "https://" ++ host;
-    | false => "http://" ++ host;
+let get_host = request => {
+  switch (Dream.header(request, "host")) {
+  | None =>
+    switch (Dream.header(request, ":authority")) {
+    | None => None
+    | Some(host) =>
+      Dream.tls(request)
+        ? Some("https://" ++ host) : Some("http://" ++ host)
+    }
+  | Some(host) =>
+    Dream.tls(request) ? Some("https://" ++ host) : Some("http://" ++ host)
   };
 };
 

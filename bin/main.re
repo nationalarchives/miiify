@@ -127,40 +127,50 @@ let delete_container = (ctx, request) => {
 };
 
 let post_container = (ctx, request) => {
-  Dream.body(request)
-  >>= {
-    body => {
-      Data.post_container(
-        ~data=body,
-        ~id=[get_id(request), "main"],
-        ~host=get_host(request),
-      )
-      |> {
-        obj =>
-          switch (obj) {
-          | Error(m) => error_response(`Bad_Request, m)
-          | Ok(obj) =>
-            let key = Data.id(obj);
-            Db.exists(~ctx=ctx.db, ~key)
-            >>= (
-              yes =>
-                if (yes) {
-                  error_response(`Bad_Request, "container already exists");
-                } else {
-                  Db.add(
-                    ~ctx=ctx.db,
-                    ~key,
-                    ~json=Data.json(obj),
-                    ~message="POST " ++ key_to_string(Data.id(obj)),
-                  )
-                  >>= (
-                    () => json_response(~request, ~body=Data.json(obj), ())
-                  );
-                }
-            );
+  switch (get_host(request)) {
+  | None => error_response(`Bad_Request, "No host header")
+  | Some(host) =>
+    Dream.body(request)
+    >>= {
+      (
+        body => {
+          Data.post_container(
+            ~data=body,
+            ~id=[get_id(request), "main"],
+            ~host,
+          )
+          |> {
+            obj =>
+              switch (obj) {
+              | Error(m) => error_response(`Bad_Request, m)
+              | Ok(obj) =>
+                let key = Data.id(obj);
+                Db.exists(~ctx=ctx.db, ~key)
+                >>= (
+                  yes =>
+                    if (yes) {
+                      error_response(
+                        `Bad_Request,
+                        "container already exists",
+                      );
+                    } else {
+                      Db.add(
+                        ~ctx=ctx.db,
+                        ~key,
+                        ~json=Data.json(obj),
+                        ~message="POST " ++ key_to_string(Data.id(obj)),
+                      )
+                      >>= (
+                        () =>
+                          json_response(~request, ~body=Data.json(obj), ())
+                      );
+                    }
+                );
+              };
           };
-      };
-    };
+        }
+      );
+    }
   };
 };
 
@@ -196,126 +206,154 @@ let delete_annotation = (ctx, request) => {
 };
 
 let post_annotation = (ctx, request) => {
-  Dream.body(request)
-  >>= {
-    body => {
-      let container_id = Dream.param(request, "container_id");
-      Data.post_annotation(
-        ~data=body,
-        ~id=[container_id, "collection", get_id(request)],
-        ~host=get_host(request),
-      )
-      |> {
-        obj =>
-          switch (obj) {
-          | Error(m) => error_response(`Bad_Request, m)
-          | Ok(obj) =>
-            let key = Data.id(obj);
-            // container must exist already
-            Db.exists(~ctx=ctx.db, ~key=[container_id])
-            >>= (
-              yes =>
-                if (yes) {
-                  // annotation can't exist already
-                  Db.exists(~ctx=ctx.db, ~key)
-                  >>= (
-                    yes =>
-                      if (yes) {
-                        error_response(
-                          `Bad_Request,
-                          "annotation already exists",
-                        );
-                      } else {
-                        let modified_key = [container_id, "main", "modified"];
-                        Db.add(
-                          // first modify main part of container with timestamp
-                          ~ctx=ctx.db,
-                          ~key=modified_key,
-                          ~json=Ezjsonm.string(get_timestamp()),
-                          ~message="POST " ++ key_to_string(modified_key),
-                        )
-                        >>= (
-                          () =>
+  switch (get_host(request)) {
+  | None => error_response(`Bad_Request, "No host header")
+  | Some(host) =>
+    Dream.body(request)
+    >>= {
+      (
+        body => {
+          let container_id = Dream.param(request, "container_id");
+          Data.post_annotation(
+            ~data=body,
+            ~id=[container_id, "collection", get_id(request)],
+            ~host,
+          )
+          |> {
+            obj =>
+              switch (obj) {
+              | Error(m) => error_response(`Bad_Request, m)
+              | Ok(obj) =>
+                let key = Data.id(obj);
+                // container must exist already
+                Db.exists(~ctx=ctx.db, ~key=[container_id])
+                >>= (
+                  yes =>
+                    if (yes) {
+                      // annotation can't exist already
+                      Db.exists(~ctx=ctx.db, ~key)
+                      >>= (
+                        yes =>
+                          if (yes) {
+                            error_response(
+                              `Bad_Request,
+                              "annotation already exists",
+                            );
+                          } else {
+                            let modified_key = [
+                              container_id,
+                              "main",
+                              "modified",
+                            ];
                             Db.add(
-                              // add to collection part of container
+                              // first modify main part of container with timestamp
                               ~ctx=ctx.db,
-                              ~key,
-                              ~json=Data.json(obj),
-                              ~message="POST " ++ key_to_string(key),
+                              ~key=modified_key,
+                              ~json=Ezjsonm.string(get_timestamp()),
+                              ~message="POST " ++ key_to_string(modified_key),
                             )
                             >>= (
                               () =>
-                                json_response(
-                                  ~request,
-                                  ~body=Data.json(obj),
-                                  (),
+                                Db.add(
+                                  // add to collection part of container
+                                  ~ctx=ctx.db,
+                                  ~key,
+                                  ~json=Data.json(obj),
+                                  ~message="POST " ++ key_to_string(key),
                                 )
-                            )
-                        );
-                      }
-                  );
-                } else {
-                  error_response(`Bad_Request, "container does not exist");
-                }
-            );
+                                >>= (
+                                  () =>
+                                    json_response(
+                                      ~request,
+                                      ~body=Data.json(obj),
+                                      (),
+                                    )
+                                )
+                            );
+                          }
+                      );
+                    } else {
+                      error_response(
+                        `Bad_Request,
+                        "container does not exist",
+                      );
+                    }
+                );
+              };
           };
-      };
-    };
+        }
+      );
+    }
   };
 };
 
 let put_annotation = (ctx, request) => {
-  Dream.body(request)
-  >>= {
-    body => {
-      let container_id = Dream.param(request, "container_id");
-      let annotation_id = Dream.param(request, "annotation_id");
-      let key = [container_id, "collection", annotation_id];
-      Data.put_annotation(~data=body, ~id=key, ~host=get_host(request))
-      |> {
-        obj =>
-          switch (obj) {
-          | Error(m) => error_response(`Bad_Request, m)
-          | Ok(obj) =>
-            Db.get_hash(~ctx=ctx.db, ~key)
-            >>= {
-              (
-                hash =>
-                  switch (hash) {
-                  | Some(hash) =>
-                    switch (get_if_match(request)) {
-                    | Some(etag) when hash == etag =>
-                      Db.add(
-                        ~ctx=ctx.db,
-                        ~key,
-                        ~json=Data.json(obj),
-                        ~message="PUT " ++ key_to_string(key),
-                      )
-                      >>= (
-                        () =>
-                          json_response(~request, ~body=Data.json(obj), ())
-                      )
-                    | None =>
-                      Db.add(
-                        ~ctx=ctx.db,
-                        ~key,
-                        ~json=Data.json(obj),
-                        ~message="PUT without etag " ++ key_to_string(key),
-                      )
-                      >>= (
-                        () =>
-                          json_response(~request, ~body=Data.json(obj), ())
-                      )
-                    | _ => Dream.empty(`Precondition_Failed)
-                    }
-                  | None =>
-                    error_response(`Bad_Request, "annotation not found")
-                  }
-              );
-            }
+  switch (get_host(request)) {
+  | None => error_response(`Bad_Request, "No host header")
+  | Some(host) =>
+    Dream.body(request)
+    >>= {
+      (
+        body => {
+          let container_id = Dream.param(request, "container_id");
+          let annotation_id = Dream.param(request, "annotation_id");
+          let key = [container_id, "collection", annotation_id];
+          Data.put_annotation(~data=body, ~id=key, ~host)
+          |> {
+            obj =>
+              switch (obj) {
+              | Error(m) => error_response(`Bad_Request, m)
+              | Ok(obj) =>
+                Db.get_hash(~ctx=ctx.db, ~key)
+                >>= {
+                  (
+                    hash =>
+                      switch (hash) {
+                      | Some(hash) =>
+                        switch (get_if_match(request)) {
+                        | Some(etag) when hash == etag =>
+                          Db.add(
+                            ~ctx=ctx.db,
+                            ~key,
+                            ~json=Data.json(obj),
+                            ~message="PUT " ++ key_to_string(key),
+                          )
+                          >>= (
+                            () =>
+                              json_response(
+                                ~request,
+                                ~body=Data.json(obj),
+                                (),
+                              )
+                          )
+                        | None =>
+                          Db.add(
+                            ~ctx=ctx.db,
+                            ~key,
+                            ~json=Data.json(obj),
+                            ~message=
+                              "PUT without etag " ++ key_to_string(key),
+                          )
+                          >>= (
+                            () =>
+                              json_response(
+                                ~request,
+                                ~body=Data.json(obj),
+                                (),
+                              )
+                          )
+                        | _ => Dream.empty(`Precondition_Failed)
+                        }
+                      | None =>
+                        error_response(`Bad_Request, "annotation not found")
+                      }
+                  );
+                }
+              };
           };
-      };
-    };
+        }
+      );
+    }
   };
 };
 
@@ -375,7 +413,7 @@ let run = ctx =>
     ),
     Dream.head("/annotations/:container_id", get_annotation_pages(ctx)),
     Dream.get("/annotations/:container_id", get_annotation_pages(ctx)),
-  ])
+  ]);
 
 let init = config => {
   config,
