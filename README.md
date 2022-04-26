@@ -26,7 +26,7 @@ Build from source and launch Docker container (note this will take some time the
 
 Create an annotation container:
 ```bash
-curl -k -d @test/container1.json https://localhost/annotations/ -H Slug: my-container
+curl -k -d @test/container1.json https://localhost/annotations/ -H Slug:my-container
 ```
 
 ```json
@@ -47,9 +47,9 @@ curl -k -d @test/container1.json https://localhost/annotations/ -H Slug: my-cont
 
 Write some annotations to the container:
 ```bash
-curl -k -d @test/container1.json https://localhost/annotations/my-container/
-curl -k -d @test/container1.json https://localhost/annotations/my-container/
-curl -k -d @test/container1.json https://localhost/annotations/my-container/
+curl -k -d @test/annotation1.json https://localhost/annotations/my-container/
+curl -k -d @test/annotation1.json https://localhost/annotations/my-container/
+curl -k -d @test/annotation1.json https://localhost/annotations/my-container/
 ```
 
 Retrieve the contents of the container but display only the links to the annotations it contains:
@@ -99,7 +99,7 @@ curl -k -d @test/annotation1.json https://localhost/annotations/my-container/ -H
 
 Retrieve the annotation called foobar:
 ```bash
-curl -k "https://localhost/annotations/my-container/foobar
+curl -k https://localhost/annotations/my-container/foobar
 ```
 
 ```json
