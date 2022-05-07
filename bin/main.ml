@@ -3,14 +3,7 @@ open Lwt.Infix
 
 type t = { config : Config_t.config; db : Db.t; container : Container.t }
 
-let root_response = "Welcome to miiify!"
-
-let get_root body request =
-  let open Response in
-  match Dream.method_ request with
-  | `GET -> html_response body
-  | `HEAD -> html_empty_response body
-  | _ -> error_response `Method_Not_Allowed "unsupported method"
+let welcome_message = "Welcome to Miiify!"
 
 let get_annotation ctx request =
   let open Response in
@@ -196,8 +189,8 @@ let run ctx =
        [
          Dream.options "/" (fun _ ->
              options_response [ "OPTIONS"; "HEAD"; "GET" ]);
-         Dream.head "/" (get_root root_response);
-         Dream.get "/" (get_root root_response);
+         Dream.head "/" (html_response welcome_message);
+         Dream.get "/" (html_response welcome_message);
          Dream.options "/annotations/" (fun _ ->
              options_response [ "OPTIONS"; "POST" ]);
          Dream.post "/annotations/" (post_container ctx);

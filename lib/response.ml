@@ -83,7 +83,10 @@ let html_headers body =
   let content_type = ("Content-Type", "text/html; charset=utf-8") in
   [ content_type; ("Content-length", content_length) ]
 
-let html_response body = Dream.respond ~headers:(html_headers body) body
-let html_empty_response body = Dream.empty ~headers:(html_headers body) `OK
+let html_response body request =
+  match Dream.method_ request with
+  | `GET -> Dream.respond ~headers:(html_headers body) body
+  | `HEAD -> Dream.empty ~headers:(html_headers body) `OK
+  | _ -> error_response `Method_Not_Allowed "unsupported method"
 
 let empty_response status = Dream.empty status
