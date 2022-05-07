@@ -11,5 +11,5 @@
 (library
  (name miiify)
  (libraries dream irmin-unix ezjsonm atdgen uuidm ptime)
- (modules container data db config config_t config_j))
+ (modules container data db header utils response config config_t config_j))
 
