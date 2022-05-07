@@ -1,5 +1,3 @@
-let root_response () = "Welcome to miiify!"
-
 let make_error status reason =
   let open Ezjsonm in
   let code = Dream.status_to_int status in
@@ -87,3 +85,5 @@ let html_headers body =
 
 let html_response body = Dream.respond ~headers:(html_headers body) body
 let html_empty_response body = Dream.empty ~headers:(html_headers body) `OK
+
+let empty_response status = Dream.empty status
