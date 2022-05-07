@@ -3,7 +3,7 @@ require "airborne"
 Airborne.configure do |config|
   config.verify_ssl = false
   config.base_url = "https://localhost/annotations"
-  #config.base_url = "http://localhost:8080/annotations"
+  #config.base_url = "https://localhost:8080/annotations"
 end
 
 describe "create container" do
