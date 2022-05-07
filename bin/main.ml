@@ -145,7 +145,7 @@ let put_annotation ctx request =
   match get_host request with
   | None -> error_response `Bad_Request "No host header"
   | Some host -> (
-      Dream.body request >>= fun [@reason.preserve_braces] body ->
+      Dream.body request >>= fun body ->
       let container_id = Dream.param request "container_id" in
       let annotation_id = Dream.param request "annotation_id" in
       let key = [ container_id; "collection"; annotation_id ] in
