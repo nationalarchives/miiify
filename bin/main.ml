@@ -1,9 +1,10 @@
 open Miiify
 open Lwt.Infix
 
-type t = { config : Config_t.config; db : Db.t; container : Container.t }
-
 let welcome_message = "Welcome to Miiify!"
+let version_message = "0.1.0"
+
+type t = { config : Config_t.config; db : Db.t; container : Container.t }
 
 let get_annotation ctx request =
   let open Response in
@@ -191,6 +192,10 @@ let run ctx =
              options_response [ "OPTIONS"; "HEAD"; "GET" ]);
          Dream.head "/" (html_response welcome_message);
          Dream.get "/" (html_response welcome_message);
+         Dream.options "/version" (fun _ ->
+             options_response [ "OPTIONS"; "HEAD"; "GET" ]);
+         Dream.head "/version" (html_response version_message);
+         Dream.get "/version" (html_response version_message);
          Dream.options "/annotations/" (fun _ ->
              options_response [ "OPTIONS"; "POST" ]);
          Dream.post "/annotations/" (post_container ctx);
