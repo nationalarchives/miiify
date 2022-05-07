@@ -4,7 +4,7 @@ info:
   version: "v1"
   description: "Miiify is W3C annotation server"
 servers:
-  - url: https://miiify.rocks
+  - url: http://miiify.rocks
 paths:
   /:
     get:
@@ -23,6 +23,24 @@ paths:
                 html:
                   summary: A welcome message
                   value: "Welcome to Miiify!"
+
+  /version:
+    get:
+      tags:
+        - version message
+      summary: Miiify version!
+      description: Displays the current version.
+      responses:
+        "200":
+          description: OK
+          content:
+            text/html:
+              schema:
+                type: string
+              examples:
+                html:
+                  summary: Version message
+                  value: "0.1.0"
 
   /annotation/:
     post:
