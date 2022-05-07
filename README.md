@@ -8,8 +8,8 @@ Rather than rely on running a centralised infrastructure, Miiify adopts a distri
 
 * Talks native git (no database required)
 * No requirement to support user authentication or accounts
-* Light-weight (docker image less than 60MB)
 * Browsable JSON content
+* Light-weight (docker image less than 60MB)
 
 ### Quick start
 
