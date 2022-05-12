@@ -112,10 +112,12 @@ let delete_annotation ctx request =
   | Some hash -> (
       match Header.get_if_match request with
       | Some etag when hash = etag ->
+          Container.modify_timestamp ~db:ctx.db ~container_id >>= fun () ->
           Db.delete ~ctx:ctx.db ~key
             ~message:("DELETE " ^ Utils.key_to_string key)
           >>= fun () -> empty_response `No_Content
       | None ->
+          Container.modify_timestamp ~db:ctx.db ~container_id >>= fun () ->
           Db.delete ~ctx:ctx.db ~key
             ~message:("DELETE without etag " ^ Utils.key_to_string key)
           >>= fun () -> empty_response `No_Content
@@ -142,11 +144,7 @@ let post_annotation ctx request =
             Db.exists ~ctx:ctx.db ~key >>= fun yes ->
             if yes then error_response `Bad_Request "annotation already exists"
             else
-              let modified_key = [ container_id; "main"; "modified" ] in
-              Db.add ~ctx:ctx.db ~key:modified_key
-                ~json:(Ezjsonm.string (Utils.get_timestamp ()))
-                ~message:("POST " ^ Utils.key_to_string modified_key)
-              >>= fun () ->
+              Container.modify_timestamp ~db:ctx.db ~container_id >>= fun () ->
               Db.add ~ctx:ctx.db ~key ~json:(Data.json obj)
                 ~message:("POST " ^ Utils.key_to_string key)
               >>= fun () -> json_response ~request ~body:(Data.json obj) ()
@@ -170,10 +168,14 @@ let put_annotation ctx request =
           | Some hash -> (
               match Header.get_if_match request with
               | Some etag when hash = etag ->
+                  Container.modify_timestamp ~db:ctx.db ~container_id
+                  >>= fun () ->
                   Db.add ~ctx:ctx.db ~key ~json:(Data.json obj)
                     ~message:("PUT " ^ Utils.key_to_string key)
                   >>= fun () -> json_response ~request ~body:(Data.json obj) ()
               | None ->
+                  Container.modify_timestamp ~db:ctx.db ~container_id
+                  >>= fun () ->
                   Db.add ~ctx:ctx.db ~key ~json:(Data.json obj)
                     ~message:("PUT without etag " ^ Utils.key_to_string key)
                   >>= fun () -> json_response ~request ~body:(Data.json obj) ()
