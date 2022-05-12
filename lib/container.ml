@@ -171,8 +171,20 @@ let annotation_collection ~ctx ~db ~key =
       >|= fun collection ->
       annotation_collection_response count limit main collection representation
 
-let modify_timestamp ~db ~container_id =
+let modify_timestamp db container_id =
   let modified_key = [ container_id; "main"; "modified" ] in
   Db.add ~ctx:db ~key:modified_key
-  ~json:(Ezjsonm.string (Utils.get_timestamp ()))
-  ~message:("POST " ^ Utils.key_to_string modified_key)
+    ~json:(Ezjsonm.string (Utils.get_timestamp ()))
+    ~message:("POST " ^ Utils.key_to_string modified_key)
+
+let add_annotation ~db ~key ~container_id ~json ~message =
+  modify_timestamp db container_id >>= fun () ->
+  Db.add ~ctx:db ~key ~json ~message
+
+let add_container ~db ~key ~json ~message = Db.add ~ctx:db ~key ~json ~message
+
+let delete_annotation ~db ~key ~container_id ~message =
+  modify_timestamp db container_id >>= fun () ->
+  Db.delete ~ctx:db ~key ~message
+
+let delete_container ~db ~key ~message = Db.delete ~ctx:db ~key ~message

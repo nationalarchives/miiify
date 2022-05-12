@@ -13,4 +13,10 @@ val get_representation : ctx:t -> string
 
 val set_representation : ctx:t -> representation:string -> unit
 
-val modify_timestamp : db:Db.t -> container_id:string -> unit Lwt.t
+val add_annotation : db:Db.t -> key:string list -> container_id:string -> json:Ezjsonm.value -> message:string -> unit Lwt.t
+
+val add_container : db:Db.t -> key:string list -> json:Ezjsonm.value -> message:string -> unit Lwt.t
+
+val delete_annotation : db:Db.t ->  key:string list -> container_id:string -> message:string -> unit Lwt.t
+
+val delete_container : db:Db.t ->  key:string list -> message:string -> unit Lwt.t
