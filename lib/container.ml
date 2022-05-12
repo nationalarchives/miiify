@@ -97,7 +97,7 @@ let annotation_page_response page count limit main collection representation =
   let json = update json [ "items" ] items in
   json
 
-let annotation_page ~ctx ~db ~key ~page =
+let get_annotation_page ~ctx ~db ~key ~page =
   Db.get ~ctx:db ~key >>= fun main ->
   let limit = ctx.page_limit in
   let representation = ctx.representation in
@@ -156,7 +156,7 @@ let annotation_collection_response count limit main collection representation =
   let json = update json [ "last" ] last in
   json
 
-let annotation_collection ~ctx ~db ~key =
+let get_annotation_collection ~ctx ~db ~key =
   Db.get ~ctx:db ~key >>= fun main ->
   let limit = ctx.page_limit in
   let representation = ctx.representation in
@@ -171,8 +171,32 @@ let annotation_collection ~ctx ~db ~key =
       >|= fun collection ->
       annotation_collection_response count limit main collection representation
 
-let modify_timestamp ~db ~container_id =
+let modify_container_timestamp db container_id =
   let modified_key = [ container_id; "main"; "modified" ] in
   Db.add ~ctx:db ~key:modified_key
-  ~json:(Ezjsonm.string (Utils.get_timestamp ()))
-  ~message:("POST " ^ Utils.key_to_string modified_key)
+    ~json:(Ezjsonm.string (Utils.get_timestamp ()))
+    ~message:("POST " ^ Utils.key_to_string modified_key)
+
+let add_or_update_annotation ~db ~key ~container_id ~json ~message =
+  modify_container_timestamp db container_id >>= fun () ->
+  Db.add ~ctx:db ~key ~json ~message
+
+let add_annotation = add_or_update_annotation
+let update_annotation = add_or_update_annotation
+let add_container ~db ~key ~json ~message = Db.add ~ctx:db ~key ~json ~message
+
+let delete_annotation ~db ~key ~container_id ~message =
+  modify_container_timestamp db container_id >>= fun () ->
+  Db.delete ~ctx:db ~key ~message
+
+let delete_container ~db ~key ~message = Db.delete ~ctx:db ~key ~message
+let get_hash ~db ~key = Db.get_hash ~ctx:db ~key
+let container_or_annotation_exists ~db ~key = Db.exists ~ctx:db ~key
+let container_exists = container_or_annotation_exists
+let annotation_exists = container_or_annotation_exists
+
+let get_page request =
+  match Dream.query request "page" with
+  | None -> 0
+  | Some page -> (
+      match int_of_string_opt page with None -> 0 | Some value -> value)
