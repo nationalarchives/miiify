@@ -2,7 +2,7 @@ open Miiify
 open Lwt.Infix
 
 let welcome_message = "Welcome to Miiify!"
-let version_message = "0.1.0"
+let version_message = "0.1.1"
 
 type t = { config : Config_t.config; db : Db.t; container : Container.t }
 
