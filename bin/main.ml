@@ -96,7 +96,7 @@ let post_container ctx request =
       | Ok data ->
           let key = Data.id data in
           let json = Data.json data in
-          Db.exists ~ctx:ctx.db ~key >>= fun yes ->
+          Container.container_exists ~db:ctx.db ~key >>= fun yes ->
           if yes then error_response `Bad_Request "container already exists"
           else
             Container.add_container ~db:ctx.db ~key ~json
@@ -139,9 +139,9 @@ let post_annotation ctx request =
       | Ok data ->
           let key = Data.id data in
           let json = Data.json data in
-          Db.exists ~ctx:ctx.db ~key:[ container_id ] >>= fun yes ->
+          Container.container_exists ~db:ctx.db ~key:[ container_id ] >>= fun yes ->
           if yes then
-            Db.exists ~ctx:ctx.db ~key >>= fun yes ->
+            Container.annotation_exists ~db:ctx.db ~key >>= fun yes ->
             if yes then error_response `Bad_Request "annotation already exists"
             else
               Container.add_annotation ~db:ctx.db ~key ~container_id ~json

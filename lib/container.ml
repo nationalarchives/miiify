@@ -184,10 +184,9 @@ let add_annotation ~db ~key ~container_id ~json ~message =
 let add_container ~db ~key ~json ~message = Db.add ~ctx:db ~key ~json ~message
 
 let delete_annotation ~db ~key ~container_id ~message =
-  modify_timestamp db container_id >>= fun () ->
-  Db.delete ~ctx:db ~key ~message
+  modify_timestamp db container_id >>= fun () -> Db.delete ~ctx:db ~key ~message
 
 let delete_container ~db ~key ~message = Db.delete ~ctx:db ~key ~message
-
-let hash ~db ~key =
-  Db.get_hash ~ctx:db ~key
+let hash ~db ~key = Db.get_hash ~ctx:db ~key
+let container_exists ~db ~key = Db.exists ~ctx:db ~key
+let annotation_exists ~db ~key = Db.exists ~ctx:db ~key

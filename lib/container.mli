@@ -22,3 +22,9 @@ val delete_annotation : db:Db.t ->  key:string list -> container_id:string -> me
 val delete_container : db:Db.t ->  key:string list -> message:string -> unit Lwt.t
 
 val hash : db:Db.t ->  key:string list -> string option Lwt.t
+
+val container_exists : db:Db.t -> key:string list -> bool Lwt.t
+
+val annotation_exists : db:Db.t -> key:string list -> bool Lwt.t
+
+
