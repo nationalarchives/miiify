@@ -11,7 +11,7 @@ let get_annotation ctx request =
   let container_id = Dream.param request "container_id" in
   let annotation_id = Dream.param request "annotation_id" in
   let key = [ container_id; "collection"; annotation_id ] in
-  Container.hash ~db:ctx.db ~key >>= fun hash ->
+  Container.get_hash ~db:ctx.db ~key >>= fun hash ->
   match hash with
   | Some hash -> (
       match Header.get_if_none_match request with
@@ -21,26 +21,21 @@ let get_annotation ctx request =
           json_response ~request ~body ~etag:(Some hash) ())
   | None -> error_response `Not_Found "annotation not found"
 
-let get_page request =
-  match Dream.query request "page" with
-  | None -> 0
-  | Some page -> (
-      match int_of_string_opt page with None -> 0 | Some value -> value)
 
 let get_annotation_pages ctx request =
   let open Response in
   let container_id = Dream.param request "container_id" in
   let key = [ container_id; "main" ] in
-  let page = get_page request in
+  let page = Container.get_page request in
   let prefer = Header.get_prefer request ctx.config.container_representation in
   Container.set_representation ~ctx:ctx.container ~representation:prefer;
-  Container.hash ~db:ctx.db ~key >>= fun hash ->
+  Container.get_hash ~db:ctx.db ~key >>= fun hash ->
   match hash with
   | Some hash -> (
       match Header.get_if_none_match request with
       | Some etag when hash = etag -> empty_response `Not_Modified
       | _ -> (
-          Container.annotation_page ~ctx:ctx.container ~db:ctx.db ~key ~page
+          Container.get_annotation_page ~ctx:ctx.container ~db:ctx.db ~key ~page
           >>= fun page ->
           match page with
           | Some page -> json_response ~request ~body:page ~etag:(Some hash) ()
@@ -53,13 +48,13 @@ let get_annotation_collection ctx request =
   let prefer = Header.get_prefer request ctx.config.container_representation in
   Container.set_representation ~ctx:ctx.container ~representation:prefer;
   let key = [ container_id; "main" ] in
-  Container.hash ~db:ctx.db ~key >>= fun hash ->
+  Container.get_hash ~db:ctx.db ~key >>= fun hash ->
   match hash with
   | Some hash -> (
       match Header.get_if_none_match request with
       | Some etag when hash = etag -> empty_response `Not_Modified
       | _ ->
-          Container.annotation_collection ~ctx:ctx.container ~db:ctx.db ~key
+          Container.get_annotation_collection ~ctx:ctx.container ~db:ctx.db ~key
           >>= fun body -> json_response ~request ~body ~etag:(Some hash) ())
   | None -> error_response `Not_Found "container not found"
 
@@ -68,7 +63,7 @@ let delete_container ctx request =
   let container_id = Dream.param request "container_id" in
   let key = [ container_id ] in
   let main_key = [ container_id; "main" ] in
-  Container.hash ~db:ctx.db ~key:main_key >>= fun hash ->
+  Container.get_hash ~db:ctx.db ~key:main_key >>= fun hash ->
   match hash with
   | Some hash -> (
       match Header.get_if_match request with
@@ -108,7 +103,7 @@ let delete_annotation ctx request =
   let container_id = Dream.param request "container_id" in
   let annotation_id = Dream.param request "annotation_id" in
   let key = [ container_id; "collection"; annotation_id ] in
-  Container.hash ~db:ctx.db ~key >>= fun hash ->
+  Container.get_hash ~db:ctx.db ~key >>= fun hash ->
   match hash with
   | Some hash -> (
       match Header.get_if_match request with
@@ -139,7 +134,8 @@ let post_annotation ctx request =
       | Ok data ->
           let key = Data.id data in
           let json = Data.json data in
-          Container.container_exists ~db:ctx.db ~key:[ container_id ] >>= fun yes ->
+          Container.container_exists ~db:ctx.db ~key:[ container_id ]
+          >>= fun yes ->
           if yes then
             Container.annotation_exists ~db:ctx.db ~key >>= fun yes ->
             if yes then error_response `Bad_Request "annotation already exists"
@@ -163,16 +159,16 @@ let put_annotation ctx request =
       | Error m -> error_response `Bad_Request m
       | Ok data -> (
           let json = Data.json data in
-          Container.hash ~db:ctx.db ~key >>= fun hash ->
+          Container.get_hash ~db:ctx.db ~key >>= fun hash ->
           match hash with
           | Some hash -> (
               match Header.get_if_match request with
               | Some etag when hash = etag ->
-                  Container.add_annotation ~db:ctx.db ~key ~container_id ~json
+                  Container.update_annotation ~db:ctx.db ~key ~container_id ~json
                     ~message:("PUT " ^ Utils.key_to_string key)
                   >>= fun () -> json_response ~request ~body:json ()
               | None ->
-                  Container.add_annotation ~db:ctx.db ~key ~container_id ~json
+                  Container.update_annotation ~db:ctx.db ~key ~container_id ~json
                     ~message:("PUT without etag " ^ Utils.key_to_string key)
                   >>= fun () -> json_response ~request ~body:json ()
               | _ -> empty_response `Precondition_Failed)
