@@ -20,3 +20,5 @@ val add_container : db:Db.t -> key:string list -> json:Ezjsonm.value -> message:
 val delete_annotation : db:Db.t ->  key:string list -> container_id:string -> message:string -> unit Lwt.t
 
 val delete_container : db:Db.t ->  key:string list -> message:string -> unit Lwt.t
+
+val hash : db:Db.t ->  key:string list -> string option Lwt.t

@@ -188,3 +188,6 @@ let delete_annotation ~db ~key ~container_id ~message =
   Db.delete ~ctx:db ~key ~message
 
 let delete_container ~db ~key ~message = Db.delete ~ctx:db ~key ~message
+
+let hash ~db ~key =
+  Db.get_hash ~ctx:db ~key

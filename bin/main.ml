@@ -11,7 +11,7 @@ let get_annotation ctx request =
   let container_id = Dream.param request "container_id" in
   let annotation_id = Dream.param request "annotation_id" in
   let key = [ container_id; "collection"; annotation_id ] in
-  Db.get_hash ~ctx:ctx.db ~key >>= fun hash ->
+  Container.hash ~db:ctx.db ~key >>= fun hash ->
   match hash with
   | Some hash -> (
       match Header.get_if_none_match request with
@@ -34,7 +34,7 @@ let get_annotation_pages ctx request =
   let page = get_page request in
   let prefer = Header.get_prefer request ctx.config.container_representation in
   Container.set_representation ~ctx:ctx.container ~representation:prefer;
-  Db.get_hash ~ctx:ctx.db ~key >>= fun hash ->
+  Container.hash ~db:ctx.db ~key >>= fun hash ->
   match hash with
   | Some hash -> (
       match Header.get_if_none_match request with
@@ -53,7 +53,7 @@ let get_annotation_collection ctx request =
   let prefer = Header.get_prefer request ctx.config.container_representation in
   Container.set_representation ~ctx:ctx.container ~representation:prefer;
   let key = [ container_id; "main" ] in
-  Db.get_hash ~ctx:ctx.db ~key >>= fun hash ->
+  Container.hash ~db:ctx.db ~key >>= fun hash ->
   match hash with
   | Some hash -> (
       match Header.get_if_none_match request with
@@ -68,7 +68,7 @@ let delete_container ctx request =
   let container_id = Dream.param request "container_id" in
   let key = [ container_id ] in
   let main_key = [ container_id; "main" ] in
-  Db.get_hash ~ctx:ctx.db ~key:main_key >>= fun hash ->
+  Container.hash ~db:ctx.db ~key:main_key >>= fun hash ->
   match hash with
   | Some hash -> (
       match Header.get_if_match request with
@@ -108,7 +108,7 @@ let delete_annotation ctx request =
   let container_id = Dream.param request "container_id" in
   let annotation_id = Dream.param request "annotation_id" in
   let key = [ container_id; "collection"; annotation_id ] in
-  Db.get_hash ~ctx:ctx.db ~key >>= fun hash ->
+  Container.hash ~db:ctx.db ~key >>= fun hash ->
   match hash with
   | Some hash -> (
       match Header.get_if_match request with
@@ -163,7 +163,7 @@ let put_annotation ctx request =
       | Error m -> error_response `Bad_Request m
       | Ok data -> (
           let json = Data.json data in
-          Db.get_hash ~ctx:ctx.db ~key >>= fun hash ->
+          Container.hash ~db:ctx.db ~key >>= fun hash ->
           match hash with
           | Some hash -> (
               match Header.get_if_match request with
