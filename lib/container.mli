@@ -12,3 +12,5 @@ val annotation_collection :
 val get_representation : ctx:t -> string
 
 val set_representation : ctx:t -> representation:string -> unit
+
+val modify_timestamp : db:Db.t -> container_id:string -> unit Lwt.t

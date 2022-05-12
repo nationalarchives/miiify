@@ -170,3 +170,9 @@ let annotation_collection ~ctx ~db ~key =
       Db.get_collection ~ctx:db ~key:k ~offset:0 ~length:limit
       >|= fun collection ->
       annotation_collection_response count limit main collection representation
+
+let modify_timestamp ~db ~container_id =
+  let modified_key = [ container_id; "main"; "modified" ] in
+  Db.add ~ctx:db ~key:modified_key
+  ~json:(Ezjsonm.string (Utils.get_timestamp ()))
+  ~message:("POST " ^ Utils.key_to_string modified_key)
