@@ -2,7 +2,9 @@
 
 An example of running Miiify locally with Kong API gateway providing read-only API access. The deployment resembles the following:
 
-<img src="miiifyk8s.jpg" width=50% height=50%>
+<p align="center">
+    <img src="miiifyk8s.jpg" width=50% height=50%>
+</p>
 
 The Kong gateway talks to a ReplicaSet containing 2 pods of Miiify that mount the same block storage. An additional Miiifyctl pod exists for mounting the storage to carry out Git commands. The pods all run within one node using minikube.
 
