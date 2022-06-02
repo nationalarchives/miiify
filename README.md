@@ -181,10 +181,10 @@ The server can be started with the command flag ```--config=<file>``` to specify
 Tests can be run using the [Airborne](https://github.com/brooklynDev/airborne) test framework:
 
 ```bash
-docker-compose up -d
+docker compose up -d
 cd test
 rspec integration.rb -fd
-docker-compose down
+docker compose down
 ```
 
 
