@@ -2,7 +2,7 @@ open Miiify
 open Lwt.Infix
 
 let welcome_message = "Welcome to Miiify!"
-let version_message = "0.1.1"
+let version_message = "0.1.2"
 
 type t = { config : Config_t.config; db : Db.t; container : Container.t }
 
@@ -101,7 +101,7 @@ let get_manifest ctx request =
   let open Response in
   let open Manifest in
   let manifest_id = Dream.param request "manifest_id" in
-  let key = [ "manifest"; manifest_id ] in
+  let key = [ ".manifest"; manifest_id ] in
   get_hash ~db:ctx.db ~key >>= function
   | Some hash -> (
       match Header.get_if_none_match request with
@@ -116,7 +116,7 @@ let post_manifest ctx request =
   let open Manifest in
   let manifest_id = Dream.param request "manifest_id" in
   Dream.body request >>= fun body ->
-  Data.post_manifest ~data:body ~id:[ "manifest"; manifest_id ] |> function
+  Data.post_manifest ~data:body ~id:[ ".manifest"; manifest_id ] |> function
   | Error m -> error_response `Bad_Request m
   | Ok data ->
       let key = Data.id data in
@@ -132,7 +132,7 @@ let delete_manifest ctx request =
   let open Response in
   let open Manifest in
   let manifest_id = Dream.param request "manifest_id" in
-  let key = [ "manifest"; manifest_id ] in
+  let key = [ ".manifest"; manifest_id ] in
   get_hash ~db:ctx.db ~key >>= function
   | Some hash -> (
       match Header.get_if_match request with
