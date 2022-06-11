@@ -13,6 +13,7 @@ val get_annotation_page :
 val get_annotation_collection :
   ctx:t -> db:Db.t -> key:string list -> Ezjsonm.value Lwt.t
 
+val get_annotation : db:Db.t -> key:string list -> Ezjsonm.value Lwt.t
 
 val add_annotation : db:Db.t -> key:string list -> container_id:string -> json:Ezjsonm.value -> message:string -> unit Lwt.t
 

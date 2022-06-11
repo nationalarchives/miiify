@@ -42,7 +42,7 @@ paths:
                   summary: Version message
                   value: "0.1.0"
 
-  /annotation/:
+  /annotations/:
     post:
       tags:
         - create container
@@ -91,7 +91,7 @@ paths:
                 type: string
                 example: Something went wrong!
 
-  /annotation/{container_id}/:
+  /annotations/{container_id}/:
     post:
       tags:
         - create annotation
@@ -257,7 +257,7 @@ paths:
                 type: string
                 example: something went wrong!
 
-  /annotation/{container_id}:
+  /annotations/{container_id}:
     get:
       tags:
         - retrieve annotation page
@@ -326,7 +326,7 @@ paths:
                 type: string
                 example: Something went wrong!
 
-  /annotation/{container_id}/{annotation_id}:
+  /annotations/{container_id}/{annotation_id}:
     get:
       tags:
         - retrieve annotation
@@ -514,6 +514,147 @@ paths:
                 type: string
                 example: Something went wrong!
 
+  /manifest/{key}:
+    post:
+      tags:
+        - create manifest
+      summary: "add or update manifest"
+      description: Creates a new manifest or updates and existing manifest.
+      parameters:
+        - name: key
+          in: path
+          required: true
+          description: replace value with key
+          schema:
+            type: string
+      requestBody:
+        required: true
+        description: Manifest data
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/create_manifest"
+      responses:
+        "201":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/create_manifest"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "500":
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+                example: Something went wrong!
+
+    get:
+      tags:
+        - retrieve manifest
+      summary: "retrieve manifest"
+      description: "Retrieve a manifest."
+      parameters:
+        - in: header
+          name: If-None-Match
+          schema:
+            type: string
+            example: "caa80ca1e4cc5f2253df5ee35293236350b19194"
+            description: "ETag support for supporting caching."
+          required: false
+        - name: key
+          in: path
+          required: true
+          description: the key to retrieve value
+          schema:
+            type: string
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/create_manifest"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "304":
+          description: Not Modified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "500":
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+                example: Something went wrong!
+
+    delete:
+      tags:
+        - delete manifest
+      summary: "delete manifest"
+      description: "Delete a manifest."
+      parameters:
+        - in: header
+          name: If-Match
+          schema:
+            type: string
+            example: "caa80ca1e4cc5f2253df5ee35293236350b19194"
+            description: "ETag support for comparing uniqueness.."
+          required: false
+        - name: key
+          in: path
+          required: true
+          description: the key to delete value
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "412":
+          description: Precondition Failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "500":
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+                example: Something went wrong!
+
 components:
   schemas:
     error:
@@ -597,3 +738,11 @@ components:
         type:
           example: AnnotationPage
           description: A mandatory string type for differentiating a page from an annotation.
+
+    create_manifest:
+      type: object
+      properties:
+        type:
+          type: string
+          example: Manifest
+          description: A mandatory type for differentiating a manifest from an annotation or container.

@@ -8,6 +8,8 @@ let get_representation ~ctx = ctx.representation
 let set_representation ~ctx ~representation =
   ctx.representation <- representation
 
+let get_annotation ~db ~key = Db.get ~ctx:db ~key
+
 let get_value term json =
   let open Ezjsonm in
   find_opt json [ term ]
