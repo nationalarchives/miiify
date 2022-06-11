@@ -92,6 +92,56 @@ let post_container ctx request =
               ~message:("POST " ^ Utils.key_to_string key)
             >>= fun () -> json_response ~request ~body:json ())
 
+let get_manifest ctx request =
+  let open Response in
+  let open Manifest in
+  let manifest_id = Dream.param request "manifest_id" in
+  let key = [ "manifest"; manifest_id ] in
+  get_hash ~db:ctx.db ~key >>= function
+  | Some hash -> (
+      match Header.get_if_none_match request with
+      | Some etag when hash = etag -> empty_response `Not_Modified
+      | _ ->
+          get_manifest ~db:ctx.db ~key >>= fun body ->
+          json_response ~request ~body ~etag:(Some hash) ())
+  | None -> error_response `Not_Found "manifest not found"
+
+let post_manifest ctx request =
+  let open Response in
+  let open Manifest in
+  let manifest_id = Dream.param request "manifest_id" in
+  Dream.body request >>= fun body ->
+  Data.post_manifest ~data:body ~id:[ "manifest"; manifest_id ] |> function
+  | Error m -> error_response `Bad_Request m
+  | Ok data ->
+      let key = Data.id data in
+      let json = Data.json data in
+      manifest_exists ~db:ctx.db ~key >>= fun yes ->
+      if yes then error_response `Bad_Request "manifest already exists"
+      else
+        add_manifest ~db:ctx.db ~key ~json
+          ~message:("POST " ^ Utils.key_to_string key)
+        >>= fun () -> json_response ~request ~body:json ()
+
+let delete_manifest ctx request =
+  let open Response in
+  let open Manifest in
+  let manifest_id = Dream.param request "manifest_id" in
+  let key = [ "manifest"; manifest_id ] in
+  get_hash ~db:ctx.db ~key >>= function
+  | Some hash -> (
+      match Header.get_if_match request with
+      | Some etag when hash = etag ->
+          delete_manifest ~db:ctx.db ~key
+            ~message:("DELETE " ^ Utils.key_to_string key)
+          >>= fun () -> empty_response `No_Content
+      | None ->
+          delete_manifest ~db:ctx.db ~key
+            ~message:("DELETE without etag " ^ Utils.key_to_string key)
+          >>= fun () -> empty_response `No_Content
+      | _ -> empty_response `Precondition_Failed)
+  | None -> error_response `Not_Found "manifest not found"
+
 let delete_annotation ctx request =
   let open Response in
   let container_id = Dream.param request "container_id" in
@@ -182,6 +232,12 @@ let run ctx =
              options_response [ "OPTIONS"; "HEAD"; "GET" ]);
          Dream.head "/version" (html_response version_message);
          Dream.get "/version" (html_response version_message);
+         Dream.options "/manifest/" (fun _ ->
+             options_response [ "OPTIONS"; "HEAD"; "GET"; "POST"; "DELETE" ]);
+         Dream.head "/manifest/:manifest_id" (get_manifest ctx);
+         Dream.get "/manifest/:manifest_id" (get_manifest ctx);
+         Dream.post "/manifest/:manifest_id" (post_manifest ctx);
+         Dream.delete "/manifest/:manifest_id" (delete_manifest ctx);
          Dream.options "/annotations/" (fun _ ->
              options_response [ "OPTIONS"; "POST" ]);
          Dream.post "/annotations/" (post_container ctx);

@@ -19,6 +19,12 @@ let is_annotation data =
   | Some (`String "Annotation") -> true
   | _ -> false
 
+let is_manifest data =
+  let open Ezjsonm in
+  match find_opt data [ "type" ] with
+  | Some (`String "Manifest") -> true
+  | _ -> false
+
 let is_container data =
   let open Ezjsonm in
   match find_opt data [ "type" ] with
@@ -51,7 +57,7 @@ let post_container ~data ~id ~host =
       if is_container json then post_worker json id host
       else Result.error "container type not found"
 
-let put_worker json id host =
+let put_annotation_worker json id host =
   match find_opt json [ "id" ] with
   | None -> Result.error "id does not exit"
   | Some id' -> (
@@ -69,8 +75,15 @@ let put_annotation ~data ~id ~host =
   match from_string data with
   | exception Parse_error (_, _) -> Result.error "could not parse JSON"
   | json ->
-      if is_annotation json then put_worker json id host
+      if is_annotation json then put_annotation_worker json id host
       else Result.error "annotation type not found"
+
+let post_manifest ~data ~id =
+  match from_string data with
+  | exception Parse_error (_, _) -> Result.error "could not parse JSON"
+  | json ->
+      if is_manifest json then Result.ok { id ; json }
+      else Result.error "manifest type not found"
 
 let id r = r.id
 let json r = r.json
