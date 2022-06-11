@@ -10,6 +10,7 @@ Rather than rely on running a centralised infrastructure, Miiify adopts a distri
 * No requirement to support user authentication or accounts
 * Browsable JSON content
 * Light-weight (docker image less than 60MB)
+* Simple Key/Value interface for working with manifests
 
 ### Quick start
 
@@ -152,6 +153,25 @@ To safely update the resource earlier we could have supplied the ETag as follows
 curl -k -X PUT -d @test/annotation2.json https://localhost/annotations/my-container/foobar -H If-Match:c25c28a70db07c843253001dabfab6d8ebc7a76f
 ```
 This ensures we really are updating the resource that we think we are.
+
+### Manifests
+
+Miiify provides a simple Key/Value interface for working with manifests which are also stored using Git in a directory called '.manifest'.
+
+To store or update an existing manifest to key 'foo':
+```bash
+curl -k -d @test/manifest1.json https://localhost/manifest/foo
+```
+
+To retrieve a manifest using key 'foo':
+```bash
+curl -k https://localhost/manifest/foo
+```
+
+To delete a manifest using key 'foo':
+```bash
+curl -k -X DELETE https://localhost:8080/manifest/foo
+```
 
 ### API
 
