@@ -12,6 +12,9 @@ val put_annotation :
 val post_manifest :
   data:string -> id:string list -> (t, string) result  
 
+val put_manifest :
+  data:string -> id:string list -> (t, string) result   
+
 val id : t -> string list
 val json : t -> Ezjsonm.value
 val to_string : t -> string

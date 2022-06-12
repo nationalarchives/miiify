@@ -128,6 +128,30 @@ let post_manifest ctx request =
           ~message:("POST " ^ Utils.key_to_string key)
         >>= fun () -> json_response ~request ~body:json ()
 
+let put_manifest ctx request =
+  let open Response in
+  let open Manifest in
+  Dream.body request >>= fun body ->
+  let manifest_id = Dream.param request "manifest_id" in
+  let key = [ ".manifest"; manifest_id ] in
+  Data.put_manifest ~data:body ~id:key |> function
+  | Error m -> error_response `Bad_Request m
+  | Ok data -> (
+      let json = Data.json data in
+      get_hash ~db:ctx.db ~key >>= function
+      | Some hash -> (
+          match Header.get_if_match request with
+          | Some etag when hash = etag ->
+              update_manifest ~db:ctx.db ~key ~json
+                ~message:("PUT " ^ Utils.key_to_string key)
+              >>= fun () -> json_response ~request ~body:json ()
+          | None ->
+              update_manifest ~db:ctx.db ~key ~json
+                ~message:("PUT without etag " ^ Utils.key_to_string key)
+              >>= fun () -> json_response ~request ~body:json ()
+          | _ -> empty_response `Precondition_Failed)
+      | None -> error_response `Bad_Request "manifest not found")
+
 let delete_manifest ctx request =
   let open Response in
   let open Manifest in
@@ -211,13 +235,11 @@ let put_annotation ctx request =
           | Some hash -> (
               match Header.get_if_match request with
               | Some etag when hash = etag ->
-                  update_annotation ~db:ctx.db ~key ~container_id
-                    ~json
+                  update_annotation ~db:ctx.db ~key ~container_id ~json
                     ~message:("PUT " ^ Utils.key_to_string key)
                   >>= fun () -> json_response ~request ~body:json ()
               | None ->
-                  update_annotation ~db:ctx.db ~key ~container_id
-                    ~json
+                  update_annotation ~db:ctx.db ~key ~container_id ~json
                     ~message:("PUT without etag " ^ Utils.key_to_string key)
                   >>= fun () -> json_response ~request ~body:json ()
               | _ -> empty_response `Precondition_Failed)
@@ -240,10 +262,11 @@ let run ctx =
          Dream.head "/version" (html_response version_message);
          Dream.get "/version" (html_response version_message);
          Dream.options "/manifest/" (fun _ ->
-             options_response [ "OPTIONS"; "HEAD"; "GET"; "POST"; "DELETE" ]);
+             options_response [ "OPTIONS"; "HEAD"; "GET"; "POST"; "PUT"; "DELETE" ]);
          Dream.head "/manifest/:manifest_id" (get_manifest ctx);
          Dream.get "/manifest/:manifest_id" (get_manifest ctx);
          Dream.post "/manifest/:manifest_id" (post_manifest ctx);
+         Dream.put "/manifest/:manifest_id" (put_manifest ctx);
          Dream.delete "/manifest/:manifest_id" (delete_manifest ctx);
          Dream.options "/annotations/" (fun _ ->
              options_response [ "OPTIONS"; "POST" ]);

@@ -82,9 +82,10 @@ let post_manifest ~data ~id =
   match from_string data with
   | exception Parse_error (_, _) -> Result.error "could not parse JSON"
   | json ->
-      if is_manifest json then Result.ok { id ; json }
+      if is_manifest json then Result.ok { id; json }
       else Result.error "manifest type not found"
 
+let put_manifest ~data ~id = post_manifest ~data ~id
 let id r = r.id
 let json r = r.json
 let to_string r = Ezjsonm.value_to_string r.json

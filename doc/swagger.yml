@@ -518,8 +518,8 @@ paths:
     post:
       tags:
         - create manifest
-      summary: "add or update manifest"
-      description: Creates a new manifest or updates and existing manifest.
+      summary: "add manifest"
+      description: Creates a new manifest.
       parameters:
         - name: key
           in: path
@@ -543,6 +543,57 @@ paths:
                 $ref: "#/components/schemas/create_manifest"
         "400":
           description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "500":
+          description: Internal Server Error
+          content:
+            text/html:
+              schema:
+                type: string
+                example: Something went wrong!
+    put:
+      tags:
+        - modify manifest
+      summary: "update manifest"
+      description: "Updates an existing manifest."
+      parameters:
+        - in: header
+          name: If-Match
+          schema:
+            type: string
+            example: "caa80ca1e4cc5f2253df5ee35293236350b19194"
+            description: "ETag support for comparing uniqueness.."
+          required: false
+        - name: key
+          in: path
+          required: true
+          description: update value with key
+          schema:
+            type: string
+      responses:
+        "200":
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/create_manifest"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/error"
+        "412":
+          description: Precondition Failed
           content:
             application/json:
               schema:

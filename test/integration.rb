@@ -218,22 +218,29 @@ describe "delete a container" do
   end
 end
 
-describe "crd test on manifest" do
+describe "crud test on manifest" do
   file = File.read("manifest1.json")
   payload = JSON.parse(file)
-  it "should return a 201" do
+  it "POST should return a 201" do
     post "/manifest/foobar", payload, { content_type: "application/json" }
     expect_status(201)
     expect_json_types(type: :string)
     expect_json(type: "Manifest")
   end
-  it "should return a 200" do
+  it "GET should return a 200" do
     get "/manifest/foobar", { Accept: "application/json" }
     expect_status(200)
     expect_json_types(type: :string)
     expect_json(type: "Manifest")
   end
-  it "should return a 204" do
+  file = File.read("manifest2.json")
+  it "PUT should return a 200" do
+    put "/manifest/foobar", payload, { content_type: "application/json" }
+    expect_status(200)
+    expect_json_types(type: :string)
+    expect_json(type: "Manifest")
+  end  
+  it "DELETE should return a 204" do
     delete "/manifest/foobar"
     expect_status(204)
   end

@@ -158,9 +158,14 @@ This ensures we really are updating the resource that we think we are.
 
 Miiify provides a simple Key/Value interface for working with manifests which are also stored using Git in a directory called '.manifest'.
 
-To store a manifest or update an existing manifest using key 'foo':
+To store a manifest using key 'foo':
 ```bash
-curl -k -d @test/manifest1.json https://localhost/manifest/foo
+curl -k -X POST -d @test/manifest1.json https://localhost/manifest/foo
+```
+
+To update a manifest using key 'foo':
+```bash
+curl -k -X PUT -d @test/manifest1.json https://localhost/manifest/foo
 ```
 
 To retrieve a manifest using key 'foo':
