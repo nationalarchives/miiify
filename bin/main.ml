@@ -83,13 +83,11 @@ let post_container ctx request =
   match Header.get_host request with
   | None -> error_response `Bad_Request "No host header"
   | Some host -> (
+      let key = [ Header.get_id request; "main" ] in
       Dream.body request >>= fun body ->
-      Data.post_container ~data:body ~id:[ Header.get_id request; "main" ] ~host
-      |> function
+      Data.post_container ~data:body ~id:key ~host |> function
       | Error m -> error_response `Bad_Request m
-      | Ok data ->
-          let key = Data.id data in
-          let json = Data.json data in
+      | Ok json ->
           container_exists ~db:ctx.db ~key >>= fun yes ->
           if yes then error_response `Bad_Request "container already exists"
           else
@@ -115,12 +113,11 @@ let post_manifest ctx request =
   let open Response in
   let open Manifest in
   let manifest_id = Dream.param request "manifest_id" in
+  let key = [ ".manifest"; manifest_id ] in
   Dream.body request >>= fun body ->
-  Data.post_manifest ~data:body ~id:[ ".manifest"; manifest_id ] |> function
+  Data.post_manifest ~data:body |> function
   | Error m -> error_response `Bad_Request m
-  | Ok data ->
-      let key = Data.id data in
-      let json = Data.json data in
+  | Ok json ->
       manifest_exists ~db:ctx.db ~key >>= fun yes ->
       if yes then error_response `Bad_Request "manifest already exists"
       else
@@ -131,13 +128,12 @@ let post_manifest ctx request =
 let put_manifest ctx request =
   let open Response in
   let open Manifest in
-  Dream.body request >>= fun body ->
   let manifest_id = Dream.param request "manifest_id" in
   let key = [ ".manifest"; manifest_id ] in
-  Data.put_manifest ~data:body ~id:key |> function
+  Dream.body request >>= fun body ->
+  Data.put_manifest ~data:body |> function
   | Error m -> error_response `Bad_Request m
-  | Ok data -> (
-      let json = Data.json data in
+  | Ok json -> (
       get_hash ~db:ctx.db ~key >>= function
       | Some hash -> (
           match Header.get_if_match request with
@@ -197,16 +193,12 @@ let post_annotation ctx request =
   match Header.get_host request with
   | None -> error_response `Bad_Request "No host header"
   | Some host -> (
-      Dream.body request >>= fun body ->
       let container_id = Dream.param request "container_id" in
-      Data.post_annotation ~data:body
-        ~id:[ container_id; "collection"; Header.get_id request ]
-        ~host
-      |> function
+      let key = [ container_id; "collection"; Header.get_id request ] in
+      Dream.body request >>= fun body ->
+      Data.post_annotation ~data:body ~id:key ~host |> function
       | Error m -> error_response `Bad_Request m
-      | Ok data ->
-          let key = Data.id data in
-          let json = Data.json data in
+      | Ok json ->
           container_exists ~db:ctx.db ~key:[ container_id ] >>= fun yes ->
           if yes then
             annotation_exists ~db:ctx.db ~key >>= fun yes ->
@@ -229,8 +221,7 @@ let put_annotation ctx request =
       let key = [ container_id; "collection"; annotation_id ] in
       Data.put_annotation ~data:body ~id:key ~host |> function
       | Error m -> error_response `Bad_Request m
-      | Ok data -> (
-          let json = Data.json data in
+      | Ok json -> (
           get_hash ~db:ctx.db ~key >>= function
           | Some hash -> (
               match Header.get_if_match request with
@@ -262,7 +253,8 @@ let run ctx =
          Dream.head "/version" (html_response version_message);
          Dream.get "/version" (html_response version_message);
          Dream.options "/manifest/" (fun _ ->
-             options_response [ "OPTIONS"; "HEAD"; "GET"; "POST"; "PUT"; "DELETE" ]);
+             options_response
+               [ "OPTIONS"; "HEAD"; "GET"; "POST"; "PUT"; "DELETE" ]);
          Dream.head "/manifest/:manifest_id" (get_manifest ctx);
          Dream.get "/manifest/:manifest_id" (get_manifest ctx);
          Dream.post "/manifest/:manifest_id" (post_manifest ctx);

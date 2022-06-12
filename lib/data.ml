@@ -1,7 +1,5 @@
 open Ezjsonm
 
-type t = { id : string list; json : Ezjsonm.value }
-
 let get_timestamp () =
   let t = Ptime_clock.now () in
   Ptime.to_rfc3339 t ~tz_offset_s:0
@@ -41,7 +39,7 @@ let post_worker json id host =
     let timestamp = get_timestamp () in
     let json = update json [ "id" ] (Some (string iri)) in
     let json = update json [ "created" ] (Some (string timestamp)) in
-    Result.ok { id; json }
+    Result.ok json 
 
 let post_annotation ~data ~id ~host =
   match from_string data with
@@ -68,7 +66,7 @@ let put_annotation_worker json id host =
           if iri = iri' then
             let timestamp = get_timestamp () in
             let json = update json [ "modified" ] (Some (string timestamp)) in
-            Result.ok { id; json }
+            Result.ok json
           else Result.error "id in body does not match")
 
 let put_annotation ~data ~id ~host =
@@ -78,14 +76,12 @@ let put_annotation ~data ~id ~host =
       if is_annotation json then put_annotation_worker json id host
       else Result.error "annotation type not found"
 
-let post_manifest ~data ~id =
+let post_manifest ~data  =
   match from_string data with
   | exception Parse_error (_, _) -> Result.error "could not parse JSON"
   | json ->
-      if is_manifest json then Result.ok { id; json }
+      if is_manifest json then Result.ok json
       else Result.error "manifest type not found"
 
-let put_manifest ~data ~id = post_manifest ~data ~id
-let id r = r.id
-let json r = r.json
-let to_string r = Ezjsonm.value_to_string r.json
+let put_manifest ~data  = post_manifest ~data
+
