@@ -22,6 +22,7 @@ docker pull jptmoore/miiify
 
 Build from source and launch Docker container (note this will take some time the first run and sometimes breaks on build changes):
 ```bash
+openssl req -x509 -newkey rsa:4096 -keyout server.key -out server.crt -days 3650 -nodes -subj "/C=UK/ST=foo/L=bar/O=baz/OU= Department/CN=localhost.local"
 ./deploy-from-source.sh
 ```
 
