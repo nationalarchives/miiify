@@ -17,3 +17,7 @@ db
 
 # test files
 test
+
+# certs build in Docker build
+server.crt
+server.key
