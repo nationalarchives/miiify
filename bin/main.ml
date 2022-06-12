@@ -2,7 +2,7 @@ open Miiify
 open Lwt.Infix
 
 let welcome_message = "Welcome to Miiify!"
-let version_message = "0.1.2"
+let version_message = "0.1.3"
 
 type t = { config : Config_t.config; db : Db.t; container : Container.t }
 
@@ -83,7 +83,8 @@ let post_container ctx request =
   match Header.get_host request with
   | None -> error_response `Bad_Request "No host header"
   | Some host -> (
-      let key = [ Header.get_id request; "main" ] in
+      let container_id = Header.get_id request in
+      let key = [ container_id; "main" ] in
       Dream.body request >>= fun body ->
       Data.post_container ~data:body ~id:key ~host |> function
       | Error m -> error_response `Bad_Request m
@@ -92,7 +93,7 @@ let post_container ctx request =
           if yes then error_response `Bad_Request "container already exists"
           else
             add_container ~db:ctx.db ~key ~json
-              ~message:("POST " ^ Utils.key_to_string key)
+              ~message:("CREATE container" ^ container_id)
             >>= fun () -> json_response ~request ~body:json ())
 
 let get_manifest ctx request =
@@ -122,7 +123,7 @@ let post_manifest ctx request =
       if yes then error_response `Bad_Request "manifest already exists"
       else
         add_manifest ~db:ctx.db ~key ~json
-          ~message:("POST " ^ Utils.key_to_string key)
+          ~message:("CREATE manifest " ^ manifest_id)
         >>= fun () -> json_response ~request ~body:json ()
 
 let put_manifest ctx request =
@@ -177,11 +178,11 @@ let delete_annotation ctx request =
   | Some hash -> (
       match Header.get_if_match request with
       | Some etag when hash = etag ->
-          delete_annotation ~db:ctx.db ~key ~container_id
+          delete_annotation ~db:ctx.db ~key
             ~message:("DELETE " ^ Utils.key_to_string key)
           >>= fun () -> empty_response `No_Content
       | None ->
-          delete_annotation ~db:ctx.db ~key ~container_id
+          delete_annotation ~db:ctx.db ~key
             ~message:("DELETE without etag " ^ Utils.key_to_string key)
           >>= fun () -> empty_response `No_Content
       | _ -> empty_response `Precondition_Failed)
@@ -204,7 +205,7 @@ let post_annotation ctx request =
             annotation_exists ~db:ctx.db ~key >>= fun yes ->
             if yes then error_response `Bad_Request "annotation already exists"
             else
-              add_annotation ~db:ctx.db ~key ~container_id ~json
+              add_annotation ~db:ctx.db ~key ~json
                 ~message:("POST " ^ Utils.key_to_string key)
               >>= fun () -> json_response ~request ~body:json ()
           else error_response `Bad_Request "container does not exist")
@@ -226,11 +227,11 @@ let put_annotation ctx request =
           | Some hash -> (
               match Header.get_if_match request with
               | Some etag when hash = etag ->
-                  update_annotation ~db:ctx.db ~key ~container_id ~json
+                  update_annotation ~db:ctx.db ~key ~json
                     ~message:("PUT " ^ Utils.key_to_string key)
                   >>= fun () -> json_response ~request ~body:json ()
               | None ->
-                  update_annotation ~db:ctx.db ~key ~container_id ~json
+                  update_annotation ~db:ctx.db ~key ~json
                     ~message:("PUT without etag " ^ Utils.key_to_string key)
                   >>= fun () -> json_response ~request ~body:json ()
               | _ -> empty_response `Precondition_Failed)

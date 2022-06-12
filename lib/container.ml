@@ -173,22 +173,27 @@ let get_annotation_collection ~ctx ~db ~key =
       >|= fun collection ->
       annotation_collection_response count limit main collection representation
 
-let modify_container_timestamp db container_id =
-  let modified_key = [ container_id; "main"; "modified" ] in
-  Db.add ~ctx:db ~key:modified_key
-    ~json:(Ezjsonm.string (Utils.get_timestamp ()))
-    ~message:("POST " ^ Utils.key_to_string modified_key)
+let modify_container_timestamp db key info =
+  match key with
+  | [ container_id; _; _ ] ->
+      Db.add ~ctx:db
+        ~key:[ container_id; "main"; "modified" ]
+        ~json:(Ezjsonm.string (Utils.get_timestamp ()))
+        ~message:(info ^ " to " ^ container_id)
+  | _ -> failwith "well that's embarassing"
 
-let add_or_update_annotation ~db ~key ~container_id ~json ~message =
-  modify_container_timestamp db container_id >>= fun () ->
+let add_annotation ~db ~key ~json ~message =
+  modify_container_timestamp db key "ADD" >>= fun () ->
   Db.add ~ctx:db ~key ~json ~message
 
-let add_annotation = add_or_update_annotation
-let update_annotation = add_or_update_annotation
+let update_annotation ~db ~key ~json ~message =
+  modify_container_timestamp db key "UPDATE" >>= fun () ->
+  Db.add ~ctx:db ~key ~json ~message
+
 let add_container ~db ~key ~json ~message = Db.add ~ctx:db ~key ~json ~message
 
-let delete_annotation ~db ~key ~container_id ~message =
-  modify_container_timestamp db container_id >>= fun () ->
+let delete_annotation ~db ~key ~message =
+  modify_container_timestamp db key "DELETE" >>= fun () ->
   Db.delete ~ctx:db ~key ~message
 
 let delete_container ~db ~key ~message = Db.delete ~ctx:db ~key ~message
