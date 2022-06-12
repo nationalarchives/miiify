@@ -165,12 +165,12 @@ curl -k -X POST -d @test/manifest1.json https://localhost/manifest/foo
 
 To update a manifest using key 'foo':
 ```bash
-curl -k -X PUT -d @test/manifest1.json https://localhost/manifest/foo
+curl -k -X PUT -d @test/manifest2.json https://localhost/manifest/foo
 ```
 
 To retrieve a manifest using key 'foo':
 ```bash
-curl -k https://localhost/manifest/foo
+curl -k -X GET https://localhost/manifest/foo
 ```
 
 To delete a manifest using key 'foo':
