@@ -30,3 +30,15 @@ data:
         - HEAD
         - OPTIONS
 
+    plugins:
+    - name: cors
+      service: miiify
+      config: 
+        origins:
+        - '*'
+        methods:
+        - GET
+        - HEAD
+        - OPTIONS
+        credentials: true
+        max_age: 3600
