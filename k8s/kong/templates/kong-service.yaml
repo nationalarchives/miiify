@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: kong-service
+  name: kong
   labels:
     app: kong
 spec:
@@ -19,5 +19,5 @@ spec:
   selector:
     app: kong
     tier: frontend
-  type: LoadBalancer
+#  type: LoadBalancer
   
