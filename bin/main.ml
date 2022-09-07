@@ -2,7 +2,7 @@ open Miiify
 open Lwt.Infix
 
 let welcome_message = "Welcome to Miiify!"
-let version_message = "0.1.3"
+let version_message = "0.1.4"
 
 type t = { config : Config_t.config; db : Db.t; container : Container.t }
 
@@ -27,6 +27,7 @@ let get_annotation_pages ctx request =
   let container_id = Dream.param request "container_id" in
   let key = [ container_id; "main" ] in
   let page = get_page request in
+  let target = get_target request in
   let prefer = Header.get_prefer request ctx.config.container_representation in
   set_representation ~ctx:ctx.container ~representation:prefer;
   get_hash ~db:ctx.db ~key >>= function
@@ -34,7 +35,7 @@ let get_annotation_pages ctx request =
       match Header.get_if_none_match request with
       | Some etag when hash = etag -> empty_response `Not_Modified
       | _ -> (
-          get_annotation_page ~ctx:ctx.container ~db:ctx.db ~key ~page
+          get_annotation_page ~ctx:ctx.container ~db:ctx.db ~key ~page ~target
           >>= fun page ->
           match page with
           | Some page -> json_response ~request ~body:page ~etag:(Some hash) ()
@@ -93,7 +94,7 @@ let post_container ctx request =
           if yes then error_response `Bad_Request "container already exists"
           else
             add_container ~db:ctx.db ~key ~json
-              ~message:("CREATE container" ^ container_id)
+              ~message:("CREATE container " ^ container_id)
             >>= fun () -> json_response ~request ~body:json ())
 
 let get_manifest ctx request =
