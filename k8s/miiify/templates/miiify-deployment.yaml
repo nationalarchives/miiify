@@ -12,6 +12,8 @@ spec:
       labels:
         app: miiify
     spec:
+      nodeSelector:
+        disktype: ssd
       containers:
         - name: miiify
           image: jptmoore/miiify
