@@ -1,32 +1,36 @@
 open Lwt.Infix
 
-type t = { page_limit : int; mutable representation : string }
+type t =
+  { page_limit : int
+  ; mutable representation : string
+  }
 
 let create ~page_limit ~representation = { page_limit; representation }
 let get_representation ~ctx = ctx.representation
-
-let set_representation ~ctx ~representation =
-  ctx.representation <- representation
-
+let set_representation ~ctx ~representation = ctx.representation <- representation
 let get_annotation ~db ~key = Db.get ~ctx:db ~key
 
 let get_value term json =
   let open Ezjsonm in
   find_opt json [ term ]
+;;
 
 let gen_id_page id page =
   let open Ezjsonm in
   let suffix = Printf.sprintf "?page=%d" page in
   Some (string (id ^ suffix))
+;;
 
 let gen_id_collection id =
   let open Ezjsonm in
   Some (string (id ^ "/"))
+;;
 
 let gen_type_page () = Some (Ezjsonm.string "AnnotationPage")
 
 let gen_type_collection () =
   Some (Ezjsonm.strings [ "BasicContainer"; "AnnotationCollection" ])
+;;
 
 let gen_total count = Some (Ezjsonm.int count)
 
@@ -44,38 +48,44 @@ let gen_part_of id_value count main =
   let json = update json [ "total" ] total in
   let json = update json [ "label" ] label in
   Some json
+;;
 
 let gen_prefer_contained_iris collection =
   let open Ezjsonm in
   Some (list (fun x -> x) (get_list (fun x -> find x [ "id" ]) collection))
+;;
 
 let gen_prefer_contained_descriptions collection = Some collection
 
 let gen_items collection representation =
   match representation with
-  | "PreferContainedDescriptions" ->
-      gen_prefer_contained_descriptions collection
+  | "PreferContainedDescriptions" -> gen_prefer_contained_descriptions collection
   | "PreferContainedIRIs" -> gen_prefer_contained_iris collection
   | "PreferMinimalContainer" -> None
   | _ -> gen_prefer_contained_descriptions collection
+;;
 
 let gen_start_index page limit =
   let index = page * limit in
   Some (Ezjsonm.int index)
+;;
 
 let gen_next id page count limit =
   let last_page = count / limit in
   if page < last_page then gen_id_page id (page + 1) else None
+;;
 
 let gen_prev id page = if page > 0 then gen_id_page id (page - 1) else None
 
 let gen_last id count limit =
   let last_page = count / limit in
   if last_page > 0 then gen_id_page id last_page else None
+;;
 
 let get_string_value term json =
   let open Ezjsonm in
   get_string (Option.get (get_value term json))
+;;
 
 let annotation_page_response page count limit main collection representation =
   let open Ezjsonm in
@@ -98,28 +108,48 @@ let annotation_page_response page count limit main collection representation =
   let json = update json [ "next" ] next in
   let json = update json [ "items" ] items in
   json
+;;
 
-let get_annotation_page ~ctx ~db ~key ~page =
-  Db.get ~ctx:db ~key >>= fun main ->
+let filter_on_target collection target =
+  let open Ezjsonm in
+  let lis = get_list (fun x -> x) collection in
+  let res = List.filter (fun x -> find x [ "target" ] = `String target) lis in
+  list (fun x -> x) res
+;;
+
+let get_annotation_page ~ctx ~db ~key ~page ~target =
+  Db.get ~ctx:db ~key
+  >>= fun main ->
   let limit = ctx.page_limit in
   let representation = ctx.representation in
   let k = List.cons (List.hd key) [ "collection" ] in
-  Db.count ~ctx:db ~key:k >>= fun count ->
+  Db.count ~ctx:db ~key:k
+  >>= fun count ->
   match count with
   | _ when page < 0 -> Lwt.return None
   | _ when page > count / limit -> Lwt.return None
   | 0 when page > 0 -> Lwt.return None
   | 0 ->
-      Lwt.return
-        (Some
-           (annotation_page_response page count limit main (`A [])
-              representation))
+    Lwt.return
+      (Some (annotation_page_response page count limit main (`A []) representation))
   | _ ->
-      Db.get_collection ~ctx:db ~key:k ~offset:(page * limit) ~length:limit
-      >|= fun collection ->
+    Db.get_collection ~ctx:db ~key:k ~offset:(page * limit) ~length:limit
+    >|= fun collection ->
+    (match target with
+    | Some target ->
+      filter_on_target collection target
+      |> fun filtered_collection ->
       Some
-        (annotation_page_response page count limit main collection
+        (annotation_page_response
+           page
+           count
+           limit
+           main
+           filtered_collection
            representation)
+    | None ->
+      Some (annotation_page_response page count limit main collection representation))
+;;
 
 let gen_first id_value count limit collection representation =
   let open Ezjsonm in
@@ -133,6 +163,7 @@ let gen_first id_value count limit collection representation =
   let json = update json [ "items" ] items in
   let json = update json [ "next" ] next in
   Some json
+;;
 
 let annotation_collection_response count limit main collection representation =
   let open Ezjsonm in
@@ -157,44 +188,50 @@ let annotation_collection_response count limit main collection representation =
   let json = update json [ "first" ] first in
   let json = update json [ "last" ] last in
   json
+;;
 
 let get_annotation_collection ~ctx ~db ~key =
-  Db.get ~ctx:db ~key >>= fun main ->
+  Db.get ~ctx:db ~key
+  >>= fun main ->
   let limit = ctx.page_limit in
   let representation = ctx.representation in
   let k = List.cons (List.hd key) [ "collection" ] in
-  Db.count ~ctx:db ~key:k >>= fun count ->
+  Db.count ~ctx:db ~key:k
+  >>= fun count ->
   match count with
   | 0 ->
-      Lwt.return
-        (annotation_collection_response count limit main (`A []) representation)
+    Lwt.return (annotation_collection_response count limit main (`A []) representation)
   | _ ->
-      Db.get_collection ~ctx:db ~key:k ~offset:0 ~length:limit
-      >|= fun collection ->
-      annotation_collection_response count limit main collection representation
+    Db.get_collection ~ctx:db ~key:k ~offset:0 ~length:limit
+    >|= fun collection ->
+    annotation_collection_response count limit main collection representation
+;;
 
 let modify_container_timestamp db key info =
   match key with
   | [ container_id; _; _ ] ->
-      Db.add ~ctx:db
-        ~key:[ container_id; "main"; "modified" ]
-        ~json:(Ezjsonm.string (Utils.get_timestamp ()))
-        ~message:(info ^ " to " ^ container_id)
+    Db.add
+      ~ctx:db
+      ~key:[ container_id; "main"; "modified" ]
+      ~json:(Ezjsonm.string (Utils.get_timestamp ()))
+      ~message:(info ^ " to " ^ container_id)
   | _ -> failwith "well that's embarassing"
+;;
 
 let add_annotation ~db ~key ~json ~message =
-  modify_container_timestamp db key "ADD" >>= fun () ->
-  Db.add ~ctx:db ~key ~json ~message
+  modify_container_timestamp db key "ADD" >>= fun () -> Db.add ~ctx:db ~key ~json ~message
+;;
 
 let update_annotation ~db ~key ~json ~message =
-  modify_container_timestamp db key "UPDATE" >>= fun () ->
-  Db.add ~ctx:db ~key ~json ~message
+  modify_container_timestamp db key "UPDATE"
+  >>= fun () -> Db.add ~ctx:db ~key ~json ~message
+;;
 
 let add_container ~db ~key ~json ~message = Db.add ~ctx:db ~key ~json ~message
 
 let delete_annotation ~db ~key ~message =
-  modify_container_timestamp db key "DELETE" >>= fun () ->
-  Db.delete ~ctx:db ~key ~message
+  modify_container_timestamp db key "DELETE" >>= fun () -> Db.delete ~ctx:db ~key ~message
+;;
 
 let delete_container ~db ~key ~message = Db.delete ~ctx:db ~key ~message
 let get_hash ~db ~key = Db.get_hash ~ctx:db ~key
@@ -205,5 +242,10 @@ let annotation_exists = container_or_annotation_exists
 let get_page request =
   match Dream.query request "page" with
   | None -> 0
-  | Some page -> (
-      match int_of_string_opt page with None -> 0 | Some value -> value)
+  | Some page ->
+    (match int_of_string_opt page with
+    | None -> 0
+    | Some value -> value)
+;;
+
+let get_target request = Dream.query request "target"
