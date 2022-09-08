@@ -22,6 +22,8 @@ RUN apk add --update libev gmp openssl
 WORKDIR /home/miiify
 
 COPY --from=build /home/opam/_build/default/bin/main.exe ./app
+COPY --from=build /home/opam/VERSION ./VERSION
+COPY --from=build /home/opam/DESCRIPTION ./DESCRIPTION
 
 COPY assets assets
 
