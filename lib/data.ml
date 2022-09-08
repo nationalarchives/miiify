@@ -15,17 +15,9 @@ let get_iri host id =
 
 let is_annotation data =
   let open Ezjsonm in
-  let has_annotation =
-    match find_opt data [ "type" ] with
-    | Some (`String "Annotation") -> true
-    | _ -> false
-  in
-  let has_target =
-    match find_opt data [ "target" ] with
-    | Some (`String _) -> true
-    | _ -> false
-  in
-  has_annotation && has_target
+  match find_opt data [ "type" ] with
+  | Some (`String "Annotation") -> true
+  | _ -> false
 ;;
 
 let is_manifest data =
