@@ -13,10 +13,13 @@ let get_iri host id =
   | _ -> failwith "well that's embarassing"
 ;;
 
+let has_body data = mem data [ "body" ]
+let has_target data = mem data [ "target" ]
+
 let is_annotation data =
   let open Ezjsonm in
   match find_opt data [ "type" ] with
-  | Some (`String "Annotation") -> true
+  | Some (`String "Annotation") when has_body data && has_target data -> true
   | _ -> false
 ;;
 
