@@ -1,9 +1,9 @@
 #!/bin/bash
 
-result=$(./pull.sh | (tail -n 1))
+result=$($HOME/git/miiify/k8s/pull.sh | (tail -n 1))
 
 if [ "$result" = "Already up to date." ]; then
     echo "No new annotations to pull"
 else
-    ./restart.sh
+    $HOME/git/miiify/k8s/restart.sh
 fi
