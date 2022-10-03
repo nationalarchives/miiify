@@ -22,12 +22,12 @@ helm install miiify miiify
 helm install miiifyctl miiifyctl
 ```
 
-### Start minikube tunnel
+### Start port forwarding
 
 Running on port 5000.
 
 ```
-minikube tunnel
+kubectl port-forward svc/kong 5000:5000
 ```
 
 ### Test the deployment

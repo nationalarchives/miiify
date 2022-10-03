@@ -12,8 +12,8 @@ spec:
       labels:
         app: miiifyctl
     spec:
-      nodeSelector:
-        disktype: ssd
+#      nodeSelector:
+#        disktype: ssd
       containers:
         - name: miiifyctl
           image: "alpine/git"
