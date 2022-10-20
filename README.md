@@ -130,6 +130,20 @@ curl -k -X PUT -d @test/annotation2.json https://localhost/annotations/my-contai
 }
 ```
 
+### IIIF
+
+Miiify can be used to store annotations to display within IIIF viewers such as [Mirador](https://projectmirador.org/). This requires obtaining the array of annotation items from a container and applying them to a specific canvas. To achieve this we can apply a query parameter filter to select a specific target canvas. For example:
+```bash
+curl https://miiify.rocks/annotations/cats\?target\=https://miiify.rocks/iiif/cats/canvas/p1
+```
+Note this assumes that the target field is a string.
+
+To see how this works within Mirador you can examine the manifest used here:
+
+https://projectmirador.org/embed/?iiif-content=https://miiifystore.s3.eu-west-2.amazonaws.com/iiif/manifest.json
+
+### Caching
+
 ETag support is added for supporting caching of resources as well as ensuring that an update or delete operation takes places on the intended resource without subsequent unknown modifications. ETag support works by using the value obtained from a GET or HEAD request and then using this in future requests. 
 ```bash
 curl -k -I https://localhost/annotations/my-container/foobar
