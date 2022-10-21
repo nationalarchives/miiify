@@ -142,6 +142,8 @@ To see how this works within Mirador you can examine the manifest used here:
 
 https://projectmirador.org/embed/?iiif-content=https://miiifystore.s3.eu-west-2.amazonaws.com/iiif/manifest.json
 
+IIIF viewers will need CORS enabled on the server. Miiify does not directly support this but is typically deployed behind a read-only proxy which should enable this. For example [miiify.rocks](https://miiify.rocks) sits behind the [Kong gateway](https://konghq.com/install#kong-community). Details on how to deploy Miiify using Kubernetes this way can be found [here](https://github.com/nationalarchives/miiify/tree/main/k8s).
+
 ### Caching
 
 ETag support is added for supporting caching of resources as well as ensuring that an update or delete operation takes places on the intended resource without subsequent unknown modifications. ETag support works by using the value obtained from a GET or HEAD request and then using this in future requests. 
