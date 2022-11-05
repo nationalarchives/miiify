@@ -4,4 +4,4 @@ metadata:
   name: miiify
 data:
   config.json: |
-    { "repository_name": "/data/db", "https": true }
+    { "repository_name": "/data/db", "tls": false }

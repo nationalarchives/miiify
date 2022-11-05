@@ -17,7 +17,7 @@ data:
 
     services:
     - name: miiify
-      url: https://miiify
+      url: http://miiify
       port: 8080
       routes:
       - name: root
