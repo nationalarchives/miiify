@@ -2,7 +2,7 @@
 
 Miiify is designed to serve web annotations from a git repository. 
 
-Annotations can be viewed in [IIIF viewers](https://projectmirador.org/embed/?iiif-content=https://miiify.rocks/manifest/tesseract) or directly from a [git repository](https://github.com/jptmoore/annotations). New annotations can be added using standard git flow mechanisms such as a pull request.
+Annotations can be viewed in [IIIF viewers](https://projectmirador.org/embed/?iiif-content=https://miiify.rocks/manifest/tesseract) or directly from a [git repository](https://github.com/jptmoore/annotations). Annotations can be added or edited using standard git flow mechanisms such as a pull request.
 
 ### Features
 
