@@ -1,8 +1,8 @@
 ### Introduction
 
-Miiify is an experimental W3C annotation server that is based on the [Web Annotation Protocol](https://www.w3.org/TR/annotation-protocol/). 
+Miiify is designed to serve web annotations from a git repository. 
 
-Rather than rely on running a centralised infrastructure, Miiify adopts a distributed approach to collaboration using a peer review process facilitated on GitHub. Each user interacts with their own instance of Miiify using a web interface that supports annotating content such as images. Contributions are then submitted back to the main GitHub repository through a pull request. An example annotation [app](https://github.com/jptmoore/miiifyapp) and [annotation](https://github.com/jptmoore/annotations) repo is available for testing. The rest of the documentation here describes the backend component of the stack which is useful for those building their own annotation interfaces.
+Annotations can be viewed in [IIIF viewers](https://projectmirador.org/embed/?iiif-content=https://miiify.rocks/manifest/tesseract) or directly from a [git repository](https://github.com/jptmoore/annotations). New annotations can be added using standard git flow mechanisms such as a pull request.
 
 ### Features
 
