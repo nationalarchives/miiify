@@ -17,7 +17,7 @@ FROM alpine as run
 
 RUN adduser miiify --disabled-password
 
-RUN apk add --update libev gmp openssl
+RUN apk add --update libev gmp openssl musl
 
 WORKDIR /home/miiify
 
