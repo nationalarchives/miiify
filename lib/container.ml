@@ -110,17 +110,16 @@ let annotation_page_response page count limit main collection representation =
   json
 ;;
 
-let target_contains item prefix =
+let target_equals item target =
   let open Ezjsonm in
-  let json = find item [ "target" ] in
-  let s = get_string json in
-  String.starts_with ~prefix s
+  let value = find item [ "target" ] in
+  value = `String target
 ;;
 
 let filter_on_target collection target =
   let open Ezjsonm in
   let lis = get_list (fun x -> x) collection in
-  let res = List.filter (fun item -> target_contains item target) lis in
+  let res = List.filter (fun item -> target_equals item target) lis in
   list (fun x -> x) res
 ;;
 

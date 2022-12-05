@@ -136,7 +136,7 @@ Miiify can be used to store annotations to display within IIIF viewers such as [
 ```bash
 curl https://miiify.rocks/annotations/cats\?target\=https://miiify.rocks/iiif/cats/canvas/p1
 ```
-Note this assumes that the target field is a string. Filtering takes place using a prefix match so only the unique starting characters of the target string are required to obtain a single match.
+Note this assumes that the target field is a string.
 
 To see how this works within Mirador you can examine the manifest used here:
 
