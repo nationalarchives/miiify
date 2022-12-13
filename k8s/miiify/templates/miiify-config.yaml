@@ -4,4 +4,4 @@ metadata:
   name: miiify
 data:
   config.json: |
-    { "repository_name": "/data/db", "tls": false }
+    { "repository_name": "/data/db", "tls": false, "container_page_limit": 500 }
