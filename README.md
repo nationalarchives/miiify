@@ -1,20 +1,12 @@
 ### Introduction
 
-Miiify is designed to serve web annotations from a git repository. 
-
-Annotations can be viewed in [IIIF viewers](https://projectmirador.org/embed/?iiif-content=https://miiify.rocks/manifest/tesseract) or directly from a [git repository](https://github.com/jptmoore/annotations). 
-
-Annotations can be added or edited using standard git flow mechanisms such as a pull request. 
-
-Tools such as [boriiis](https://github.com/jptmoore/boriiis) can patch a repository with new content automated via an OCR pipeline.
+Miiify is designed to serve web annotations from a git repository. This means that all new content can go through a review process before going public. Some example output is available [here](https://github.com/jptmoore/awesome-iiif-annotations).
 
 ### Features
 
-* Talks native git (no database required)
-* No requirement to support user authentication or accounts
-* Browsable JSON content
-* Light-weight docker image
-* Simple Key/Value interface for working with manifests
+* Annotation content can be accessed in IIIF viewers or directly from a git repository
+* Annotations can be added or edited using standard git flow mechanisms such as a pull request
+* Tools such as [boriiis](https://github.com/jptmoore/boriiis) can patch a repository with new content automated via an OCR pipeline
 
 ### Quick start
 
