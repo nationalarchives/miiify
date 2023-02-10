@@ -9,6 +9,7 @@ from whoosh.qparser import QueryParser
 class Data:
     def __init__(self, ctx):
         self.repo = ctx.repo
+        self.annotation_limit = ctx.annotation_limit
         self.idx = None
 
     def __create_schema__(self):
@@ -43,7 +44,7 @@ class Data:
         qp = QueryParser("content", schema=self.idx.schema)
         query = qp.parse(term)
         with self.idx.searcher() as s:
-            results = s.search(query, limit=200)
+            results = s.search(query, limit=self.annotation_limit)
             for res in results:
                 print(res)
         
