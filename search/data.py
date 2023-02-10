@@ -6,6 +6,10 @@ from whoosh.searching import Searcher
 from whoosh.fields import *
 from whoosh.qparser import QueryParser
 
+class InvalidTitlePath(Exception):
+    "Raised when no matching title path"
+    pass
+
 class Data:
     def __init__(self, ctx):
         self.repo = ctx.repo
@@ -28,11 +32,21 @@ class Data:
             text = data.read()
             return text
 
+    def __get_title_path__(self, file):
+        match file.split('/'):
+            case [_, _, _, 'git', _, title, 'collection', path, 'body', 'value']:
+                return (title, path)
+            case [_, 'data', 'db', _, title, 'collection', path, 'body', 'value']:
+                return (title, path)                
+            case _:
+                raise InvalidTitlePath
+        
     def __write_data__(self, index):
         writer = index.writer()
         for file in glob.iglob(f"{self.repo}/*/collection/*/body/value", recursive=True):
-            text = self.__read_file__(file)
-            writer.add_document(title=file, path=file, content=text)
+            content = self.__read_file__(file)
+            title,path = self.__get_title_path__(file)
+            writer.add_document(title=title, path=path, content=content)
         writer.commit()
 
     def load(self):
