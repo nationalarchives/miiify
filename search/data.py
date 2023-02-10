@@ -32,7 +32,7 @@ class Data:
             text = data.read()
             return text
 
-    def __get_title_path__(self, file):
+    def __get_container_annotation__(self, file):
         match file.split('/'):
             case [_, _, _, 'git', 'annotations', container, 'collection', annotation, 'body', 'value']:
                 return (container, annotation)
@@ -45,7 +45,7 @@ class Data:
         writer = index.writer()
         for file in glob.iglob(f"{self.repo}/*/collection/*/body/value", recursive=True):
             content = self.__read_file__(file)
-            container, annotation = self.__get_title_path__(file)
+            container, annotation = self.__get_container_annotation__(file)
             writer.add_document(container=container, annotation=annotation, content=content)
         writer.commit()
 
