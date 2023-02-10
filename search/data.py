@@ -6,8 +6,8 @@ from whoosh.searching import Searcher
 from whoosh.fields import *
 from whoosh.qparser import QueryParser
 
-class InvalidTitlePath(Exception):
-    "Raised when no matching title path"
+class InvalidFilePath(Exception):
+    "Raised when no matching file path"
     pass
 
 class Data:
@@ -17,7 +17,7 @@ class Data:
         self.idx = None
 
     def __create_schema__(self):
-        schema = Schema(title=TEXT(stored=True), path=ID(stored=True), content=TEXT)
+        schema = Schema(container=TEXT(stored=True), annotation=ID(stored=True), content=TEXT)
         return schema
 
     def __create_index__(self, schema):
@@ -34,19 +34,19 @@ class Data:
 
     def __get_title_path__(self, file):
         match file.split('/'):
-            case [_, _, _, 'git', _, title, 'collection', path, 'body', 'value']:
-                return (title, path)
-            case [_, 'data', 'db', _, title, 'collection', path, 'body', 'value']:
-                return (title, path)                
+            case [_, _, _, 'git', _, container, 'collection', annotation, 'body', 'value']:
+                return (container, annotation)
+            case [_, 'data', 'db', _, container, 'collection', annotation, 'body', 'value']:
+                return (container, annotation)                
             case _:
-                raise InvalidTitlePath
+                raise InvalidFilePath
         
     def __write_data__(self, index):
         writer = index.writer()
         for file in glob.iglob(f"{self.repo}/*/collection/*/body/value", recursive=True):
             content = self.__read_file__(file)
-            title,path = self.__get_title_path__(file)
-            writer.add_document(title=title, path=path, content=content)
+            container, annotation = self.__get_title_path__(file)
+            writer.add_document(container=container, annotation=annotation, content=content)
         writer.commit()
 
     def load(self):
