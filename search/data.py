@@ -34,9 +34,9 @@ class Data:
 
     def __get_title_path__(self, file):
         match file.split('/'):
-            case [_, _, _, 'git', _, container, 'collection', annotation, 'body', 'value']:
+            case [_, _, _, 'git', 'annotations', container, 'collection', annotation, 'body', 'value']:
                 return (container, annotation)
-            case [_, 'data', 'db', _, container, 'collection', annotation, 'body', 'value']:
+            case [_, 'data', 'db', container, 'collection', annotation, 'body', 'value']:
                 return (container, annotation)                
             case _:
                 raise InvalidFilePath
