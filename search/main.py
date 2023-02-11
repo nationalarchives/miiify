@@ -1,5 +1,6 @@
 from data import Data
 from net import Net
+from response import Response
 from configparser import ConfigParser
 
 class Context:
@@ -22,8 +23,9 @@ def run():
     data.load()
     uris = data.search(u"Henry")
     net = Net(ctx)
-    resp = net.get(uris)
-    print(resp)
+    data = net.get(uris)
+    resp = Response(ctx)
+    print(resp.to_json(data))
 
 if __name__ == "__main__":
     run()
