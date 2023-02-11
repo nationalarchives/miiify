@@ -2,6 +2,7 @@ from data import Data
 from net import Net
 from response import Response
 from configparser import ConfigParser
+from flask import Flask, request
 
 class Context:
     pass
@@ -18,14 +19,23 @@ ctx.remote_server = config_ini.get("miiify_search", "REMOTE_SERVER")
 ctx.repo = config_ini.get("miiify_search", "REPO")
 ctx.max_workers = config_ini.getint("miiify_search", "MAX_WORKERS")
 
-def run():
-    data = Data(ctx)
-    data.load()
-    uris = data.search(u"Henry")
-    net = Net(ctx)
-    data = net.get(uris)
-    resp = Response(ctx)
-    print(resp.to_json(data))
+# load and index data in Whoosh
+data = Data(ctx)
+data.load()
+# communication with miiify
+net = Net(ctx)
+# format the response
+resp = Response(ctx)
 
-if __name__ == "__main__":
-    run()
+app = Flask(__name__)
+
+@app.route('/annotations/search')
+def search():
+    q=request.args['q']
+    uris = data.search(q)
+    miiify = net.get(uris)
+    json = resp.annotations(miiify)
+    return json    
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5000)
