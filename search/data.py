@@ -60,11 +60,13 @@ class Data:
         query = qp.parse(term)
         with self.idx.searcher() as s:
             results = s.search(query, limit=self.annotation_limit)
+            uris = []
             for r in results:
                 container = r.get('container')
                 annotation = r.get('annotation')
                 uri = f"{self.remote_server}/annotations/{container}/{annotation}"
-                print(uri)
+                uris.append(uri)
+            return uris
         
 
 
