@@ -55,11 +55,16 @@ class Data:
         idx = self.__create_index__(schema)
         self.__write_data__(idx)
 
-    def search(self, term):
+    def search(self, term, page):
+        if page < 0: return None
         qp = QueryParser("content", schema=self.idx.schema)
         query = qp.parse(term)
         with self.idx.searcher() as s:
-            results = s.search(query, limit=self.annotation_limit)
+            page_length = self.annotation_limit
+            results = s.search_page(query, page+1, pagelen=page_length)
+            results_length = len(results)
+            print(results_length)
+            if page > (results_length / page_length): return None
             uris = []
             for r in results:
                 container = r.get('container')

@@ -3,6 +3,7 @@ from net import Net
 from response import Response
 from configparser import ConfigParser
 from flask import Flask, request
+from flask import abort
 
 class Context:
     pass
@@ -31,8 +32,11 @@ app = Flask(__name__)
 
 @app.route('/annotations/search')
 def search():
-    q=request.args['q']
-    uris = data.search(q)
+    q=request.args.get('q')
+    if q == None: abort(404)
+    page = request.args.get('page', 0, type=int)
+    uris = data.search(q, page)
+    if uris == None: abort(404)
     miiify = net.get(uris)
     json = resp.annotations(miiify)
     return json    
