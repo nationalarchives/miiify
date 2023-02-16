@@ -38,10 +38,10 @@ def search():
     q = request.args.get('q')
     if q == None: abort(404)
     page = request.args.get('page', 0, type=int)
-    uris = data.search(q, page)
+    (total, uris) = data.search(q, page)
     if uris == None: abort(404)
-    miiify = net.get(uris)
-    return resp.annotations(request.full_path, miiify)    
+    uri_responses = net.get(uris)
+    return resp.annotations(request.path, q, page, total, uri_responses)    
 
 if __name__ == '__main__':
     app.run(debug=ctx.debug, port=ctx.server_port)

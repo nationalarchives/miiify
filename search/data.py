@@ -71,7 +71,7 @@ class Data:
                 annotation = r.get('annotation')
                 uri = f"{self.remote_server}/annotations/{container}/{annotation}"
                 uris.append(uri)
-            return uris
+            return (results_length, uris)
         
 
 
