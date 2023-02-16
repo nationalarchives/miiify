@@ -9,5 +9,5 @@ MarkupSafe==2.1.2
 requests==2.28.2
 requests-futures==1.0.0
 urllib3==1.26.14
-Werkzeug==2.2.2
+Werkzeug==2.2.3
 Whoosh==2.7.4
