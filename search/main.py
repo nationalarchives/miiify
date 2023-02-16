@@ -32,14 +32,13 @@ app = Flask(__name__)
 
 @app.route('/annotations/search')
 def search():
-    q=request.args.get('q')
+    q = request.args.get('q')
     if q == None: abort(404)
     page = request.args.get('page', 0, type=int)
     uris = data.search(q, page)
     if uris == None: abort(404)
     miiify = net.get(uris)
-    json = resp.annotations(miiify)
-    return json    
+    return resp.annotations(request.full_path, miiify)    
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
