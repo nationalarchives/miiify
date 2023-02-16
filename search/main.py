@@ -2,7 +2,7 @@ from data import Data
 from net import Net
 from response import Response
 from configparser import ConfigParser
-from flask import Flask, request
+from flask import Flask, request, make_response
 from flask import abort
 
 class Context:
@@ -21,7 +21,7 @@ ctx.repo = config_ini.get("miiify_search", "REPO")
 ctx.max_workers = config_ini.getint("miiify_search", "MAX_WORKERS")
 ctx.server_port = config_ini.getint("miiify_search", "SERVER_PORT")
 ctx.debug = config_ini.getboolean("miiify_search", "DEBUG")
-
+ctx.cors = config_ini.getboolean("miiify_search", "CORS")
 
 # load and index data in Whoosh
 data = Data(ctx)
@@ -29,7 +29,7 @@ data.load()
 # communication with miiify
 net = Net(ctx)
 # format the response
-resp = Response(ctx)
+r = Response(ctx)
 
 app = Flask(__name__)
 
@@ -41,7 +41,10 @@ def search():
     (total, uris) = data.search(q, page)
     if uris == None: abort(404)
     uri_responses = net.get(uris)
-    return resp.annotations(request.path, q, page, total, uri_responses)    
+    response = r.annotations(request.path, q, page, total, uri_responses) 
+    custom_response = make_response(response)
+    if ctx.cors: custom_response.headers['Access-Control-Allow-Origin'] = '*'
+    return custom_response
 
 if __name__ == '__main__':
     app.run(debug=ctx.debug, port=ctx.server_port)
