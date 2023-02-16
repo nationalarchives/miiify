@@ -19,6 +19,9 @@ ctx.annotation_limit = config_ini.getint("miiify_search", "ANNOTATION_LIMIT")
 ctx.remote_server = config_ini.get("miiify_search", "REMOTE_SERVER")
 ctx.repo = config_ini.get("miiify_search", "REPO")
 ctx.max_workers = config_ini.getint("miiify_search", "MAX_WORKERS")
+ctx.server_port = config_ini.getint("miiify_search", "SERVER_PORT")
+ctx.debug = config_ini.getboolean("miiify_search", "DEBUG")
+
 
 # load and index data in Whoosh
 data = Data(ctx)
@@ -41,4 +44,4 @@ def search():
     return resp.annotations(request.full_path, miiify)    
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=ctx.debug, port=ctx.server_port)
