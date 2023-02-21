@@ -52,4 +52,4 @@ net = Net(ctx)
 r = Response(ctx)
 
 if __name__ == '__main__':
-    app.run(debug=ctx.debug, port=ctx.server_port)
+    app.run(host='0.0.0.0', debug=ctx.debug, port=ctx.server_port)

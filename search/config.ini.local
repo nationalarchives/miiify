@@ -4,10 +4,10 @@ NAME=miiify_search
 VERSION=0.1
 CREATOR=john.moore@nationalarchives.gov.uk
 [miiify_search]
-DEBUG=False
+DEBUG=True
 CORS=True
 SERVER_PORT=5555
 ANNOTATION_LIMIT=20
 MAX_WORKERS=10
 REMOTE_SERVER=https://miiify.rocks
-REPO=/data/db
+REPO=/Users/john/git/annotations
