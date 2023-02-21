@@ -1,7 +1,11 @@
+from flask import abort
+
 class Response:
     def __init__(self, ctx):
         self.remote_server = ctx.remote_server
         self.annotation_limit = ctx.annotation_limit
+        self.logger = ctx.logger
+
 
     def __simple_template__(self, q, page, uri, items):
         dict = {
@@ -45,8 +49,14 @@ class Response:
             return self.__simple_template__(q, page, uri, items)
 
     def annotations(self, path, q, page, total, data):
-        items = []
-        for item in data:
-            items.append(item.json())
-        uri = f"{self.remote_server}{path}"
-        return self.__response__(q, page, total, uri, items)
+        try:
+            items = []
+            for item in data:
+                items.append(item.json())
+            uri = f"{self.remote_server}{path}"
+            result = self.__response__(q, page, total, uri, items)
+        except Exception as e:
+            self.logger.error(f"failed to create annotation response: {repr(e)}")
+            abort(500)
+        else:
+            return result

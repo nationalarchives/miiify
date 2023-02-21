@@ -5,6 +5,7 @@ from whoosh.index import create_in
 from whoosh.searching import Searcher
 from whoosh.fields import *
 from whoosh.qparser import QueryParser
+from flask import abort
 
 class InvalidFilePath(Exception):
     "Raised when no matching file path"
@@ -12,6 +13,7 @@ class InvalidFilePath(Exception):
 
 class Data:
     def __init__(self, ctx):
+        self.logger = ctx.logger
         self.repo = ctx.repo
         self.annotation_limit = ctx.annotation_limit
         self.remote_server = ctx.remote_server
@@ -51,27 +53,41 @@ class Data:
         writer.commit()
 
     def load(self):
-        schema = self.__create_schema__()
-        idx = self.__create_index__(schema)
-        self.__write_data__(idx)
+        try:
+            self.logger.info('loading data')
+            schema = self.__create_schema__()
+            idx = self.__create_index__(schema)
+            self.__write_data__(idx)
+            self.logger.info('loaded data')
+        except Exception as e:
+            self.logger.error(f"failed to load data: {repr(e)}")
+            abort(500)
+        else:
+            return None
+        
 
     def search(self, term, page):
-        if page < 0: return None
-        qp = QueryParser("content", schema=self.idx.schema)
-        query = qp.parse(term)
-        with self.idx.searcher() as s:
-            page_length = self.annotation_limit
-            results = s.search_page(query, page+1, pagelen=page_length)
-            results_length = len(results)
-            print(results_length)
-            if page > (results_length / page_length): return None
-            uris = []
-            for r in results:
-                container = r.get('container')
-                annotation = r.get('annotation')
-                uri = f"{self.remote_server}/annotations/{container}/{annotation}"
-                uris.append(uri)
-            return (results_length, uris)
+        try:
+            if page < 0: return (0, [])
+            qp = QueryParser("content", schema=self.idx.schema)
+            query = qp.parse(term)
+            with self.idx.searcher() as s:
+                page_length = self.annotation_limit
+                results = s.search_page(query, page+1, pagelen=page_length)
+                results_length = len(results)
+                if page > (results_length / page_length): return (0, [])
+                uris = []
+                for r in results:
+                    container = r.get('container')
+                    annotation = r.get('annotation')
+                    uri = f"{self.remote_server}/annotations/{container}/{annotation}"
+                    uris.append(uri)
+                result = (results_length, uris)
+        except Exception as e:
+            self.logger.error(f"failed to search data: {repr(e)}")
+            abort(500)
+        else:
+            return result
         
 
 
