@@ -20,7 +20,7 @@ data:
       url: http://miiify
       port: 8080
       routes:
-      - name: root
+      - name: miiify
         paths:
         - /v1
         - /
@@ -34,10 +34,10 @@ data:
       url: http://miiifysearch
       port: 5555
       routes:
-      - name: root
+      - name: miiifysearch
         paths:
-        - /v1
-        - /
+        - /search
+        strip_path: true
         preserve_host: true
         methods:
         - GET

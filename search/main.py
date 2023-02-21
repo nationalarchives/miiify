@@ -31,7 +31,7 @@ ctx.debug = config_ini.getboolean("miiify_search", "DEBUG")
 ctx.cors = config_ini.getboolean("miiify_search", "CORS")
 ctx.logger = app.logger
 
-@app.route('/annotations/search')
+@app.route('/search')
 def search():
     q = request.args.get('q')
     if q == None: abort(404)
