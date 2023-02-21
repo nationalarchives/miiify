@@ -36,7 +36,7 @@ data:
       routes:
       - name: miiifysearch
         paths:
-        - /search
+        - /iiif
         strip_path: true
         preserve_host: true
         methods:
