@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: miiifysearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: miiifysearch
+  template:
+    metadata:
+      labels:
+        app: miiifysearch
+    spec:
+#      nodeSelector:
+#        disktype: ssd
+      containers:
+        - name: miiifysearch
+          image: "jptmoore/miiifysearch"
+          volumeMounts:
+            - name: miiifysearch
+              mountPath: /data
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      volumes:
+        - name: miiifysearch
+          persistentVolumeClaim:
+            claimName: "miiify-pvc"

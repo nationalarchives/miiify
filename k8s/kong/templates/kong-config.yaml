@@ -30,6 +30,20 @@ data:
         - HEAD
         - OPTIONS
 
+    - name: miiifysearch
+      url: http://miiifysearch
+      port: 5555
+      routes:
+      - name: root
+        paths:
+        - /v1
+        - /
+        preserve_host: true
+        methods:
+        - GET
+        - HEAD
+        - OPTIONS
+
     plugins:
     - name: cors
       service: miiify
