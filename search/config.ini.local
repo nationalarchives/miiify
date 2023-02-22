@@ -10,5 +10,6 @@ SERVER_PORT=5555
 ANNOTATION_LIMIT=20
 MAX_WORKERS=10
 REMOTE_SERVER=https://miiify.rocks
+REMOTE_SEARCH_URL=https://miiify.rocks/iiif/content/search
 REPO=/Users/john/git/annotations
 INDEX=/tmp/index

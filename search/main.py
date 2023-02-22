@@ -23,6 +23,7 @@ config_ini.read("config.ini")
 ctx.version = config_ini.get("main", "VERSION")
 ctx.annotation_limit = config_ini.getint("miiify_search", "ANNOTATION_LIMIT")
 ctx.remote_server = config_ini.get("miiify_search", "REMOTE_SERVER")
+ctx.remote_search_url = config_ini.get("miiify_search", "REMOTE_SEARCH_URL")
 ctx.repo = config_ini.get("miiify_search", "REPO")
 ctx.index = config_ini.get("miiify_search", "INDEX")
 ctx.max_workers = config_ini.getint("miiify_search", "MAX_WORKERS")
@@ -38,7 +39,7 @@ def search():
     page = request.args.get('page', 0, type=int)
     (total, uris) = data.search(q, page)
     uri_responses = net.get(uris)
-    response = r.annotations(request.path, q, page, total, uri_responses)
+    response = r.annotations(q, page, total, uri_responses)
     custom_response = make_response(response)
     if ctx.cors: custom_response.headers['Access-Control-Allow-Origin'] = '*'
     return custom_response
