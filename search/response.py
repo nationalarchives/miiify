@@ -8,7 +8,7 @@ class Response:
         self.logger = ctx.logger
 
 
-    def __simple_template__(self, q, page, items):
+    def simple_template(self, q, page, items):
         dict = {
             "@context": "http://iiif.io/api/search/2/context.json",
             "id": f"{self.remote_search_url}?q={q}&page={page}",
@@ -17,7 +17,7 @@ class Response:
         }
         return dict
 
-    def __part_of__(self, q, total, total_pages):
+    def part_of(self, q, total, total_pages):
         first = f"{self.remote_search_url}?q={q}&page=0"
         last = f"{self.remote_search_url}?q={q}&page={total_pages}"
         dict = {
@@ -31,11 +31,11 @@ class Response:
         }
         return dict
 
-    def __paged_template__(self, q, page, total, items):
+    def paged_template(self, q, page, total, items):
         start_index = page * self.annotation_limit
         total_pages = int(total / self.annotation_limit)
-        dict = self.__simple_template__(q, page, items)
-        dict.update(self.__part_of__(q, total, total_pages))
+        dict = self.simple_template(q, page, items)
+        dict.update(self.part_of(q, total, total_pages))
         if page > 0:
             dict["prev"] = f"{self.remote_search_url}?q={q}&page={page-1}"
         if page < total_pages:
@@ -43,18 +43,18 @@ class Response:
         dict["start_index"] = start_index
         return dict
 
-    def __response__(self, q, page, total, items):
+    def response(self, q, page, total, items):
         if total > self.annotation_limit:  # if paged response
-            return self.__paged_template__(q, page, total, items)
+            return self.paged_template(q, page, total, items)
         else:
-            return self.__simple_template__(q, page, items)
+            return self.simple_template(q, page, items)
 
     def annotations(self, q, page, total, data):
         try:
             items = []
             for item in data:
                 items.append(item.json())
-            result = self.__response__(q, page, total, items)
+            result = self.response(q, page, total, items)
         except Exception as e:
             self.logger.error(f"failed to create annotation response: {repr(e)}")
             abort(500)

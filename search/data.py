@@ -20,23 +20,23 @@ class Data:
         self.remote_server = ctx.remote_server
         self.idx = None
 
-    def __create_schema__(self):
+    def create_schema(self):
         schema = Schema(container=TEXT(stored=True), annotation=ID(stored=True), content=TEXT)
         return schema
 
-    def __create_index__(self, schema):
+    def create_index(self, schema):
         if not os.path.exists(self.index):
             os.mkdir(self.index)
         idx = create_in(self.index, schema)
         self.idx = idx
         return idx
 
-    def __read_file__(self, file):
+    def read_file(self, file):
         with io.open(file,'r',encoding='utf8') as data:
             text = data.read()
             return text
 
-    def __get_container_annotation__(self, file):
+    def get_container_annotation(self, file):
         match file.split('/'):
             case [_, _, _, 'git', 'annotations', container, 'collection', annotation, 'body', 'value']:
                 return (container, annotation)
@@ -45,20 +45,20 @@ class Data:
             case _:
                 raise InvalidFilePath
         
-    def __write_data__(self, index):
+    def write_data(self, index):
         writer = index.writer()
         for file in glob.iglob(f"{self.repo}/*/collection/*/body/value", recursive=True):
-            content = self.__read_file__(file)
-            container, annotation = self.__get_container_annotation__(file)
+            content = self.read_file(file)
+            container, annotation = self.get_container_annotation(file)
             writer.add_document(container=container, annotation=annotation, content=content)
         writer.commit()
 
     def load(self):
         try:
             self.logger.info('loading data')
-            schema = self.__create_schema__()
-            idx = self.__create_index__(schema)
-            self.__write_data__(idx)
+            schema = self.create_schema()
+            idx = self.create_index(schema)
+            self.write_data(idx)
             self.logger.info('loaded data')
         except Exception as e:
             self.logger.error(f"failed to load data: {repr(e)}")
