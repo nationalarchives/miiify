@@ -22,8 +22,8 @@
    (>= 1.0.0~alpha4))
   (ezjsonm
    (>= 1.2.0))
-  (irmin-unix
-   (= 2.9.1))
+  (irmin
+   (>= 2.9.1))
   (atdgen
    (>= 2.2.1))
   (ptime
