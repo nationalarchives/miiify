@@ -7,6 +7,8 @@ WORKDIR /home/opam
 
 # Install dependencies
 ADD miiify.opam miiify.opam
+RUN opam pin add -n dream https://github.com/aantron/dream.git
+RUN opam pin add -n dream-httpaf https://github.com/aantron/dream.git
 RUN opam install . --deps-only
 
 # Build project

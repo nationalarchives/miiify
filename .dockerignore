@@ -21,3 +21,6 @@ test
 # certs build in Docker build
 server.crt
 server.key
+
+# python code
+search

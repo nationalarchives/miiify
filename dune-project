@@ -22,8 +22,8 @@
    (>= 1.0.0~alpha4))
   (ezjsonm
    (>= 1.2.0))
-  (irmin
-   (>= 2.9.1))
+  (irmin-git
+   (>= 3.6.0))
   (atdgen
    (>= 2.2.1))
   (ptime
