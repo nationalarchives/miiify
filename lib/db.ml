@@ -1,10 +1,10 @@
 open Lwt.Infix
-module Git_store_json_value = Irmin_unix.Git.FS.KV (Irmin.Contents.Json_value)
+module Git_store_json_value = Irmin_git_unix.FS.KV (Irmin.Contents.Json_value)
 module Store = Git_store_json_value
 module Proj = Irmin.Json_tree (Store)
 
 let repository_author = ref "miiify.rocks"
-let info message = Irmin_unix.info ~author:!repository_author "%s" message
+let info message = Irmin_git_unix.info ~author:!repository_author "%s" message
 
 type t = { db : Store.t Lwt.t }
 
@@ -12,7 +12,7 @@ let create ~fname ~author =
   repository_author := author;
   let config = Irmin_git.config ~bare:true fname in
   let repo = Store.Repo.v config in
-  let branch = repo >>= Store.master in
+  let branch = repo >>= fun repo -> Store.of_branch repo "master" in
   { db = branch }
 
 let add ~ctx ~key ~json ~message =
