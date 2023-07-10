@@ -30,11 +30,25 @@ data:
         - HEAD
         - OPTIONS
 
-    - name: miiifysearch
-      url: http://miiifysearch
+    # - name: miiifysearch
+    #   url: http://miiifysearch
+    #   port: 5555
+    #   routes:
+    #   - name: miiifysearch
+    #     paths:
+    #     - /iiif/content
+    #     strip_path: true
+    #     preserve_host: true
+    #     methods:
+    #     - GET
+    #     - HEAD
+    #     - OPTIONS
+  
+    - name: annotass
+      url: http://annotass
       port: 5555
       routes:
-      - name: miiifysearch
+      - name: annotass
         paths:
         - /iiif/content
         strip_path: true
