@@ -11,10 +11,13 @@ homepage: "https://github.com/nationalarchives/miiify"
 doc: "https://github.com/nationalarchives/miiify"
 bug-reports: "https://github.com/nationalarchives/miiify/issues"
 depends: [
-  "dune" {>= "3.11"}
-  "dream"
-  "irmin-git"
-  "irmin-pack"
+  "dune" {>= "3.0"}
+  "dream" {>= "1.0.0~alpha4"}
+  "irmin-pack" {>= "3.6.0"}
+  "irmin-git" {>= "3.6.0"}
+  "atdgen" {>= "2.2.1"}
+  "ptime" {>= "0.8.5"}
+  "uuidm" {>= "0.9.7"}
   "odoc" {with-doc}
 ]
 build: [

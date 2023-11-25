@@ -37,3 +37,7 @@ db/
 
 # vscode
 packtest/.ocamlformat
+
+# certs
+*.crt
+*.key

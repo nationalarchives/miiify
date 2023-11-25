@@ -1,26 +1,24 @@
 # opam local switch
-_opam/
+miiify/_opam/
 
 # Dune build environment
-_build/
+miiify/_build/
 
 # Git
-.git/
-.gitignore
+miiify/.git/
+miiify/.gitignore
 
 # Development
 Dockerfile
 docker-compose.yml
 
 # Default git db
-db
+miiify/db
 
 # test files
-test
+miiify/test
 
 # certs build in Docker build
-server.crt
-server.key
+miiify/server.crt
+miiify/server.key
 
-# python code
-search
