@@ -1,0 +1,27 @@
+(lang dune 3.11)
+
+(name miiify)
+
+(generate_opam_files true)
+
+(source
+ (github nationalarchives/miiify))
+
+(authors "john.moore@nationalarchives.gov.uk")
+
+(maintainers "john.moore@nationalarchives.gov.uk")
+
+(license MIT)
+
+(documentation "https://github.com/nationalarchives/miiify")
+
+(package
+ (name miiify)
+ (synopsis "A web annotation server")
+ (description
+  "A simple web annotation server built from the same principles at Git")
+ (depends dream irmin-git irmin-pack)
+ (tags
+  (web annotation git irmin)))
+
+; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project

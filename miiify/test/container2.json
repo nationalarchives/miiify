@@ -1,0 +1,6 @@
+{
+  "@context": "http://iiif.io/api/presentation/3/context.json",
+  "id": "http://localhost:8080/annotations/my-container",
+  "type": "AnnotationCollection",
+  "label": "A Container for Web Annotations"
+}
