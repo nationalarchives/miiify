@@ -1,8 +1,18 @@
 version: "3"
 
 services:
-  web:
-    image: jptmoore/miiify
+  git:
+    image: jptmoore/miiify:git
+    build: .
+    ports:
+      - "8080:8080"
+      - "80:8080"
+      - "443:8080"
+    #volumes:
+    #  - ./db:/home/miiify/db
+    restart: always
+  pack:
+    image: jptmoore/miiify:pack
     build: .
     ports:
       - "8080:8080"
