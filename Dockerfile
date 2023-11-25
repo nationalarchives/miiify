@@ -5,7 +5,7 @@ RUN sudo apk add --update libev-dev openssl-dev gmp-dev libffi-dev
 ADD miiify .
 RUN opam install . --deps-only
 # Build project
-RUN opam exec -- dune build --profile=release
+RUN opam exec -- dune build bin/main.exe --profile=release
 
 # runtime image
 FROM alpine as run
