@@ -1,5 +1,3 @@
-(include_subdirs unqualified)
-
 (test
  (name miiify)
  (libraries miiify))
