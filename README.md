@@ -1,227 +1,149 @@
 ### Introduction
 
-Miiify is designed to serve web annotations from a git repository. This means that all new content can go through a review process before going public. Some example output is available [here](https://github.com/jptmoore/awesome-iiif-annotations).
+Miiify is a light-weight web annotation server with its own embedded database technology. Its primary use case is to support [IIIF](https://iiif.io/) applications. There is a choice of two backends:
 
-### Features
+#### git
 
-* Annotation content can be accessed in IIIF viewers or directly from a git repository
-* Annotations can be added or edited using standard git flow mechanisms such as a pull request
-* Tools such as [boriiis](https://github.com/jptmoore/boriiis) can patch a repository with new content automated via an OCR pipeline
+Designed to be compatible with the Git protocol. This means annotations can be added or edited using standard git flow mechanisms such as a pull request and all new content can go through a review process before going public. 
 
-### Quick start
+#### pack
 
-Run pre-built Docker image:
+Designed to be highly-scalable and disk efficient. This backend uses technology that is part of the distributed ledger used within the Tezos blockchain.
+
+### Getting started
+
+Miiify can be run with Docker using either the git or pack backend. The example below uses the pack backend.
+
+#### Starting server
+
 ```bash
-docker pull jptmoore/miiify
-./deploy.sh
+docker compose pull pack
+docker compose up pack -d
 ```
 
-Build from source and launch Docker container (note this will take some time the first run and sometimes breaks on build changes):
+### Stopping server
 ```bash
-./deploy-from-source.sh
+docker compose down pack
 ```
 
-Create an annotation container:
+### Basic concepts
+
+Annotations are organised into containers and can be retrieved in pages to display within annotation viewers such as [Mirador](https://projectmirador.org/). To filter the annotation page to a specific IIIF canvas an additional target parameter can be supplied.
+
+Create an annotation container called my-container:
 ```bash
-curl -k -d @test/container1.json https://localhost/annotations/ -H Slug:my-container
+http http://localhost:8080/annotations/ < test/container1.json Slug:my-container
 ```
 
+Add an annotation called foobar to my-container:
+```bash
+http http://localhost:8080/annotations/my-container/ < test/annotation1.json Slug:foobar
+```
+
+Add another annotation but use a system generated id:
+```bash
+http http://localhost:8080/annotations/my-container/ < test/annotation1.json
+```
+
+Retrieve the first annotation page from my-container:
+```bash
+http http://localhost:8080/annotations/my-container/\?page\=0
+```
+produces:
 ```json
 {
-  "@context": [
-    "http://www.w3.org/ns/anno.jsonld",
-    "http://www.w3.org/ns/ldp.jsonld"
-  ],
-  "type": [
-    "BasicContainer",
-    "AnnotationCollection"
-  ],
-  "label": "A Container for Web Annotations",
-  "id": "https://localhost/annotations/my-container",
-  "created": "2022-04-26T14:12:39Z"
+    "@context": "http://iiif.io/api/presentation/3/context.json",
+    "id": "http://localhost/annotations/my-container?page=0",
+    "items": [
+        {
+            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "body": "http://example.org/post1",
+            "created": "2023-11-26T16:30:47Z",
+            "id": "http://localhost:8080/annotations/my-container/edd6a28b-b7a5-4c0c-88c6-a29377fffb8c",
+            "target": "http://example.com/page1",
+            "type": "Annotation"
+        },
+        {
+            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "body": "http://example.org/post1",
+            "created": "2023-11-26T16:32:27Z",
+            "id": "http://localhost:8080/annotations/my-container/foobar",
+            "target": "http://example.com/page1",
+            "type": "Annotation"
+        }
+    ],
+    "partOf": {
+        "created": "2023-11-26T16:28:53Z",
+        "id": "http://localhost/annotations/my-container",
+        "label": "A Container for Web Annotations",
+        "total": 2,
+        "type": "AnnotationCollection"
+    },
+    "startIndex": 0,
+    "type": "AnnotationPage"
 }
 ```
 
-Write some annotations to the container:
+Retrieve the first annotation page from my-container but filter annotations based on their target:
 ```bash
-curl -k -d @test/annotation1.json https://localhost/annotations/my-container/
-curl -k -d @test/annotation1.json https://localhost/annotations/my-container/
-curl -k -d @test/annotation1.json https://localhost/annotations/my-container/
+http http://localhost:8080/annotations/my-container/ < test/annotation3.json
+http http://localhost:8080/annotations/my-container/\?page\=0\&target\=http://example.com/page3
 ```
-
-Retrieve the contents of the container but display only the links to the annotations it contains:
-```bash
-curl -k "https://localhost/annotations/my-container?page=0" -H Prefer:'return=representation;include="http://www.w3.org/ns/oa#PreferContainedIRIs"'
-```
-
+produces:
 ```json
 {
-  "@context": [
-    "http://www.w3.org/ns/anno.jsonld",
-    "http://www.w3.org/ns/ldp.jsonld"
-  ],
-  "id": "https://localhost/annotations/my-container?page=0",
-  "type": "AnnotationPage",
-  "partOf": {
-    "id": "https://localhost/annotations/my-container/",
-    "created": "2022-04-26T14:12:39Z",
-    "modified": "2022-04-26T14:24:05Z",
-    "total": 3,
-    "label": "A Container for Web Annotations"
-  },
-  "startIndex": 0,
-  "items": [
-    "https://localhost/annotations/my-container/354b14bd-8ad5-4261-8e81-dd70a6758c2f",
-    "https://localhost/annotations/my-container/56c3df84-da68-40b3-8d22-d37cd5ec3571",
-    "https://localhost/annotations/my-container/c6f45c55-58d0-4510-b978-39585f22fd1d"
-  ]
+    "@context": "http://iiif.io/api/presentation/3/context.json",
+    "id": "http://localhost/annotations/my-container?page=0&target=http://example.com/page3",
+    "items": [
+        {
+            "@context": "http://www.w3.org/ns/anno.jsonld",
+            "body": "http://example.org/post3",
+            "created": "2023-11-26T17:02:10Z",
+            "id": "http://localhost:8080/annotations/my-container/ca04c632-b093-44b8-8785-0c985b2ff036",
+            "target": "http://example.com/page3",
+            "type": "Annotation"
+        }
+    ],
+    "partOf": {
+        "created": "2023-11-26T16:28:53Z",
+        "id": "http://localhost/annotations/my-container",
+        "label": "A Container for Web Annotations",
+        "total": 3,
+        "type": "AnnotationCollection"
+    },
+    "startIndex": 0,
+    "type": "AnnotationPage"
 }
 ```
 
-Add an annotation called foobar to the container:
+Retrieve a single annotation:
 ```bash
-curl -k -d @test/annotation1.json https://localhost/annotations/my-container/ -H Slug:foobar
+http http://localhost:8080/annotations/my-container/foobar
 ```
-
+produces
 ```json
 {
-  "@context": "http://www.w3.org/ns/anno.jsonld",
-  "type": "Annotation",
-  "body": "http://example.org/post1",
-  "target": "http://example.com/page1",
-  "id": "https://localhost/annotations/my-container/foobar",
-  "created": "2022-04-26T14:30:26Z"
+    "@context": "http://www.w3.org/ns/anno.jsonld",
+    "body": "http://example.org/post1",
+    "created": "2023-11-26T16:32:27Z",
+    "id": "http://localhost:8080/annotations/my-container/foobar",
+    "target": "http://example.com/page1",
+    "type": "Annotation"
 }
 ```
 
-Retrieve the annotation called foobar:
-```bash
-curl -k https://localhost/annotations/my-container/foobar
-```
+ 
+### Other key features
 
-```json
-{
-  "type": "Annotation",
-  "target": "http://example.com/page1",
-  "id": "https://localhost/annotations/my-container/foobar",
-  "created": "2022-04-26T14:30:26Z",
-  "body": "http://example.org/post1",
-  "@context": "http://www.w3.org/ns/anno.jsonld"
-}
-```
-
-Update the contents of the annotation called foobar:
-```bash
-curl -k -X PUT -d @test/annotation2.json https://localhost/annotations/my-container/foobar
-```
-
-```json
-{
-  "@context": "http://www.w3.org/ns/anno.jsonld",
-  "id": "https://localhost/annotations/my-container/foobar",
-  "type": "Annotation",
-  "body": "http://example.org/post2",
-  "target": "http://example.com/page2",
-  "modified": "2022-04-26T14:35:25Z"
-}
-```
-
-### IIIF
-
-Miiify can be used to store annotations to display within IIIF viewers such as [Mirador](https://projectmirador.org/). This requires obtaining the array of annotation items from a container and applying them to a specific canvas. To achieve this we can apply a query parameter filter to select a specific target canvas. For example:
-```bash
-curl https://miiify.rocks/annotations/cats\?target\=https://miiify.rocks/iiif/cats/canvas/p1
-```
-Note this assumes that the target field is a string.
-
-To see how this works within Mirador you can examine the manifest used here:
-
-https://projectmirador.org/embed/?iiif-content=https://miiify.rocks/manifest/cats
-
-IIIF viewers will need CORS enabled on the server. Miiify does not directly support this but is typically deployed behind a read-only proxy which should enable this. For example [miiify.rocks](https://miiify.rocks) sits behind the [Kong gateway](https://konghq.com/install#kong-community). Details on how to deploy Miiify using Kubernetes this way can be found [here](https://github.com/nationalarchives/miiify/tree/main/k8s).
-
-### Caching
-
-ETag support is added for supporting caching of resources as well as ensuring that an update or delete operation takes places on the intended resource without subsequent unknown modifications. ETag support works by using the value obtained from a GET or HEAD request and then using this in future requests. 
-```bash
-curl -k -I https://localhost/annotations/my-container/foobar
-```
-```
-HTTP/2 200 
-etag: "c25c28a70db07c843253001dabfab6d8ebc7a76f"
-content-type: application/ld+json; profile="http://www.w3.org/ns/anno.jsonld"
-link: <http://www.w3.org/ns/ldp#Resource>; rel="type"
-```
-Note that your ETag hashes will be different from these examples:
-```bash
-curl -k -I https://localhost/annotations/my-container/foobar -H If-None-Match:c25c28a70db07c843253001dabfab6d8ebc7a76f
-```
-If there is no change to an annotation or container collection the server will respond back with a Not Modified status to inform the client that the cached version of the response is still good to use:
-```
-HTTP/2 304 
-```
-To safely update the resource earlier we could have supplied the ETag as follows:
-```bash
-curl -k -X PUT -d @test/annotation2.json https://localhost/annotations/my-container/foobar -H If-Match:c25c28a70db07c843253001dabfab6d8ebc7a76f
-```
-This ensures we really are updating the resource that we think we are.
-
-### Manifests
-
-Miiify provides a simple Key/Value interface for working with manifests which are also stored using Git in a directory called '.manifest'.
-
-To store a manifest using key 'foo':
-```bash
-curl -k -X POST -d @test/manifest1.json https://localhost/manifest/foo
-```
-
-To update a manifest using key 'foo':
-```bash
-curl -k -X PUT -d @test/manifest2.json https://localhost/manifest/foo
-```
-
-To retrieve a manifest using key 'foo':
-```bash
-curl -k -X GET https://localhost/manifest/foo
-```
-
-To delete a manifest using key 'foo':
-```bash
-curl -k -X DELETE https://localhost/manifest/foo
-```
-
-### API
-
-The API has been described using [OpenAPI](https://github.com/nationalarchives/miiify/blob/main/doc/swagger.yml).
+* Support for ETag caching
+* Simple key/value interface for working with IIIF manifests
+* Easily scaled horizontally using Kubernetes
 
 
-### Configuration
 
-The server can be started with the command flag ```--config=<file>``` to specify a JSON configuration file. The sample below shows all the fields with their default values when not included:
 
-```json
-{
-  "tls": true,
-  "interface": "0.0.0.0",
-  "port": 8080,
-  "certificate_file": "server.crt",
-  "key_file": "server.key",
-  "repository_name": "db",
-  "repository_author": "miiify.rocks",
-  "container_page_limit": 200,
-  "container_representation": "PreferContainedDescriptions"
-}
-```
 
-### Testing
 
-Tests can be run using the [Airborne](https://github.com/brooklynDev/airborne) test framework:
 
-```bash
-docker compose up -d
-cd test
-rspec integration.rb -fd
-docker compose down
-```
 
 
