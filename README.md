@@ -1,6 +1,6 @@
 ### Introduction
 
-Miiify is a light-weight web annotation server with its own embedded database technology. Its primary use case is to support [IIIF](https://iiif.io/) applications. There is a choice of two backends:
+Miiify is a light-weight web annotation server using an embedded database. Its primary use case is to support [IIIF](https://iiif.io/) applications. There is a choice of two storage backends:
 
 #### git
 
