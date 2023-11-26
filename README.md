@@ -14,7 +14,7 @@ Designed to be highly-scalable and disk efficient. This backend uses technology 
 
 Miiify can be run with Docker using either the git or pack backend. The example below uses the pack backend.
 
-#### Starting server
+### Starting server
 
 ```bash
 docker compose pull pack
