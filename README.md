@@ -140,6 +140,13 @@ produces
 * Easily scaled horizontally using Kubernetes
 
 
+### Building from source
+
+To build your own native Docker images:
+```
+cd miiify/test
+./build.sh pack
+```
 
 
 
