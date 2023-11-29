@@ -17,7 +17,7 @@ describe "create container" do
 end
 
 describe "get empty collection" do
-  it "should contain specific keys and have a total of 0 annotations" do
+  it "should return a 404 as no annotations exist" do
     get "/annotations/my-container/", { Accept: "application/json" }
     expect_status(404)
   end
@@ -143,7 +143,7 @@ describe "check the container collection total and keys" do
 end
 
 describe "check the first annotation page total and keys" do
-  it "should contain 200 annotations items and have a next key" do
+  it "should contain 200 annotations items" do
     get "/annotations/my-container/", { Accept: "application/json", params: { page: 0 } }
     expect_status(200)
     expect_json("partOf", total: 200)
@@ -152,10 +152,37 @@ describe "check the first annotation page total and keys" do
   end
 end
 
-describe "check the second annotation page exists" do
-  it "should return a 404" do
+describe "add another annotation to go over 200 page limit" do
+  file = File.read("annotation1.json")
+  payload = JSON.parse(file)
+  it "should return a 201" do
+    post "/annotations/my-container/", payload, { content_type: "application/json" }
+    expect_status(201)
+    expect_json(type: "Annotation")
+  end
+end
+
+describe "check the second annotation page exist" do
+  it "should return a 200 and have 201 items" do
     get "/annotations/my-container/", { Accept: "application/json", params: { page: 1 } }
-    expect_status(404)
+    expect_status(200)
+    expect_json("partOf", total: 201)
+  end
+end
+
+describe "check the next key exists on first page" do
+  it "should return a 200 and have next key" do
+    get "/annotations/my-container/", { Accept: "application/json", params: { page: 0 } }
+    expect_status(200)
+    expect_json_keys("", [:next])
+  end
+end
+
+describe "check the prev key exists on second page" do
+  it "should return a 200 and have prev key" do
+    get "/annotations/my-container/", { Accept: "application/json", params: { page: 1 } }
+    expect_status(200)
+    expect_json_keys("", [:prev])
   end
 end
 
