@@ -31,7 +31,6 @@ end = struct
 
   let annotation_link =
     [ ("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\"") ]
-
 end
 
 let bad_request message = Dream.html ~status:`Bad_Request message
@@ -43,6 +42,12 @@ let ok message = Dream.html ~status:`OK message
 
 let precondition_failed message =
   Dream.html ~status:`Precondition_Failed message
+
+let get_container ~hash body =
+  let open Header in
+  let etag = [ ("ETag", "\"" ^ hash ^ "\"") ] in
+  let headers = jsonld_content_type @ etag in
+  Dream.respond ~status:`OK ~headers body
 
 let create_container body =
   let open Header in
@@ -100,10 +105,10 @@ let create_manifest body =
   Dream.respond ~status:`Created ~headers body
 
 let get_manifest ~hash body =
-    let open Header in
-    let etag = [ ("ETag", "\"" ^ hash ^ "\"") ] in
-    let headers = manifest_content_type @ etag in
-    Dream.respond ~status:`OK ~headers body
+  let open Header in
+  let etag = [ ("ETag", "\"" ^ hash ^ "\"") ] in
+  let headers = manifest_content_type @ etag in
+  Dream.respond ~status:`OK ~headers body
 
 let update_manifest body =
   let open Header in

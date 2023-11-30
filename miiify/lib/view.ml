@@ -4,6 +4,16 @@ open Config_t
 let status config _ _ = Response.ok config.miiify_status
 let version config _ _ = Response.ok config.miiify_version
 
+let get_container config db request =
+  let open Response in
+  let id = Dream.param request "container_id" in
+  Controller.get_container_hash ~config ~db ~id >>= function
+  | Some hash -> (
+      Header.get_if_none_match request |> function
+      | Some etag when hash = etag -> not_modified "container not modified"
+      | _ -> Controller.get_container ~config ~db ~container_id:id >>= get_container ~hash)
+  | None -> not_found "container not found"
+
 let post_container config db request =
   let open Response in
   let id = Header.get_id request in

@@ -1,5 +1,7 @@
 val create : config:Config_t.config -> Db.t
 
+val get_container : db:Db.t -> container_id:string -> Yojson.Basic.t Lwt.t
+
 val get_annotations :
   db:Db.t ->
   container_id:string ->

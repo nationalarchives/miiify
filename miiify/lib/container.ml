@@ -126,3 +126,5 @@ let collection_worker json page target total limit =
 
 let collection json ~total ~limit ~target =
   collection_worker json 0 target total limit |> to_string
+
+let container json = json |> to_string

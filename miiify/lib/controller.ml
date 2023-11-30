@@ -2,6 +2,9 @@ open Lwt.Syntax
 open Lwt.Infix
 open Config_t
 
+let get_container ~config ~db ~container_id =
+  Model.get_container ~db ~container_id >|= Container.container
+
 let post_container ~config ~db ~id ~host ~message data =
   Container.create ~id ~host ~data |> function
   | Ok json ->

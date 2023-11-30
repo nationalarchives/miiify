@@ -5,6 +5,10 @@ open Config_t
 
 let create ~config = Db.create ~fname:config.repository_name
 
+let get_container ~db ~container_id =
+  let* data = Db.get ~db ~key:[ container_id; "main" ]  in
+  from_string data |> Lwt.return
+
 let filter_items target items =
   match target with
   | Some target ->

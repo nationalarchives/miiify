@@ -1,6 +1,9 @@
 val status : Config_t.config -> Db.t -> Dream.request -> Dream.response Lwt.t
 val version : Config_t.config -> Db.t -> Dream.request -> Dream.response Lwt.t
 
+val get_container :
+  Config_t.config -> Db.t -> Dream.request -> Dream.response Lwt.t
+
 val post_container :
   Config_t.config -> Db.t -> Dream.request -> Dream.response Lwt.t
 

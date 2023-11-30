@@ -1,3 +1,6 @@
+val get_container :
+  config:Config_t.config -> db:Db.t -> container_id:string -> string Lwt.t
+
 val post_container :
   config:Config_t.config ->
   db:Db.t ->

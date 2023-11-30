@@ -6,3 +6,5 @@ val update :
 
 val collection :
   Yojson.Basic.t -> total:int -> limit:int -> target:string option -> string
+
+val container : Yojson.Basic.t -> string
