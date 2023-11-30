@@ -11,4 +11,5 @@ type config = {
   ~repository_author <ocaml default="\"miiify.rocks\""> : string;
   ~container_page_limit <ocaml default="200"> : int;
   ~container_representation <ocaml default="\"PreferContainedDescriptions\""> : string;
+  ~avoid_mid_air_collisions <ocaml default="false"> : bool;
 }

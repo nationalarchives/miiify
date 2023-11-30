@@ -18,6 +18,13 @@ let post_container config db request =
       | Ok result -> result >>= create_container
       | Error m -> bad_request m)
 
+let put_container_worker request config db id host message =
+  let open Response in
+  Dream.body request >>= Controller.put_container ~config ~db ~id ~host ~message
+  >>= function
+  | Ok result -> result >>= update_container
+  | Error m -> bad_request m
+
 let put_container config db request =
   let open Response in
   let container_id = Dream.param request "container_id" in
@@ -26,20 +33,12 @@ let put_container config db request =
   Controller.get_container_hash ~config ~db ~id:container_id >>= function
   | Some hash -> (
       Header.get_if_match request |> function
-      | Some etag when hash = etag -> (
-          Dream.body request
-          >>= Controller.put_container ~config ~db ~id:container_id ~host
-                ~message
-          >>= function
-          | Ok result -> result >>= update_container
-          | Error m -> bad_request m)
-      | None -> (
-          Dream.body request
-          >>= Controller.put_container ~config ~db ~id:container_id ~host
-                ~message:(message ^ " no etag")
-          >>= function
-          | Ok result -> result >>= update_container
-          | Error m -> bad_request m)
+      | Some etag when hash = etag ->
+          put_container_worker request config db container_id host message
+      | None when config.avoid_mid_air_collisions = true ->
+          precondition_failed "etag required"
+      | None when config.avoid_mid_air_collisions = false ->
+          put_container_worker request config db container_id host message
       | _ -> precondition_failed "failed to match etag")
   | None -> not_found "container not found"
 
@@ -53,9 +52,10 @@ let delete_container config db request =
       | Some etag when hash = etag ->
           Controller.delete_container ~config ~db ~id:container_id ~message
           >>= delete_container
-      | None ->
-          Controller.delete_container ~config ~db ~id:container_id
-            ~message:(message ^ " no etag")
+      | None when config.avoid_mid_air_collisions = true ->
+          precondition_failed "etag required"
+      | None when config.avoid_mid_air_collisions = false ->
+          Controller.delete_container ~config ~db ~id:container_id ~message
           >>= delete_container
       | _ -> precondition_failed "failed to match etag")
   | None -> not_found "container not found"

@@ -9,5 +9,6 @@
   "repository_name": "db",
   "repository_author": "miiify.rocks",
   "container_page_limit": 200,
-  "container_representation": "PreferContainedDescriptions"
+  "container_representation": "PreferContainedDescriptions",
+  "avoid_mid_air_collisions": false
 }
