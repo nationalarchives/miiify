@@ -80,6 +80,16 @@ let post_annotation config db request =
           | Error m -> bad_request m))
   | false -> not_found "container does not exist"
 
+let put_annotation_worker request config db container_id annotation_id host
+    message =
+  let open Response in
+  Dream.body request
+  >>= Controller.put_annotation ~config ~db ~container_id ~annotation_id ~host
+        ~message
+  >>= function
+  | Ok result -> result >>= update_annotation
+  | Error m -> bad_request m
+
 let put_annotation config db request =
   let open Response in
   let annotation_id = Dream.param request "annotation_id" in
@@ -90,20 +100,14 @@ let put_annotation config db request =
   >>= function
   | Some hash -> (
       Header.get_if_match request |> function
-      | Some etag when hash = etag -> (
-          Dream.body request
-          >>= Controller.put_annotation ~config ~db ~container_id ~annotation_id
-                ~host ~message
-          >>= function
-          | Ok result -> result >>= update_annotation
-          | Error m -> bad_request m)
-      | None -> (
-          Dream.body request
-          >>= Controller.put_annotation ~config ~db ~container_id ~annotation_id
-                ~host ~message:(message ^ " no etag")
-          >>= function
-          | Ok result -> result >>= update_annotation
-          | Error m -> bad_request m)
+      | Some etag when hash = etag ->
+          put_annotation_worker request config db container_id annotation_id
+            host message
+      | None when config.avoid_mid_air_collisions = true ->
+          precondition_failed "etag required"
+      | None when config.avoid_mid_air_collisions = false ->
+          put_annotation_worker request config db container_id annotation_id
+            host message
       | _ -> precondition_failed "failed to match etag")
   | None -> not_found "annotation not found"
 
@@ -179,9 +183,11 @@ let delete_annotation config db request =
           Controller.delete_annotation ~config ~db ~container_id ~annotation_id
             ~message
           >>= delete_annotation
-      | None ->
+      | None when config.avoid_mid_air_collisions = true ->
+          precondition_failed "etag required"
+      | None when config.avoid_mid_air_collisions = false ->
           Controller.delete_annotation ~config ~db ~container_id ~annotation_id
-            ~message:(message ^ " no etag")
+            ~message
           >>= delete_annotation
       | _ -> precondition_failed "failed to match etag")
   | None -> not_found "annotation not found"
