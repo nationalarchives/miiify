@@ -16,8 +16,8 @@ let () =
            (View.delete_container config db);
          Dream.post "/annotations/:container_id/"
            (View.post_annotation config db);
-         Dream.get "/annotations/:container_id/" (View.get_container config db);
-         Dream.get "/annotations/:container_id" (View.get_container config db);
+         Dream.get "/annotations/:container_id/" (View.get_annotations config db);
+         (* Dream.get "/annotations/:container_id" (View.get_container config db); *)
          Dream.get "/annotations/:container_id/:annotation_id"
            (View.get_annotation config db);
          Dream.delete "/annotations/:container_id/:annotation_id"

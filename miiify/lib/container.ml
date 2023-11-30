@@ -13,7 +13,7 @@ let create_worker json id host =
     json |> member "id" = `Null
     && json |> member "created" = `Null
   then
-    let iri = host ^ "/annotations/" ^ id in
+    let iri = host ^ "/annotations/" ^ id ^ "/" in
     let timestamp = Utils.Time.get_timestamp () in
     let id = `String iri in
     let type_ = json |> member "type" in

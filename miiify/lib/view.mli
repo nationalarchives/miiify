@@ -22,7 +22,7 @@ val get_annotation :
 val delete_annotation :
   Config_t.config -> Db.t -> Dream.request -> Dream.response Lwt.t
 
-val get_container :
+val get_annotations :
   Config_t.config -> Db.t -> Dream.request -> Dream.response Lwt.t
 
 val post_manifest :

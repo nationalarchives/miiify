@@ -142,7 +142,7 @@ let get_annotation_page config db request =
           | None -> not_found "page not found"))
   | None -> not_found "no pages found"
 
-let get_container config db request =
+let get_annotations config db request =
   let open Response in
   let open Header in
   let container =
