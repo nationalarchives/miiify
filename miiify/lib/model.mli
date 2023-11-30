@@ -1,6 +1,6 @@
 val create : config:Config_t.config -> Db.t
 
-val get_container :
+val get_annotations :
   db:Db.t ->
   container_id:string ->
   offset:int ->

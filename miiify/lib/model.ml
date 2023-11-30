@@ -11,7 +11,7 @@ let filter_items target items =
       List.filter (fun x -> x |> Util.member "target" = `String target) items
   | None -> items
 
-let get_container ~db ~container_id ~offset ~length ~target =
+let get_annotations ~db ~container_id ~offset ~length ~target =
   let* main = Db.get ~db ~key:[ container_id; "main" ] in
   let container = from_string main in
   let* collection =

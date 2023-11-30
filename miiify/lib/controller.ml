@@ -47,7 +47,7 @@ let annotation_exists ~config ~db ~container_id ~annotation_id =
 
 let get_annotation_collection ~config ~db ~id ~target =
   let* total = Model.total ~db ~container_id:id in
-  Model.get_container ~db ~container_id:id ~offset:0
+  Model.get_annotations ~db ~container_id:id ~offset:0
     ~length:config.container_page_limit ~target
   >|= Container.collection ~total ~target ~limit:config.container_page_limit
 
@@ -57,7 +57,7 @@ let get_annotation_page ~config ~db ~id ~page ~target =
   let* total = Model.total ~db ~container_id:id in
   if page < 0 || page > calculate_page total limit then Lwt.return_none
   else
-    Model.get_container ~db ~container_id:id ~offset:(page * limit)
+    Model.get_annotations ~db ~container_id:id ~offset:(page * limit)
       ~length:limit ~target
     >|= Annotation.page ~total ~page ~target ~limit
 
