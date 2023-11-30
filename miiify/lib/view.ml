@@ -214,6 +214,13 @@ let post_manifest config db request =
       | Ok result -> result >>= create_manifest
       | Error m -> bad_request m)
 
+let put_manifest_worker request config db id message =
+  let open Response in
+  Dream.body request >>= Controller.put_manifest ~config ~db ~id ~message
+  >>= function
+  | Ok result -> result >>= update_manifest
+  | Error m -> bad_request m
+
 let put_manifest config db request =
   let open Response in
   let id = Dream.param request "manifest_id" in
@@ -221,19 +228,12 @@ let put_manifest config db request =
   Controller.get_manifest_hash ~config ~db ~id >>= function
   | Some hash -> (
       Header.get_if_match request |> function
-      | Some etag when hash = etag -> (
-          Dream.body request
-          >>= Controller.put_manifest ~config ~db ~id ~message
-          >>= function
-          | Ok result -> result >>= update_manifest
-          | Error m -> bad_request m)
-      | None -> (
-          Dream.body request
-          >>= Controller.put_manifest ~config ~db ~id
-                ~message:(message ^ " no etag")
-          >>= function
-          | Ok result -> result >>= update_manifest
-          | Error m -> bad_request m)
+      | Some etag when hash = etag ->
+          put_manifest_worker request config db id message
+      | None when config.avoid_mid_air_collisions = true ->
+          precondition_failed "etag required"
+      | None when config.avoid_mid_air_collisions = false ->
+          put_manifest_worker request config db id message
       | _ -> precondition_failed "failed to match etag")
   | None -> not_found "manifest not found"
 
@@ -246,10 +246,11 @@ let delete_manifest config db request =
       Header.get_if_match request |> function
       | Some etag when hash = etag ->
           Controller.delete_manifest ~config ~db ~id ~message
-          >>= delete_manifest
-      | None ->
-          Controller.delete_manifest ~config ~db ~id
-            ~message:(message ^ " no etag")
-          >>= delete_manifest
+          >>= delete_container
+      | None when config.avoid_mid_air_collisions = true ->
+          precondition_failed "etag required"
+      | None when config.avoid_mid_air_collisions = false ->
+          Controller.delete_manifest ~config ~db ~id ~message
+          >>= delete_container
       | _ -> precondition_failed "failed to match etag")
   | None -> not_found "manifest not found"
