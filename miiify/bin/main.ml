@@ -8,24 +8,24 @@ let () =
   @@ Dream.logger
   @@ Dream.router
        [
-         Dream.get "/" (View.status config db);
-         Dream.get "/version" (View.version config db);
-         Dream.post "/annotations/" (View.post_container config db);
+         Dream.get "/" (View.status config);
+         Dream.get "/version" (View.version config);
+         Dream.post "/annotations/" (View.post_container db);
          Dream.put "/annotations/:container_id" (View.put_container config db);
          Dream.delete "/annotations/:container_id"
            (View.delete_container config db);
-         Dream.post "/annotations/:container_id/"
-           (View.post_annotation config db);
-         Dream.get "/annotations/:container_id/" (View.get_annotations config db);
-         Dream.get "/annotations/:container_id" (View.get_container config db);
+         Dream.post "/annotations/:container_id/" (View.post_annotation db);
+         Dream.get "/annotations/:container_id/"
+           (View.get_annotations config db);
+         Dream.get "/annotations/:container_id" (View.get_container db);
          Dream.get "/annotations/:container_id/:annotation_id"
-           (View.get_annotation config db);
+           (View.get_annotation db);
          Dream.delete "/annotations/:container_id/:annotation_id"
            (View.delete_annotation config db);
          Dream.put "/annotations/:container_id/:annotation_id"
            (View.put_annotation config db);
-         Dream.post "/manifest/:manifest_id" (View.post_manifest config db);
-         Dream.get "/manifest/:manifest_id" (View.get_manifest config db);
+         Dream.post "/manifest/:manifest_id" (View.post_manifest db);
+         Dream.get "/manifest/:manifest_id" (View.get_manifest db);
          Dream.put "/manifest/:manifest_id" (View.put_manifest config db);
          Dream.delete "/manifest/:manifest_id" (View.delete_manifest config db);
        ]
