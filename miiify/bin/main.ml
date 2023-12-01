@@ -21,6 +21,8 @@ let () =
          Dream.post "/annotations/:container_id/" (View.post_annotation db);
          Dream.get "/annotations/:container_id/"
            (View.get_annotations config db);
+         Dream.options "/annotations/:container_id/"
+           (View.options_annotations);
          Dream.head "/annotations/:container_id/"
            (View.head_annotations config db);
          Dream.options "/annotations/:container_id" View.options_container;

@@ -9,6 +9,7 @@ module Header : sig
   val options_status : (string * string) list
   val options_version : (string * string) list
   val options_container : (string * string) list
+  val options_annotations : (string * string) list
 end = struct
   let jsonld_content_type =
     [
@@ -37,9 +38,10 @@ end = struct
   let annotation_link =
     [ ("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\"") ]
 
-  let options_status = [ ("Allow", "HEAD, GET") ]
-  let options_version = [ ("Allow", "HEAD, GET") ]
-  let options_container = [ ("Allow", "HEAD, GET, POST, PUT, DELETE") ]
+  let options_status = [ ("Allow", "OPTIONS, HEAD, GET") ]
+  let options_version = [ ("Allow", "OPTIONS, HEAD, GET") ]
+  let options_container = [ ("Allow", "OPTIONS, HEAD, GET, POST, PUT, DELETE") ]
+  let options_annotations = [ ("Allow", "OPTIONS, HEAD, GET, POST") ]
 end
 
 let bad_request message = Dream.html ~status:`Bad_Request message
@@ -96,16 +98,18 @@ let update_annotation body =
 
 let delete_annotation = no_content
 
+let options_annotations = Dream.empty ~headers:Header.options_annotations `OK
+
 let get_collection ~hash body =
   let open Header in
   let etag = [ ("ETag", "\"" ^ hash ^ "\"") ] in
-  let headers = collection_link @ jsonld_content_type @ etag in
+  let headers = collection_link @ jsonld_content_type @ etag @ options_annotations in
   Dream.respond ~status:`OK ~headers body
 
 let get_page ~hash body =
   let open Header in
   let etag = [ ("ETag", "\"" ^ hash ^ "\"") ] in
-  let headers = page_link @ jsonld_content_type @ etag in
+  let headers = page_link @ jsonld_content_type @ etag @ options_annotations in
   Dream.respond ~status:`OK ~headers body
 
 let get_annotation ~hash body =

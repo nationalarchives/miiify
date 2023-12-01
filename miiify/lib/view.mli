@@ -26,6 +26,8 @@ val head_annotation : Db.t -> Dream.request -> Dream.response Lwt.t
 val delete_annotation :
   Config_t.config -> Db.t -> Dream.request -> Dream.response Lwt.t
 
+val options_annotations : Dream.request -> Dream.response Lwt.t
+
 val get_annotations :
   Config_t.config -> Db.t -> Dream.request -> Dream.response Lwt.t
 

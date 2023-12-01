@@ -32,6 +32,8 @@ val update_annotation : string -> Dream.response Lwt.t
 
 val delete_annotation : unit -> Dream.response Lwt.t
 
+val options_annotations : Dream.response Lwt.t
+
 val get_collection : hash:string -> string -> Dream.response Lwt.t
 
 val get_page : hash:string -> string -> Dream.response Lwt.t
