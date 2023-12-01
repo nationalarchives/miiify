@@ -10,6 +10,7 @@ module Header : sig
   val options_version : (string * string) list
   val options_container : (string * string) list
   val options_annotations : (string * string) list
+  val options_annotation : (string * string) list
 end = struct
   let jsonld_content_type =
     [
@@ -42,6 +43,9 @@ end = struct
   let options_version = [ ("Allow", "OPTIONS, HEAD, GET") ]
   let options_container = [ ("Allow", "OPTIONS, HEAD, GET, POST, PUT, DELETE") ]
   let options_annotations = [ ("Allow", "OPTIONS, HEAD, GET, POST") ]
+
+  let options_annotation =
+    [ ("Allow", "OPTIONS, HEAD, GET, POST, PUT, DELETE") ]
 end
 
 let bad_request message = Dream.html ~status:`Bad_Request message
@@ -81,41 +85,50 @@ let update_container body =
   let headers = collection_link @ jsonld_content_type @ options_container in
   Dream.respond ~status:`OK ~headers body
 
-let delete_container () = 
+let delete_container () =
   let open Header in
   let headers = options_container in
   Dream.empty ~headers `No_Content
 
+let options_annotation = Dream.empty ~headers:Header.options_annotation `OK
+
 let create_annotation body =
   let open Header in
-  let headers = jsonld_content_type in
+  let headers = jsonld_content_type @ options_annotation in
   Dream.respond ~status:`Created ~headers body
+
+let get_annotation ~hash body =
+  let open Header in
+  let etag = [ ("ETag", "\"" ^ hash ^ "\"") ] in
+  let headers =
+    annotation_link @ jsonld_content_type @ etag @ options_annotation
+  in
+  Dream.respond ~status:`OK ~headers body
 
 let update_annotation body =
   let open Header in
-  let headers = jsonld_content_type in
+  let headers = jsonld_content_type @ options_annotation in
   Dream.respond ~status:`OK ~headers body
 
-let delete_annotation = no_content
+let delete_annotation () = 
+  let open Header in
+  let headers = options_annotation in
+  Dream.empty ~headers `No_Content
 
 let options_annotations = Dream.empty ~headers:Header.options_annotations `OK
 
 let get_collection ~hash body =
   let open Header in
   let etag = [ ("ETag", "\"" ^ hash ^ "\"") ] in
-  let headers = collection_link @ jsonld_content_type @ etag @ options_annotations in
+  let headers =
+    collection_link @ jsonld_content_type @ etag @ options_annotations
+  in
   Dream.respond ~status:`OK ~headers body
 
 let get_page ~hash body =
   let open Header in
   let etag = [ ("ETag", "\"" ^ hash ^ "\"") ] in
   let headers = page_link @ jsonld_content_type @ etag @ options_annotations in
-  Dream.respond ~status:`OK ~headers body
-
-let get_annotation ~hash body =
-  let open Header in
-  let etag = [ ("ETag", "\"" ^ hash ^ "\"") ] in
-  let headers = annotation_link @ jsonld_content_type @ etag in
   Dream.respond ~status:`OK ~headers body
 
 let prefer_contained_descriptions response = response

@@ -30,6 +30,8 @@ let () =
          Dream.head "/annotations/:container_id" (View.head_container db);
          Dream.get "/annotations/:container_id/:annotation_id"
            (View.get_annotation db);
+         Dream.options "/annotations/:container_id/:annotation_id"
+           (View.options_annotation);
          Dream.head "/annotations/:container_id/:annotation_id"
            (View.head_annotation db);
          Dream.delete "/annotations/:container_id/:annotation_id"

@@ -173,6 +173,9 @@ let get_annotations config db request =
   | "PreferMinimalContainer" -> container |> prefer_minimal_container
   | v -> bad_request (Printf.sprintf "%s not recognised" v)
 
+let options_annotation _ = Response.options_annotation
+
+
 let head_annotations config db request =
   get_annotations config db request >>= Response.head
 

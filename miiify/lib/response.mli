@@ -38,6 +38,8 @@ val get_collection : hash:string -> string -> Dream.response Lwt.t
 
 val get_page : hash:string -> string -> Dream.response Lwt.t
 
+val options_annotation : Dream.response Lwt.t
+
 val get_annotation : hash:string -> string -> Dream.response Lwt.t
 
 val prefer_contained_descriptions : Dream.response Lwt.t -> Dream.response Lwt.t
