@@ -227,6 +227,8 @@ let get_manifest db request =
 
 let head_manifest db request = get_manifest db request >>= Response.head
 
+let options_manifest _ = Response.options_manifest
+
 let post_manifest db request =
   let open Response in
   let id = Dream.param request "manifest_id" in

@@ -50,4 +50,6 @@ let () =
          Dream.head "/manifest/:manifest_id" (View.head_manifest db);
          Dream.put "/manifest/:manifest_id" (View.put_manifest config db);
          Dream.delete "/manifest/:manifest_id" (View.delete_manifest config db);
+         Dream.options "/manifest/:manifest_id" (View.options_manifest);
+
        ]

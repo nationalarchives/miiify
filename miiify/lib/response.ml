@@ -12,6 +12,7 @@ module Header : sig
   val options_create_container : (string * string) list
   val options_annotations : (string * string) list
   val options_annotation : (string * string) list
+  val options_manifest : (string * string) list
 end = struct
   let jsonld_content_type =
     [
@@ -45,6 +46,7 @@ end = struct
   let options_container = [ ("Allow", "OPTIONS, HEAD, GET, PUT, DELETE") ]
   let options_create_container = [ ("Allow", "OPTIONS, POST") ]
   let options_annotations = [ ("Allow", "OPTIONS, HEAD, GET, POST") ]
+  let options_manifest = [ ("Allow", "OPTIONS, HEAD, GET, POST, PUT, DELETE") ]
 
   let options_annotation =
     [ ("Allow", "OPTIONS, HEAD, GET, POST, PUT, DELETE") ]
@@ -54,7 +56,6 @@ let bad_request message = Dream.html ~status:`Bad_Request message
 let not_found message = Dream.html ~status:`Not_Found message
 let not_implemented message = Dream.html ~status:`Not_Implemented message
 let not_modified message = Dream.html ~status:`Not_Modified message
-let no_content () = Dream.empty `No_Content
 
 let status message =
   Dream.html ~headers:Header.options_status ~status:`OK message
@@ -82,7 +83,9 @@ let get_container ~hash body =
 
 let create_container body =
   let open Header in
-  let headers = collection_link @ jsonld_content_type @ options_create_container in
+  let headers =
+    collection_link @ jsonld_content_type @ options_create_container
+  in
   Dream.respond ~status:`Created ~headers body
 
 let update_container body =
@@ -144,23 +147,28 @@ let prefer_contained_iris _ =
 let prefer_minimal_container _ =
   not_implemented "Please raise an issue if you would like this feature"
 
+let options_manifest = Dream.empty ~headers:Header.options_manifest `OK
+
 let create_manifest body =
   let open Header in
-  let headers = manifest_content_type in
+  let headers = manifest_content_type @ options_manifest in
   Dream.respond ~status:`Created ~headers body
 
 let get_manifest ~hash body =
   let open Header in
   let etag = [ ("ETag", "\"" ^ hash ^ "\"") ] in
-  let headers = manifest_content_type @ etag in
+  let headers = manifest_content_type @ etag @ options_manifest in
   Dream.respond ~status:`OK ~headers body
 
 let update_manifest body =
   let open Header in
-  let headers = manifest_content_type in
+  let headers = manifest_content_type @ options_manifest in
   Dream.respond ~status:`OK ~headers body
 
-let delete_manifest = no_content
+let delete_manifest () =
+  let open Header in
+  let headers = options_manifest in
+  Dream.empty ~headers `No_Content
 
 let head m =
   let* body = Dream.body m in

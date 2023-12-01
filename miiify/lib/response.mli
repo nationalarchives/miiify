@@ -58,4 +58,6 @@ val update_manifest : string -> Dream.response Lwt.t
 
 val delete_manifest : unit -> Dream.response Lwt.t
 
+val options_manifest : Dream.response Lwt.t
+
 val head : Dream.server Dream.message -> Dream.response Lwt.t
