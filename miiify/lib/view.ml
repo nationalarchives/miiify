@@ -11,6 +11,8 @@ let options_version _ = Response.options_version
 
 let options_container _ = Response.options_container
 
+let options_create_container _ = Response.options_create_container
+
 let get_container db request =
   let open Response in
   let id = Dream.param request "container_id" in
