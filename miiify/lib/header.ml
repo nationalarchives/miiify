@@ -23,21 +23,23 @@ let get_host message =
   | Some host -> get_host_helper message host
 
 let get_prefer request ~default =
-  match Dream.header request "prefer" with
-  | None -> default
-  | Some
-      "return=representation;include=\"http://www.w3.org/ns/ldp#PreferMinimalContainer\""
+  let prefer =
+    match Dream.header request "prefer" with
+    | Some prefer -> Str.global_replace (Str.regexp "  *") "" prefer
+    | None -> default
+  in
+
+  match prefer with
+  | "return=representation;include=\"http://www.w3.org/ns/ldp#PreferMinimalContainer\""
     ->
       "PreferMinimalContainer"
-  | Some
-      "return=representation;include=\"http://www.w3.org/ns/oa#PreferContainedIRIs\""
+  | "return=representation;include=\"http://www.w3.org/ns/oa#PreferContainedIRIs\""
     ->
       "PreferContainedIRIs"
-  | Some
-      "return=representation;include=\"http://www.w3.org/ns/oa#PreferContainedDescriptions\""
+  | "return=representation;include=\"http://www.w3.org/ns/oa#PreferContainedDescriptions\""
     ->
       "PreferContainedDescriptions"
-  | Some v -> v
+  | _ -> prefer
 
 let param_exists request param =
   match Dream.query request param with None -> false | Some _ -> true
