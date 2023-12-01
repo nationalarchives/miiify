@@ -8,8 +8,8 @@ let () =
   @@ Dream.logger
   @@ Dream.router
        [
-         Dream.get "/" (View.status config);
-         Dream.get "/version" (View.version config);
+         Dream.get "/" (View.get_status config);
+         Dream.get "/version" (View.get_version config);
          Dream.post "/annotations/" (View.post_container db);
          Dream.put "/annotations/:container_id" (View.put_container config db);
          Dream.delete "/annotations/:container_id"
