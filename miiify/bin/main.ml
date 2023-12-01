@@ -10,10 +10,10 @@ let () =
        [
          Dream.get "/" (View.get_status config);
          Dream.head "/" (View.head_status config);
-         Dream.options "/" (View.options_status);
+         Dream.options "/" View.options_status;
          Dream.get "/version" (View.get_version config);
          Dream.head "/version" (View.head_version config);
-         Dream.options "/version" (View.options_version);
+         Dream.options "/version" View.options_version;
          Dream.post "/annotations/" (View.post_container db);
          Dream.put "/annotations/:container_id" (View.put_container config db);
          Dream.delete "/annotations/:container_id"
@@ -23,6 +23,7 @@ let () =
            (View.get_annotations config db);
          Dream.head "/annotations/:container_id/"
            (View.head_annotations config db);
+         Dream.options "/annotations/:container_id" View.options_container;
          Dream.get "/annotations/:container_id" (View.get_container db);
          Dream.head "/annotations/:container_id" (View.head_container db);
          Dream.get "/annotations/:container_id/:annotation_id"

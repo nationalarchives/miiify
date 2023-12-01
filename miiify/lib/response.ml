@@ -8,6 +8,7 @@ module Header : sig
   val annotation_link : (string * string) list
   val options_status : (string * string) list
   val options_version : (string * string) list
+  val options_container : (string * string) list
 end = struct
   let jsonld_content_type =
     [
@@ -38,6 +39,7 @@ end = struct
 
   let options_status = [ ("Allow", "HEAD, GET") ]
   let options_version = [ ("Allow", "HEAD, GET") ]
+  let options_container = [ ("Allow", "HEAD, GET, POST, PUT, DELETE") ]
 end
 
 let bad_request message = Dream.html ~status:`Bad_Request message
@@ -59,23 +61,28 @@ let options_version = Dream.empty ~headers:Header.options_version `OK
 let precondition_failed message =
   Dream.html ~status:`Precondition_Failed message
 
+let options_container = Dream.empty ~headers:Header.options_container `OK
+
 let get_container ~hash body =
   let open Header in
   let etag = [ ("ETag", "\"" ^ hash ^ "\"") ] in
-  let headers = jsonld_content_type @ etag in
+  let headers = jsonld_content_type @ etag @ options_container in
   Dream.respond ~status:`OK ~headers body
 
 let create_container body =
   let open Header in
-  let headers = collection_link @ jsonld_content_type in
+  let headers = collection_link @ jsonld_content_type @ options_container in
   Dream.respond ~status:`Created ~headers body
 
 let update_container body =
   let open Header in
-  let headers = collection_link @ jsonld_content_type in
+  let headers = collection_link @ jsonld_content_type @ options_container in
   Dream.respond ~status:`OK ~headers body
 
-let delete_container = no_content
+let delete_container () = 
+  let open Header in
+  let headers = options_container in
+  Dream.empty ~headers `No_Content
 
 let create_annotation body =
   let open Header in

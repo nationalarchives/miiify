@@ -16,6 +16,8 @@ val not_modified : string -> Dream.response Lwt.t
 
 val precondition_failed : string -> Dream.response Lwt.t
 
+val options_container : Dream.response Lwt.t
+
 val get_container : hash:string -> string -> Dream.response Lwt.t
 
 val create_container : string -> Dream.response Lwt.t

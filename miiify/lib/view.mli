@@ -1,11 +1,10 @@
 val get_status : Config_t.config -> Dream.request -> Dream.response Lwt.t
 val head_status : Config_t.config -> Dream.request -> Dream.response Lwt.t
 val options_status : Dream.request -> Dream.response Lwt.t
-
 val get_version : Config_t.config -> Dream.request -> Dream.response Lwt.t
 val head_version : Config_t.config -> Dream.request -> Dream.response Lwt.t
 val options_version : Dream.request -> Dream.response Lwt.t
-
+val options_container : Dream.request -> Dream.response Lwt.t
 val get_container : Db.t -> Dream.request -> Dream.response Lwt.t
 val head_container : Db.t -> Dream.request -> Dream.response Lwt.t
 val post_container : Db.t -> Dream.request -> Dream.response Lwt.t
