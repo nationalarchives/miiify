@@ -10,8 +10,10 @@ let () =
        [
          Dream.get "/" (View.get_status config);
          Dream.head "/" (View.head_status config);
+         Dream.options "/" (View.options_status);
          Dream.get "/version" (View.get_version config);
          Dream.head "/version" (View.head_version config);
+         Dream.options "/version" (View.options_version);
          Dream.post "/annotations/" (View.post_container db);
          Dream.put "/annotations/:container_id" (View.put_container config db);
          Dream.delete "/annotations/:container_id"

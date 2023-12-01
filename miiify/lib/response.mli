@@ -1,4 +1,10 @@
-val ok : string -> Dream.response Lwt.t
+val status : string -> Dream.response Lwt.t
+
+val options_status : Dream.response Lwt.t
+
+val version : string -> Dream.response Lwt.t
+
+val options_version : Dream.response Lwt.t
 
 val bad_request : string -> Dream.response Lwt.t
 

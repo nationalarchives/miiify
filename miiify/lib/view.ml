@@ -1,10 +1,14 @@
 open Lwt
 open Config_t
 
-let get_status config _ = Response.ok config.miiify_status
+let get_status config _ = Response.status config.miiify_status
 let head_status config request = get_status config request >>= Response.head
-let get_version config _ = Response.ok config.miiify_version
+let options_status _ = Response.options_status
+
+let get_version config _ = Response.version config.miiify_version
 let head_version config request = get_version config request >>= Response.head
+let options_version _ = Response.options_version
+
 
 let get_container db request =
   let open Response in

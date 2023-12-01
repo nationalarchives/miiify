@@ -1,10 +1,13 @@
 open Lwt.Syntax
+
 module Header : sig
   val jsonld_content_type : (string * string) list
   val manifest_content_type : (string * string) list
   val collection_link : (string * string) list
   val page_link : (string * string) list
   val annotation_link : (string * string) list
+  val options_status : (string * string) list
+  val options_version : (string * string) list
 end = struct
   let jsonld_content_type =
     [
@@ -32,6 +35,9 @@ end = struct
 
   let annotation_link =
     [ ("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\"") ]
+
+  let options_status = [ ("Allow", "HEAD, GET") ]
+  let options_version = [ ("Allow", "HEAD, GET") ]
 end
 
 let bad_request message = Dream.html ~status:`Bad_Request message
@@ -39,7 +45,16 @@ let not_found message = Dream.html ~status:`Not_Found message
 let not_implemented message = Dream.html ~status:`Not_Implemented message
 let not_modified message = Dream.html ~status:`Not_Modified message
 let no_content () = Dream.empty `No_Content
-let ok message = Dream.html ~status:`OK message
+
+let status message =
+  Dream.html ~headers:Header.options_status ~status:`OK message
+
+let options_status = Dream.empty ~headers:Header.options_status `OK
+
+let version message =
+  Dream.html ~headers:Header.options_version ~status:`OK message
+
+let options_version = Dream.empty ~headers:Header.options_version `OK
 
 let precondition_failed message =
   Dream.html ~status:`Precondition_Failed message
@@ -118,10 +133,10 @@ let update_manifest body =
 
 let delete_manifest = no_content
 
-let head m = 
+let head m =
   let* body = Dream.body m in
   let content_length = Printf.sprintf "%d" (String.length body) in
   let headers = Dream.all_headers m in
   let status = Dream.status m in
   let headers' = List.cons ("Content-Length", content_length) headers in
-  Dream.empty ~headers:headers' status  
+  Dream.empty ~headers:headers' status
