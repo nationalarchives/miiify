@@ -1,3 +1,4 @@
+open Lwt.Syntax
 module Header : sig
   val jsonld_content_type : (string * string) list
   val manifest_content_type : (string * string) list
@@ -116,3 +117,11 @@ let update_manifest body =
   Dream.respond ~status:`OK ~headers body
 
 let delete_manifest = no_content
+
+let head m = 
+  let* body = Dream.body m in
+  let content_length = Printf.sprintf "%d" (String.length body) in
+  let headers = Dream.all_headers m in
+  let status = Dream.status m in
+  let headers' = List.cons ("Content-Length", content_length) headers in
+  Dream.empty ~headers:headers' status  

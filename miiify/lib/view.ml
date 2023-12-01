@@ -2,7 +2,9 @@ open Lwt
 open Config_t
 
 let get_status config _ = Response.ok config.miiify_status
+let head_status config request = get_status config request >>= Response.head
 let get_version config _ = Response.ok config.miiify_version
+let head_version config request = get_version config request >>= Response.head
 
 let get_container db request =
   let open Response in
@@ -14,6 +16,8 @@ let get_container db request =
       | _ ->
           Controller.get_container ~db ~container_id:id >>= get_container ~hash)
   | None -> not_found "container not found"
+
+let head_container db request = get_container db request >>= Response.head
 
 let post_container db request =
   let open Response in
@@ -162,6 +166,9 @@ let get_annotations config db request =
   | "PreferMinimalContainer" -> container |> prefer_minimal_container
   | v -> bad_request (Printf.sprintf "%s not recognised" v)
 
+let head_annotations config db request =
+  get_annotations config db request >>= Response.head
+
 let get_annotation db request =
   let open Response in
   let container_id = Dream.param request "container_id" in
@@ -174,6 +181,8 @@ let get_annotation db request =
           Controller.get_annotation ~db ~container_id ~annotation_id
           >>= get_annotation ~hash)
   | None -> not_found "annotation not found"
+
+let head_annotation db request = get_annotation db request >>= Response.head
 
 let delete_annotation config db request =
   let open Response in
@@ -203,6 +212,8 @@ let get_manifest db request =
       | Some etag when hash = etag -> not_modified "manifest not modified"
       | _ -> Controller.get_manifest ~db ~id >>= get_manifest ~hash)
   | None -> not_found "manifest not found"
+
+let head_manifest db request = get_manifest db request >>= Response.head
 
 let post_manifest db request =
   let open Response in
