@@ -28,7 +28,7 @@ docker compose down pack
 
 ### Basic concepts
 
-Annotations are organised into containers and can be retrieved in pages to display within annotation viewers such as [Mirador](https://projectmirador.org/). To filter the annotation page to a specific IIIF canvas an additional target parameter can be supplied.
+Annotations are organised into containers and can be retrieved in pages to display within IIIF viewers such as [Mirador](https://projectmirador.org/). To filter the annotation page to a specific IIIF canvas an additional target parameter can be supplied.
 
 Create an annotation container called my-container:
 ```bash
@@ -135,7 +135,7 @@ produces
  
 ### Other key features
 
-* Support for ETag caching
+* Support for ETag caching and collision avoidance
 * Simple key/value interface for working with IIIF manifests
 * Easily scaled horizontally using Kubernetes
 
