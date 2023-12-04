@@ -21,22 +21,26 @@ let send ~status ~headers annotations =
         "did not find AnnotationCollection or AnnotationPage type"
 
 let prefer_minimal_container response =
-  let open Yojson.Basic.Util in
-  let* data = Dream.body response in
-  let headers = Dream.all_headers response in
-  let status = Dream.status response in
-  let json = Yojson.Basic.from_string data in
-  let annotations =
-    json |> member "type" |> function
-    | `String "AnnotationCollection" ->
-        let id = json |> member "first" |> member "id" in
-        let first = `Assoc [ ("first", id) ] in
-        let json' = json |> filter_collection in
-        Some (combine json' first)
-    | `String "AnnotationPage" -> Some (json |> filter_page)
-    | _ -> None
-  in
-  send ~status ~headers annotations
+  Dream.header response "Content-Type" |> function
+  | Some header when header = Dream.text_html ->
+      response |> Lwt.return
+  | _ ->
+      let open Yojson.Basic.Util in
+      let* data = Dream.body response in
+      let headers = Dream.all_headers response in
+      let status = Dream.status response in
+      let json = Yojson.Basic.from_string data in
+      let annotations =
+        json |> member "type" |> function
+        | `String "AnnotationCollection" ->
+            let id = json |> member "first" |> member "id" in
+            let first = `Assoc [ ("first", id) ] in
+            let json' = json |> filter_collection in
+            Some (combine json' first)
+        | `String "AnnotationPage" -> Some (json |> filter_page)
+        | _ -> None
+      in
+      send ~status ~headers annotations
 
 let get_iris items =
   let open Yojson.Basic.Util in
@@ -50,27 +54,31 @@ let first json items =
   |> Utils.Json.filter_null
 
 let prefer_contained_iris response =
-  let open Yojson.Basic.Util in
-  let* data = Dream.body response in
-  let headers = Dream.all_headers response in
-  let status = Dream.status response in
-  let json = Yojson.Basic.from_string data in
-  let annotations =
-    json |> member "type" |> function
-    | `String "AnnotationCollection" ->
-        let json' = json |> filter_collection in
-        let items = json |> member "first" |> member "items" in
-        let iris = get_iris items in
-        let first = `Assoc [ ("first", first json iris) ] in
-        Some (combine json' first)
-    | `String "AnnotationPage" ->
-        let json' = json |> filter_page in
-        let items = json |> member "items" in
-        let iris = get_iris items in
-        let items = `Assoc [ ("items", iris) ] in
-        Some (combine json' items)
-    | _ -> None
-  in
-  send ~status ~headers annotations
+  Dream.header response "Content-Type" |> function
+  | Some header when header = Dream.text_html ->
+      response |> Lwt.return
+  | _ ->
+      let open Yojson.Basic.Util in
+      let* data = Dream.body response in
+      let headers = Dream.all_headers response in
+      let status = Dream.status response in
+      let json = Yojson.Basic.from_string data in
+      let annotations =
+        json |> member "type" |> function
+        | `String "AnnotationCollection" ->
+            let json' = json |> filter_collection in
+            let items = json |> member "first" |> member "items" in
+            let iris = get_iris items in
+            let first = `Assoc [ ("first", first json iris) ] in
+            Some (combine json' first)
+        | `String "AnnotationPage" ->
+            let json' = json |> filter_page in
+            let items = json |> member "items" in
+            let iris = get_iris items in
+            let items = `Assoc [ ("items", iris) ] in
+            Some (combine json' items)
+        | _ -> None
+      in
+      send ~status ~headers annotations
 
 let prefer_contained_descriptions response = response |> Lwt.return
