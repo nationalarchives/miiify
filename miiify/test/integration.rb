@@ -186,17 +186,35 @@ describe "check the prev key exists on second page" do
   end
 end
 
+describe "get container collection items with PreferMinimalContainer" do
+  it "should return the correct keys" do
+    get "/annotations/my-container/", { Accept: "application/json", Prefer: "return=representation;include=\"http://www.w3.org/ns/ldp#PreferMinimalContainer\"" }
+    expect_status(200)
+    expect_json_keys("", [:@context, :created, :first, :id, :label, :total, :type])
+  end
+end
+
+describe "get container collection items with PreferMinimalContainer" do
+  it "should return the correct keys" do
+    get "/annotations/my-container/", { Accept: "application/json", params: { page: 0 }, Prefer: "return=representation;include=\"http://www.w3.org/ns/ldp#PreferMinimalContainer\"" }
+    expect_status(200)
+    expect_json_keys("", [:@context, :id, :type, :partOf, :startIndex, :next])
+  end
+end
+
 describe "get container collection items with PreferContainedIRIs" do
   it "should return items as array of strings" do
     get "/annotations/my-container/", { Accept: "application/json", Prefer: "return=representation;include=\"http://www.w3.org/ns/oa#PreferContainedIRIs\"" }
-    expect_status(501)
+    expect_status(200)
+    expect_json_types("first", items: :array_of_strings)
   end
 end
 
 describe "get page items with PreferContainedIRIs" do
   it "should return items as array of strings" do
     get "/annotations/my-container/", { Accept: "application/json", params: { page: 0 }, Prefer: "return=representation;include=\"http://www.w3.org/ns/oa#PreferContainedIRIs\"" }
-    expect_status(501)
+    expect_status(200)
+    expect_json_types(items: :array_of_strings)
   end
 end
 
@@ -204,6 +222,7 @@ describe "get container collection items with PreferContainedDescriptions" do
   it "should return items as array of objects" do
     get "/annotations/my-container/", { Accept: "application/json", Prefer: "return=representation;include=\"http://www.w3.org/ns/oa#PreferContainedDescriptions\"" }
     expect_status(200)
+    expect_json_types("first", items: :array_of_objects)
   end
 end
 
@@ -211,6 +230,7 @@ describe "get page items with PreferContainedDescriptions" do
   it "should return items as array of objects" do
     get "/annotations/my-container/", { Accept: "application/json", params: { page: 0 }, Prefer: "return=representation;include=\"http://www.w3.org/ns/oa#PreferContainedDescriptions\"" }
     expect_status(200)
+    expect_json_types(items: :array_of_objects)
   end
 end
 
