@@ -169,7 +169,7 @@ let get_annotations config db request =
   get_prefer request ~default:config.container_representation |> function
   | "PreferContainedDescriptions" ->
       annotations >>= Prefer.prefer_contained_descriptions
-  | "PreferContainedIRIs" -> annotations
+  | "PreferContainedIRIs" -> annotations >>= Prefer.prefer_contained_iris
   | "PreferMinimalContainer" -> annotations >>= Prefer.prefer_minimal_container
   | v -> bad_request (Printf.sprintf "%s not recognised" v)
 
