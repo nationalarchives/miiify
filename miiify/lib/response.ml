@@ -57,6 +57,9 @@ let not_found message = Dream.html ~status:`Not_Found message
 let not_implemented message = Dream.html ~status:`Not_Implemented message
 let not_modified message = Dream.html ~status:`Not_Modified message
 
+let internal_server_error message =
+  Dream.html ~status:`Internal_Server_Error message
+
 let status message =
   Dream.html ~headers:Header.options_status ~status:`OK message
 
@@ -139,14 +142,6 @@ let get_page ~hash body =
   let headers = page_link @ jsonld_content_type @ etag @ options_annotations in
   Dream.respond ~status:`OK ~headers body
 
-let prefer_contained_descriptions response = response
-
-let prefer_contained_iris _ =
-  not_implemented "Please raise an issue if you would like this feature"
-
-let prefer_minimal_container _ =
-  not_implemented "Please raise an issue if you would like this feature"
-
 let options_manifest = Dream.empty ~headers:Header.options_manifest `OK
 
 let create_manifest body =
@@ -177,3 +172,6 @@ let head m =
   let status = Dream.status m in
   let headers' = List.cons ("Content-Length", content_length) headers in
   Dream.empty ~headers:headers' status
+
+let from_json ~status ~headers json =
+  json |> Yojson.Basic.to_string |> Dream.respond ~status ~headers

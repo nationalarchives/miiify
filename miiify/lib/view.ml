@@ -4,13 +4,10 @@ open Config_t
 let get_status config _ = Response.status config.miiify_status
 let head_status config request = get_status config request >>= Response.head
 let options_status _ = Response.options_status
-
 let get_version config _ = Response.version config.miiify_version
 let head_version config request = get_version config request >>= Response.head
 let options_version _ = Response.options_version
-
 let options_container _ = Response.options_container
-
 let options_create_container _ = Response.options_create_container
 
 let get_container db request =
@@ -164,19 +161,19 @@ let options_annotations _ = Response.options_annotations
 let get_annotations config db request =
   let open Response in
   let open Header in
-  let container =
+  let annotations =
     param_exists request "page" |> function
     | true -> get_annotation_page config db request
     | false -> get_annotation_collection config db request
   in
   get_prefer request ~default:config.container_representation |> function
-  | "PreferContainedDescriptions" -> container |> prefer_contained_descriptions
-  | "PreferContainedIRIs" -> container |> prefer_contained_iris
-  | "PreferMinimalContainer" -> container |> prefer_minimal_container
+  | "PreferContainedDescriptions" ->
+      annotations >>= Prefer.prefer_contained_descriptions
+  | "PreferContainedIRIs" -> annotations
+  | "PreferMinimalContainer" -> annotations >>= Prefer.prefer_minimal_container
   | v -> bad_request (Printf.sprintf "%s not recognised" v)
 
 let options_annotation _ = Response.options_annotation
-
 
 let head_annotations config db request =
   get_annotations config db request >>= Response.head
@@ -226,7 +223,6 @@ let get_manifest db request =
   | None -> not_found "manifest not found"
 
 let head_manifest db request = get_manifest db request >>= Response.head
-
 let options_manifest _ = Response.options_manifest
 
 let post_manifest db request =
