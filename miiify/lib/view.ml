@@ -185,7 +185,7 @@ let get_annotation db request =
   Controller.get_annotation_hash ~db ~container_id ~annotation_id >>= function
   | Some hash -> (
       Header.get_if_none_match request |> function
-      | Some etag when hash = etag -> not_modified "container not modified"
+      | Some etag when hash = etag -> not_modified "annotation not modified"
       | _ ->
           Controller.get_annotation ~db ~container_id ~annotation_id
           >>= get_annotation ~hash)
