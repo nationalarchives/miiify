@@ -6,6 +6,7 @@ module Header : sig
   val collection_link : (string * string) list
   val page_link : (string * string) list
   val annotation_link : (string * string) list
+  val vary_prefer : (string * string) list
   val options_status : (string * string) list
   val options_version : (string * string) list
   val options_container : (string * string) list
@@ -41,6 +42,7 @@ end = struct
   let annotation_link =
     [ ("Link", "<http://www.w3.org/ns/ldp#Resource>; rel=\"type\"") ]
 
+  let vary_prefer = [ ("Vary", "Prefer") ]
   let options_status = [ ("Allow", "OPTIONS, HEAD, GET") ]
   let options_version = [ ("Allow", "OPTIONS, HEAD, GET") ]
   let options_container = [ ("Allow", "OPTIONS, HEAD, GET, PUT, DELETE") ]
@@ -132,14 +134,14 @@ let get_collection ~hash body =
   let open Header in
   let etag = [ ("ETag", "\"" ^ hash ^ "\"") ] in
   let headers =
-    collection_link @ jsonld_content_type @ etag @ options_annotations
+    collection_link @ jsonld_content_type @ etag @ options_annotations @ vary_prefer
   in
   Dream.respond ~status:`OK ~headers body
 
 let get_page ~hash body =
   let open Header in
   let etag = [ ("ETag", "\"" ^ hash ^ "\"") ] in
-  let headers = page_link @ jsonld_content_type @ etag @ options_annotations in
+  let headers = page_link @ jsonld_content_type @ etag @ options_annotations @ vary_prefer in
   Dream.respond ~status:`OK ~headers body
 
 let options_manifest = Dream.empty ~headers:Header.options_manifest `OK
