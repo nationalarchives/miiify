@@ -135,10 +135,9 @@ produces
  
 ### Other key features
 
+* Easy to use with Docker and Kubernetes
 * Support for ETag caching and collision avoidance
 * Simple key/value interface for working with IIIF manifests
-* Easily scaled horizontally using Kubernetes
-
 
 ### Building from source
 
@@ -147,6 +146,10 @@ To build your own native Docker images:
 cd miiify/test
 ./build.sh pack
 ```
+
+### Documentation
+
+[API specification](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/nationalarchives/miiify/breaking/v1/doc/swagger.yml)
 
 
 
