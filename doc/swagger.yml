@@ -1,10 +1,10 @@
 openapi: "3.0.0"
 info:
   title: Miiify API
-  version: "v1"
-  description: "Miiify is W3C annotation server"
+  version: "v1.0.0"
+  description: "Miiify is web annotation server"
 servers:
-  - url: http://miiify.rocks
+  - url: https://miiify.rocks
 paths:
   /:
     get:
@@ -22,7 +22,7 @@ paths:
               examples:
                 html:
                   summary: A welcome message
-                  value: "Welcome to Miiify!"
+                  value: OK
 
   /version:
     get:
@@ -40,14 +40,14 @@ paths:
               examples:
                 html:
                   summary: Version message
-                  value: "0.1.0"
+                  value: 1.0.0
 
   /annotations/:
     post:
       tags:
         - create container
       summary: create a new container
-      description: Creates a new container to store annotations. Please refer to the Web Annotation Data Model for a description on the JSON that can be used. Currently miffy will only check the type field is valid.
+      description: Creates a new container to store annotations. Please refer to the Web Annotation Data Model for a description on the JSON that can be used.
       parameters:
         - in: header
           name: Host
@@ -69,27 +69,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/create_container"
+              $ref: "#/components/schemas/container"
       responses:
         "201":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/create_container_response"
+                $ref: "#/components/schemas/container"
         "400":
           description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "500":
           description: Internal Server Error
-          content:
-            text/html:
-              schema:
-                type: string
-                example: Something went wrong!
 
   /annotations/{container_id}/:
     post:
@@ -124,34 +115,30 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/create_annotation"
+              $ref: "#/components/schemas/annotation"
       responses:
         "201":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/create_annotation_response"
+                $ref: "#/components/schemas/annotation"
         "400":
           description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "500":
           description: Internal Server Error
-          content:
-            text/html:
-              schema:
-                type: string
-                example: Something went wrong!
 
     get:
       tags:
-        - retrieve annotation collection
-      summary: "retrieve annotation collection"
-      description: "Retrieve the annotations as a collection."
+        - retrieve annotation collection or annotation page
+      summary: retrieve annotation collection
+      description: Retrieve the annotations as a collection or annotation page.
       parameters:
+        - in: query
+          name: page
+          schema:
+            type: integer
+          description: Access individual pages.
         - in: header
           name: If-None-Match
           schema:
@@ -163,12 +150,48 @@ paths:
           name: Prefer
           schema:
             type: string
-            default: return=representation;include="http://www.w3.org/ns/oa#PreferContainedDescriptions"
+            default: return=representation;include="https://www.w3.org/ns/oa#PreferContainedDescriptions"
             enum:
-              - return=representation;include="http://www.w3.org/ns/oa#PreferContainedDescriptions"
-              - return=representation;include="http://www.w3.org/ns/oa#PreferContainedIRIs"
-              - return=representation;include="http://www.w3.org/ns/ldp#PreferMinimalContainer"
+              - return=representation;include="https://www.w3.org/ns/oa#PreferContainedDescriptions"
+              - return=representation;include="https://www.w3.org/ns/oa#PreferContainedIRIs"
+              - return=representation;include="https://www.w3.org/ns/ldp#PreferMinimalContainer"
             description: "ETag support for comparing uniqueness."
+          required: false
+        - name: container_id
+          in: path
+          required: true
+          description: the unique identifier of a container
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/collection"
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "304":
+          description: Not Modified
+        "500":
+          description: Internal Server Error
+
+  /annotations/{container_id}:
+    get:
+      tags:
+        - retrieve container
+      summary: retrieve container details
+      description: Retrieve the details of a container.
+      parameters:
+        - in: header
+          name: If-None-Match
+          schema:
+            type: string
+            example: "caa80ca1e4cc5f2253df5ee35293236350b19194"
+            description: "ETag support for supporting caching."
           required: false
         - name: container_id
           in: path
@@ -182,32 +205,57 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/collection"
+                $ref: "#/components/schemas/container"
         "400":
           description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "404":
           description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "304":
           description: Not Modified
+        "500":
+          description: Internal Server Error
+
+    put:
+      tags:
+        - modify container
+      summary: modify a container
+      description: Modify a single container. The id field within the JSON payload must match the id field in the container being modified."
+      parameters:
+        - in: header
+          name: Host
+          schema:
+            type: string
+            example: miiify.rocks
+            description: Override the default host sent from client.
+          required: false
+        - in: header
+          name: If-Match
+          schema:
+            type: string
+            example: "caa80ca1e4cc5f2253df5ee35293236350b19194"
+            description: "ETag support for comparing uniqueness.."
+          required: false
+        - name: container_id
+          in: path
+          required: true
+          description: the unique identifier of a container
+          schema:
+            type: string
+      responses:
+        "200":
+          description: success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/error"
+                $ref: "#/components/schemas/container"
+        "400":
+          description: Bad Request
+        "404":
+          description: Not Found
+        "412":
+          description: Precondition Failed
         "500":
           description: Internal Server Error
-          content:
-            text/html:
-              schema:
-                type: string
-                example: Something went wrong!
 
     delete:
       tags:
@@ -229,102 +277,16 @@ paths:
           schema:
             type: string
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
         "400":
           description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "404":
           description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "412":
           description: Precondition Failed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "500":
           description: Internal Server Error
-          content:
-            text/html:
-              schema:
-                type: string
-                example: something went wrong!
-
-  /annotations/{container_id}:
-    get:
-      tags:
-        - retrieve annotation page
-      summary: "retrieve annotation page"
-      description: "An annotation collection can be broken down into a series of pages based on the default limit of 200 annotations per page."
-      parameters:
-        - in: query
-          name: page
-          schema:
-            type: integer
-          description: Access individual pages.
-        - in: header
-          name: If-None-Match
-          schema:
-            type: string
-            example: "caa80ca1e4cc5f2253df5ee35293236350b19194"
-            description: "ETag support for supporting caching."
-          required: false
-        - in: header
-          name: Prefer
-          schema:
-            type: string
-            default: return=representation;include="http://www.w3.org/ns/oa#PreferContainedDescriptions"
-            enum:
-              - return=representation;include="http://www.w3.org/ns/oa#PreferContainedDescriptions"
-              - return=representation;include="http://www.w3.org/ns/oa#PreferContainedIRIs"
-              - return=representation;include="http://www.w3.org/ns/ldp#PreferMinimalContainer"
-            description: "ETag support for comparing uniqueness."
-          required: false
-        - name: container_id
-          in: path
-          required: true
-          description: the unique identifier of a container
-          schema:
-            type: string
-      responses:
-        "200":
-          description: success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/page"
-        "400":
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
-        "404":
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
-        "304":
-          description: Not Modified
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
-        "500":
-          description: Internal Server Error
-          content:
-            text/html:
-              schema:
-                type: string
-                example: Something went wrong!
 
   /annotations/{container_id}/{annotation_id}:
     get:
@@ -344,11 +306,11 @@ paths:
           name: Prefer
           schema:
             type: string
-            default: return=representation;include="http://www.w3.org/ns/oa#PreferContainedDescriptions"
+            default: return=representation;include="https://www.w3.org/ns/oa#PreferContainedDescriptions"
             enum:
-              - return=representation;include="http://www.w3.org/ns/oa#PreferContainedDescriptions"
-              - return=representation;include="http://www.w3.org/ns/oa#PreferContainedIRIs"
-              - return=representation;include="http://www.w3.org/ns/ldp#PreferMinimalContainer"
+              - return=representation;include="https://www.w3.org/ns/oa#PreferContainedDescriptions"
+              - return=representation;include="https://www.w3.org/ns/oa#PreferContainedIRIs"
+              - return=representation;include="https://www.w3.org/ns/ldp#PreferMinimalContainer"
             description: "ETag support for comparing uniqueness."
           required: false
         - name: container_id
@@ -365,36 +327,20 @@ paths:
             type: string
       responses:
         "200":
-          description: success
+          description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/create_annotation_response"
+                $ref: "#/components/schemas/annotation"
         "400":
           description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "404":
           description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "304":
           description: Not Modified
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "500":
           description: Internal Server Error
-          content:
-            text/html:
-              schema:
-                type: string
-                example: Something went wrong!
+
     put:
       tags:
         - modify annotation
@@ -429,36 +375,19 @@ paths:
             type: string
       responses:
         "200":
-          description: success
+          description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/modify_annotation_response"
+                $ref: "#/components/schemas/annotation"
         "400":
           description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "404":
           description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "412":
           description: Precondition Failed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "500":
           description: Internal Server Error
-          content:
-            text/html:
-              schema:
-                type: string
-                example: Something went wrong!
 
     delete:
       tags:
@@ -486,33 +415,16 @@ paths:
           schema:
             type: string
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
         "400":
           description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "404":
           description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "412":
           description: Precondition Failed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "500":
           description: Internal Server Error
-          content:
-            text/html:
-              schema:
-                type: string
-                example: Something went wrong!
 
   /manifest/{key}:
     post:
@@ -533,27 +445,19 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/create_manifest"
+              $ref: "#/components/schemas/manifest"
       responses:
         "201":
           description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/create_manifest"
+                $ref: "#/components/schemas/manifest"
         "400":
           description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "500":
           description: Internal Server Error
-          content:
-            text/html:
-              schema:
-                type: string
-                example: Something went wrong!
+
     put:
       tags:
         - modify manifest
@@ -575,36 +479,19 @@ paths:
             type: string
       responses:
         "200":
-          description: success
+          description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/create_manifest"
+                $ref: "#/components/schemas/manifest"
         "400":
           description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "404":
           description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "412":
           description: Precondition Failed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "500":
           description: Internal Server Error
-          content:
-            text/html:
-              schema:
-                type: string
-                example: Something went wrong!
 
     get:
       tags:
@@ -627,36 +514,19 @@ paths:
             type: string
       responses:
         "200":
-          description: success
+          description: OK
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/create_manifest"
+                $ref: "#/components/schemas/manifest"
         "400":
           description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "404":
           description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "304":
           description: Not Modified
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "500":
           description: Internal Server Error
-          content:
-            text/html:
-              schema:
-                type: string
-                example: Something went wrong!
 
     delete:
       tags:
@@ -678,101 +548,35 @@ paths:
           schema:
             type: string
       responses:
-        "200":
-          description: OK
+        "204":
+          description: No Content
         "400":
           description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "404":
           description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "412":
           description: Precondition Failed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/error"
         "500":
           description: Internal Server Error
-          content:
-            text/html:
-              schema:
-                type: string
-                example: Something went wrong!
 
 components:
   schemas:
-    error:
-      type: object
-      properties:
-        code:
-          type: integer
-          example: 400
-          description: The HTTP error code
-        reason:
-          type: string
-          example: "something went wrong!"
-          description: Human readable error message.
-
-    create_container:
+    container:
       type: object
       properties:
         type:
           example:
             - BasicContainer
             - AnnotationCollection
-          description: A mandatory type for differentiating a container from an annotation.
+          description: An example type for differentiating a container from an annotation.
 
-    create_container_response:
-      type: object
-      properties:
-        type:
-          example:
-            - BasicContainer
-            - AnnotationCollection
-          description: A mandatory array type for differentiating a container from an annotation.
-        created:
-          type: string
-          example: "2021-10-02T15:57:29Z"
-          description: The same data used to create a container but with a created key added.
-
-    create_annotation:
+    annotation:
       type: object
       properties:
         type:
           type: string
           example: Annotation
-          description: A mandatory type for differentiating an annotation from a container.
-
-    create_annotation_response:
-      type: object
-      properties:
-        type:
-          type: string
-          example: Annotation
-          description: A mandatory type for differentiating an annotation from a container.
-        created:
-          type: string
-          example: "2021-10-02T15:57:29Z"
-          description: The same data used to create a container but with a created key added.
-
-    modify_annotation_response:
-      type: object
-      properties:
-        type:
-          type: string
-          example: Annotation
-          description: A mandatory type for differentiating an annotation from a container.
-        modified:
-          type: string
-          example: "2021-10-02T15:57:29Z"
-          description: The same data used to create a container but with a modified key added.
+          description: An example type for differentiating an annotation from a container.
 
     collection:
       type: object
@@ -781,19 +585,19 @@ components:
           example:
             - BasicContainer
             - AnnotationCollection
-          description: A mandatory array type for differentiating a collection from an annotation.
+          description: An example type for differentiating a collection from an annotation.
 
     page:
       type: object
       properties:
         type:
           example: AnnotationPage
-          description: A mandatory string type for differentiating a page from an annotation.
+          description: An example type for differentiating a page from an annotation.
 
-    create_manifest:
+    manifest:
       type: object
       properties:
         type:
           type: string
           example: Manifest
-          description: A mandatory type for differentiating a manifest from an annotation or container.
+          description: An example type for differentiating a manifest from an annotation or container.
