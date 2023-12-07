@@ -1,14 +1,25 @@
 version: "3"
 
 services:
-  web:
-    image: jptmoore/miiify
+  git:
+    image: jptmoore/miiify:git
     build: .
     ports:
-      - "80:8080"
-      - "443:8080"
-#    volumes:
-#      - ./db:/home/miiify/db
+      - "10000:10000"
+      - "8080:10000"
+      - "80:10000"
+      - "443:10000"
+    #volumes:
+    #  - ./db:/home/miiify/db
     restart: always
-#    logging:
-#      driver: ${LOGGING_DRIVER:-json-file}
+  pack:
+    image: jptmoore/miiify:pack
+    build: .
+    ports:
+      - "10000:10000"
+      - "8080:10000"
+      - "80:10000"
+      - "443:10000"
+    #volumes:
+    #  - ./db:/home/miiify/db
+    restart: always

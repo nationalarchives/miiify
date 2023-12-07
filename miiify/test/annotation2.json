@@ -1,0 +1,7 @@
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "https://localhost:10000/annotations/my-container/foobar",
+  "type": "Annotation",
+  "body": "http://example.org/post2",
+  "target": "http://example.com/page2"
+}

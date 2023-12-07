@@ -1,0 +1,38 @@
+(rule
+ (targets config_j.ml config_j.mli)
+ (deps config.atd)
+ (action
+  (run atdgen -j %{deps})))
+
+(rule
+ (targets config_t.ml config_t.mli)
+ (deps config.atd)
+ (action
+  (run atdgen -t %{deps})))
+
+(library
+ (name miiify)
+ (modules
+  db
+  model
+  view
+  annotation
+  container
+  manifest
+  utils
+  controller
+  header
+  response
+  prefer
+  config
+  config_t
+  config_j)
+ (libraries
+  irmin.unix
+  irmin-git.unix
+  irmin-pack.unix
+  yojson
+  ptime.clock.os
+  dream
+  uuidm
+  atdgen))
