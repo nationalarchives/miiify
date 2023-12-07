@@ -1,28 +1,6 @@
 open Lwt
 open Lwt.Syntax
-
-module Conf = struct
-  let entries = 32
-  let stable_hash = 256
-  let contents_length_header = Some `Varint
-  let inode_child_order = `Seeded_hash
-  let forbid_empty_dir_persistence = false
-end
-
-module Repo_config = struct
-  let readonly = false
-  let index_log_size = 2_500_000
-  let merge_throttle = `Block_writes
-  let indexing_strategy = Irmin_pack.Indexing_strategy.minimal
-  let fresh = false
-
-  let config =
-    Irmin_pack.config ~fresh ~index_log_size ~merge_throttle ~indexing_strategy
-      ~readonly
-end
-
-module StoreMaker = Irmin_pack_unix.KV (Conf)
-module Store = StoreMaker.Make (Irmin.Contents.String)
+module Store = Irmin_git_unix.FS.KV (Irmin.Contents.String)
 module Store_info = Irmin_unix.Info (Store.Info)
 
 let info message = Store_info.v ~author:"miiify.rocks" "%s" message
@@ -30,7 +8,7 @@ let info message = Store_info.v ~author:"miiify.rocks" "%s" message
 type t = Store.t Lwt.t
 
 let create ~fname =
-  let config = Repo_config.config fname in
+  let config = Irmin_git.config ~bare:true fname in
   let repo = Store.Repo.v config in
   let* repo = repo in
   Store.main repo
@@ -69,5 +47,4 @@ let exists ~db ~key =
 
 let total ~db ~key =
   let* store = db in
-  let* tree = Store.get_tree store key in
-  Store.Tree.length tree []
+  Store.list store key >|= List.length
