@@ -5,9 +5,10 @@ services:
     image: jptmoore/miiify:git
     build: .
     ports:
-      - "8080:8080"
-      - "80:8080"
-      - "443:8080"
+      - "5000:5000"
+      - "8080:5000"
+      - "80:5000"
+      - "443:5000"
     #volumes:
     #  - ./db:/home/miiify/db
     restart: always
@@ -15,9 +16,10 @@ services:
     image: jptmoore/miiify:pack
     build: .
     ports:
-      - "8080:8080"
-      - "80:8080"
-      - "443:8080"
+      - "5000:5000"
+      - "8080:5000"
+      - "80:5000"
+      - "443:5000"
     #volumes:
     #  - ./db:/home/miiify/db
     restart: always
