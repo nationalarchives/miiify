@@ -53,7 +53,7 @@ produces:
 ```json
 {
     "@context": "http://iiif.io/api/presentation/3/context.json",
-    "id": "http://localhost:8080/annotations/my-container?page=0",
+    "id": "http://localhost:8080/annotations/my-container/?page=0",
     "items": [
         {
             "@context": "http://www.w3.org/ns/anno.jsonld",
@@ -74,7 +74,7 @@ produces:
     ],
     "partOf": {
         "created": "2023-11-26T16:28:53Z",
-        "id": "http://localhost:8080/annotations/my-container",
+        "id": "http://localhost:8080/annotations/my-container/",
         "label": "A Container for Web Annotations",
         "total": 2,
         "type": "AnnotationCollection"
@@ -93,7 +93,7 @@ produces:
 ```json
 {
     "@context": "http://iiif.io/api/presentation/3/context.json",
-    "id": "http://localhost:8080/annotations/my-container?page=0&target=http://example.com/page3",
+    "id": "http://localhost:8080/annotations/my-container/?page=0&target=http://example.com/page3",
     "items": [
         {
             "@context": "http://www.w3.org/ns/anno.jsonld",
@@ -106,7 +106,7 @@ produces:
     ],
     "partOf": {
         "created": "2023-11-26T16:28:53Z",
-        "id": "http://localhost:8080/annotations/my-container",
+        "id": "http://localhost:8080/annotations/my-container/",
         "label": "A Container for Web Annotations",
         "total": 3,
         "type": "AnnotationCollection"
@@ -135,10 +135,9 @@ produces
  
 ### Other key features
 
+* Easy to use with Docker and Kubernetes
 * Support for ETag caching and collision avoidance
 * Simple key/value interface for working with IIIF manifests
-* Easily scaled horizontally using Kubernetes
-
 
 ### Building from source
 
@@ -147,6 +146,10 @@ To build your own native Docker images:
 cd miiify/test
 ./build.sh pack
 ```
+
+### Documentation
+
+[API specification](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/nationalarchives/miiify/breaking/v1/doc/swagger.yml)
 
 
 
