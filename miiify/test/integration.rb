@@ -3,7 +3,7 @@ require "airborne"
 Airborne.configure do |config|
   config.verify_ssl = false
   #config.base_url = "https://localhost"
-  config.base_url = "https://localhost:10000"
+  config.base_url = "http://localhost:10000"
 end
 
 describe "create container" do

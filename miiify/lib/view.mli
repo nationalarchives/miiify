@@ -8,7 +8,7 @@ val options_container : Dream.request -> Dream.response Lwt.t
 val options_create_container : Dream.request -> Dream.response Lwt.t
 val get_container : Db.t -> Dream.request -> Dream.response Lwt.t
 val head_container : Db.t -> Dream.request -> Dream.response Lwt.t
-val post_container : Db.t -> Dream.request -> Dream.response Lwt.t
+val post_container : Config_t.config -> Db.t -> Dream.request -> Dream.response Lwt.t
 
 val put_container :
   Config_t.config -> Db.t -> Dream.request -> Dream.response Lwt.t
@@ -16,7 +16,7 @@ val put_container :
 val delete_container :
   Config_t.config -> Db.t -> Dream.request -> Dream.response Lwt.t
 
-val post_annotation : Db.t -> Dream.request -> Dream.response Lwt.t
+val post_annotation : Config_t.config -> Db.t -> Dream.request -> Dream.response Lwt.t
 
 val put_annotation :
   Config_t.config -> Db.t -> Dream.request -> Dream.response Lwt.t

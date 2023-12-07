@@ -8,19 +8,15 @@ let get_id message =
 
 let get_if_none_match message = Dream.header message "If-None-Match"
 let get_if_match message = Dream.header message "If-Match"
+let get_host_helper host proto = proto ^ "://" ^ host
 
-let get_host_helper request host =
-  match Dream.tls request with
-  | true -> "https://" ^ host
-  | false -> "http://" ^ host
-
-let get_host message =
+let get_host message proto =
   match Dream.header message "host" with
   | None -> (
       match Dream.header message ":authority" with
       | None -> "https://example.com"
-      | Some host -> get_host_helper message host)
-  | Some host -> get_host_helper message host
+      | Some host -> get_host_helper host proto)
+  | Some host -> get_host_helper host proto
 
 let get_prefer request ~default =
   let prefer =

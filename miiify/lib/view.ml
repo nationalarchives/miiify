@@ -23,10 +23,10 @@ let get_container db request =
 
 let head_container db request = get_container db request >>= Response.head
 
-let post_container db request =
+let post_container config db request =
   let open Response in
   let id = Header.get_id request in
-  let host = Header.get_host request in
+  let host = Header.get_host request config.id_proto in
   let message = Utils.Info.message request in
   Controller.container_exists ~db ~id >>= function
   | true -> bad_request "container exists"
@@ -46,7 +46,7 @@ let put_container_worker request db id host message =
 let put_container config db request =
   let open Response in
   let container_id = Dream.param request "container_id" in
-  let host = Header.get_host request in
+  let host = Header.get_host request config.id_proto in
   let message = Utils.Info.message request in
   Controller.get_container_hash ~db ~id:container_id >>= function
   | Some hash -> (
@@ -78,11 +78,11 @@ let delete_container config db request =
       | _ -> precondition_failed "failed to match etag")
   | None -> not_found "container not found"
 
-let post_annotation db request =
+let post_annotation config db request =
   let open Response in
   let annotation_id = Header.get_id request in
   let container_id = Dream.param request "container_id" in
-  let host = Header.get_host request in
+  let host = Header.get_host request config.id_proto in
   let message = Utils.Info.message request in
   Controller.container_exists ~db ~id:container_id >>= function
   | true -> (
@@ -109,7 +109,7 @@ let put_annotation config db request =
   let open Response in
   let annotation_id = Dream.param request "annotation_id" in
   let container_id = Dream.param request "container_id" in
-  let host = Header.get_host request in
+  let host = Header.get_host request config.id_proto in
   let message = Utils.Info.message request in
   Controller.get_annotation_hash ~db ~container_id ~annotation_id >>= function
   | Some hash -> (

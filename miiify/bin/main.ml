@@ -17,7 +17,7 @@ let () =
          Dream.head "/version" (View.head_version config);
          Dream.options "/version" View.options_version;
          (* /annotations/ *)
-         Dream.post "/annotations/" (View.post_container db);
+         Dream.post "/annotations/" (View.post_container config db);
          Dream.options "/annotations/" View.options_create_container;
          (* /annotations/:container_id *)
          Dream.get "/annotations/:container_id" (View.get_container db);
@@ -27,7 +27,7 @@ let () =
            (View.delete_container config db);
          Dream.options "/annotations/:container_id" View.options_container;
          (* /annotations/:container_id/ *)
-         Dream.post "/annotations/:container_id/" (View.post_annotation db);
+         Dream.post "/annotations/:container_id/" (View.post_annotation config db);
          Dream.get "/annotations/:container_id/"
            (View.get_annotations config db);
          Dream.options "/annotations/:container_id/" View.options_annotations;

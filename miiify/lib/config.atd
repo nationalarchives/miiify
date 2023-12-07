@@ -3,6 +3,7 @@ type config = {
   ~miiify_status <ocaml default="\"OK\""> : string;
   ~miiify_version <ocaml default="\"version 1.0.0\""> : string;
   ~tls <ocaml default="true"> : bool;
+  ~id_proto <ocaml default="\"https\""> : string;
   ~interface <ocaml default="\"0.0.0.0\""> : string;
   ~port <ocaml default="10000"> : int;
   ~certificate_file <ocaml default="\"server.crt\""> : string;
