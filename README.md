@@ -32,49 +32,49 @@ Annotations are organised into containers and can be retrieved in pages to displ
 
 Create an annotation container called my-container:
 ```bash
-http http://localhost:8080/annotations/ < test/container1.json Slug:my-container
+https miiify.onrender.com/annotations/ < test/container1.json Slug:my-container
 ```
 
 Add an annotation called foobar to my-container:
 ```bash
-http http://localhost:8080/annotations/my-container/ < test/annotation1.json Slug:foobar
+https miiify.onrender.com/annotations/my-container/ < test/annotation1.json Slug:foobar
 ```
 
 Add another annotation but use a system generated id:
 ```bash
-http http://localhost:8080/annotations/my-container/ < test/annotation1.json
+https miiify.onrender.com/annotations/my-container/ < test/annotation1.json
 ```
 
 Retrieve the first annotation page from my-container:
 ```bash
-http http://localhost:8080/annotations/my-container/\?page\=0
+https miiify.onrender.com/annotations/my-container/\?page\=0
 ```
 produces:
 ```json
 {
     "@context": "http://iiif.io/api/presentation/3/context.json",
-    "id": "http://localhost:8080/annotations/my-container/?page=0",
+    "id": "https://miiify.onrender.com/annotations/my-container/?page=0",
     "items": [
         {
             "@context": "http://www.w3.org/ns/anno.jsonld",
             "body": "http://example.org/post1",
-            "created": "2023-11-26T16:30:47Z",
-            "id": "http://localhost:8080/annotations/my-container/edd6a28b-b7a5-4c0c-88c6-a29377fffb8c",
+            "created": "2023-12-07T17:13:18Z",
+            "id": "https://miiify.onrender.com/annotations/my-container/4acb2493-96b2-4efb-a5aa-044cde1408f0",
             "target": "http://example.com/page1",
             "type": "Annotation"
         },
         {
             "@context": "http://www.w3.org/ns/anno.jsonld",
             "body": "http://example.org/post1",
-            "created": "2023-11-26T16:32:27Z",
-            "id": "http://localhost:8080/annotations/my-container/foobar",
+            "created": "2023-12-07T17:11:44Z",
+            "id": "https://miiify.onrender.com/annotations/my-container/foobar",
             "target": "http://example.com/page1",
             "type": "Annotation"
         }
     ],
     "partOf": {
-        "created": "2023-11-26T16:28:53Z",
-        "id": "http://localhost:8080/annotations/my-container/",
+        "created": "2023-12-07T17:10:20Z",
+        "id": "https://miiify.onrender.com/annotations/my-container/",
         "label": "A Container for Web Annotations",
         "total": 2,
         "type": "AnnotationCollection"
@@ -86,27 +86,27 @@ produces:
 
 Retrieve the first annotation page from my-container but filter annotations based on their target:
 ```bash
-http http://localhost:8080/annotations/my-container/ < test/annotation3.json
-http http://localhost:8080/annotations/my-container/\?page\=0\&target\=http://example.com/page3
+https miiify.onrender.com/annotations/my-container/ < test/annotation3.json
+https miiify.onrender.com/annotations/my-container/\?page\=0\&target\=http://example.com/page3
 ```
 produces:
 ```json
 {
     "@context": "http://iiif.io/api/presentation/3/context.json",
-    "id": "http://localhost:8080/annotations/my-container/?page=0&target=http://example.com/page3",
+    "id": "https://miiify.onrender.com/annotations/my-container/?page=0&target=http://example.com/page3",
     "items": [
         {
             "@context": "http://www.w3.org/ns/anno.jsonld",
             "body": "http://example.org/post3",
-            "created": "2023-11-26T17:02:10Z",
-            "id": "http://localhost:8080/annotations/my-container/ca04c632-b093-44b8-8785-0c985b2ff036",
+            "created": "2023-12-07T17:15:47Z",
+            "id": "https://miiify.onrender.com/annotations/my-container/20375636-3af4-44e4-b005-b5c5e625ec85",
             "target": "http://example.com/page3",
             "type": "Annotation"
         }
     ],
     "partOf": {
-        "created": "2023-11-26T16:28:53Z",
-        "id": "http://localhost:8080/annotations/my-container/",
+        "created": "2023-12-07T17:10:20Z",
+        "id": "https://miiify.onrender.com/annotations/my-container/",
         "label": "A Container for Web Annotations",
         "total": 3,
         "type": "AnnotationCollection"
@@ -118,21 +118,20 @@ produces:
 
 Retrieve a single annotation:
 ```bash
-http http://localhost:8080/annotations/my-container/foobar
+https miiify.onrender.com/annotations/my-container/foobar
 ```
 produces
 ```json
 {
     "@context": "http://www.w3.org/ns/anno.jsonld",
     "body": "http://example.org/post1",
-    "created": "2023-11-26T16:32:27Z",
-    "id": "http://localhost:8080/annotations/my-container/foobar",
+    "created": "2023-12-07T17:11:44Z",
+    "id": "https://miiify.onrender.com/annotations/my-container/foobar",
     "target": "http://example.com/page1",
     "type": "Annotation"
 }
 ```
 
- 
 ### Other key features
 
 * Easy to use with Docker and Kubernetes
