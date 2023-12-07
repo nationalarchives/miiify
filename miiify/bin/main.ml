@@ -1,11 +1,26 @@
 open Miiify
+open Lwt.Syntax
+
+let config = Utils.Cmd.parse ()
+
+let cors handler req =
+  let handlers =
+    [
+      ("Access-Control-Allow-Origin", config.access_control_allow_origin);
+      ("Access-Control-Max-Age", config.access_control_max_age);
+    ]
+  in
+  let* res = handler req in
+  handlers
+  |> List.map (fun (key, value) -> Dream.add_header res key value)
+  |> ignore;
+  Lwt.return res
 
 let () =
-  let config = Utils.Cmd.parse () in
   let db = Model.create ~config in
   Dream.run ~interface:config.interface ~tls:config.tls ~port:config.port
     ~certificate_file:config.certificate_file ~key_file:config.key_file
-  @@ Dream.logger
+  @@ Dream.logger @@ cors
   @@ Dream.router
        [
          (* /status *)
@@ -27,7 +42,8 @@ let () =
            (View.delete_container config db);
          Dream.options "/annotations/:container_id" View.options_container;
          (* /annotations/:container_id/ *)
-         Dream.post "/annotations/:container_id/" (View.post_annotation config db);
+         Dream.post "/annotations/:container_id/"
+           (View.post_annotation config db);
          Dream.get "/annotations/:container_id/"
            (View.get_annotations config db);
          Dream.options "/annotations/:container_id/" View.options_annotations;
@@ -50,6 +66,5 @@ let () =
          Dream.head "/manifest/:manifest_id" (View.head_manifest db);
          Dream.put "/manifest/:manifest_id" (View.put_manifest config db);
          Dream.delete "/manifest/:manifest_id" (View.delete_manifest config db);
-         Dream.options "/manifest/:manifest_id" (View.options_manifest);
-
+         Dream.options "/manifest/:manifest_id" View.options_manifest;
        ]

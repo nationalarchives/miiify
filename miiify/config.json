@@ -11,5 +11,7 @@
   "repository_author": "miiify.rocks",
   "container_page_limit": 200,
   "container_representation": "PreferContainedDescriptions",
-  "avoid_mid_air_collisions": false
+  "avoid_mid_air_collisions": false,
+  "access_control_allow_origin": "*",
+  "access_control_max_age": "86400"
 }

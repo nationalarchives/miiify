@@ -13,4 +13,6 @@ type config = {
   ~container_page_limit <ocaml default="200"> : int;
   ~container_representation <ocaml default="\"PreferContainedDescriptions\""> : string;
   ~avoid_mid_air_collisions <ocaml default="false"> : bool;
+  ~access_control_allow_origin <ocaml default="\"*\""> : string;
+  ~access_control_max_age <ocaml default="\"86400\""> : string;
 }
