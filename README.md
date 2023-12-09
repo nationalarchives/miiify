@@ -21,6 +21,12 @@ docker compose pull pack
 docker compose up pack -d
 ```
 
+#### Check the server is running
+
+```bash
+http :
+```
+
 #### Stopping server
 ```bash
 docker compose down pack
