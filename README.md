@@ -32,17 +32,17 @@ Annotations are organised into containers and can be retrieved in pages to displ
 
 Create an annotation container called my-container:
 ```bash
-https miiify.onrender.com/annotations/ < test/container1.json Slug:my-container
+https miiify.onrender.com/annotations/ < miiify/test/container1.json Slug:my-container
 ```
 
 Add an annotation called foobar to my-container:
 ```bash
-https miiify.onrender.com/annotations/my-container/ < test/annotation1.json Slug:foobar
+https miiify.onrender.com/annotations/my-container/ < miiify/test/annotation1.json Slug:foobar
 ```
 
 Add another annotation but use a system generated id:
 ```bash
-https miiify.onrender.com/annotations/my-container/ < test/annotation1.json
+https miiify.onrender.com/annotations/my-container/ < miiify/test/annotation1.json
 ```
 
 Retrieve the first annotation page from my-container:
@@ -86,7 +86,7 @@ produces:
 
 Retrieve the first annotation page from my-container but filter annotations based on their target:
 ```bash
-https miiify.onrender.com/annotations/my-container/ < test/annotation3.json
+https miiify.onrender.com/annotations/my-container/ < miiify/test/annotation3.json
 https miiify.onrender.com/annotations/my-container/\?page\=0\&target\=http://example.com/page3
 ```
 produces:
