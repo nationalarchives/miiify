@@ -138,6 +138,10 @@ produces
 }
 ```
 
+### Tutorial
+
+Simple [video tutorial](https://miiifystore.s3.eu-west-2.amazonaws.com/presentations/simple-external-annotation.mp4) to show how to create annotations and display them in the Mirador IIIF viewer.
+
 ### Other key features
 
 * Easy to use with Docker and Kubernetes
