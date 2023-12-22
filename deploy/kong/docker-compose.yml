@@ -1,0 +1,29 @@
+version: "3.5"
+
+services:
+  kong:
+    image: jptmoore/kong
+    container_name: kong
+    environment:
+      KONG_DATABASE: "off"
+      KONG_PROXY_ACCESS_LOG_KEY: "/dev/stdout"
+      KONG_ADMIN_ACCESS_LOG_KEY: "/dev/stdout"
+      KONG_PROXY_ERROR_LOG_KEY: "/dev/stderr"
+      KONG_ADMIN_ERROR_LOG_KEY: "/dev/stderr"
+      KONG_PROXY_LISTEN_KEY: "0.0.0.0:8000"
+      KONG_DECLARATIVE_CONFIG: "/home/kong/kong.yml"
+    ports:
+      - "8000:8000"
+    networks:
+      - miiify.net
+  miiify:
+    depends_on:
+      - kong
+    image: jptmoore/miiify:pack
+    container_name: miiify
+    networks:
+      - miiify.net
+
+networks:
+  miiify.net:
+    name: miiify_network

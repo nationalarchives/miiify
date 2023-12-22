@@ -1,0 +1,16 @@
+_format_version: "2.1"
+_transform: true
+
+services:
+  - name: miiify
+    url: http://miiify:10000
+    routes:
+      - name: miiify
+        paths:
+          - /v1
+          - /
+        preserve_host: true
+        methods:
+          - GET
+          - HEAD
+          - OPTIONS
