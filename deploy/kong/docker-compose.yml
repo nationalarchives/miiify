@@ -23,6 +23,8 @@ services:
     container_name: miiify
     networks:
       - miiify.net
+    #volumes:
+    #  - ./db:/home/miiify/db
 
 networks:
   miiify.net:
