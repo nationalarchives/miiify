@@ -1,6 +1,6 @@
 {
   "miiify_status": "OK",
-  "miiify_version": "version 1.0.0",
+  "miiify_version": "version 1.0.1",
   "tls": false,
   "id_proto": "https",
   "interface": "0.0.0.0",

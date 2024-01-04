@@ -65,10 +65,10 @@ let prev json page target =
     id |> function `String x -> `String (x ^ next) | _ -> `Null
   else `Null
 
-let annotation_page_id json target =
+let annotation_page_id json page target =
   let open Utils in
   let id = json |> Util.member "id" in
-  let params = Json.id_helper 0 target in
+  let params = Json.id_helper page target in
   id |> function `String x -> `String (x ^ params) | _ -> `Null
 
 let part_of json total =
@@ -92,7 +92,7 @@ let part_of json total =
 
 let page_worker json page total limit target =
   let open Util in
-  let id = annotation_page_id json target in
+  let id = annotation_page_id json page target in
   let context = json |> member "@context" in
   let part_of = part_of json total in
   let start_index = `Int (page * limit) in
