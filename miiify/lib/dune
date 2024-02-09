@@ -10,6 +10,24 @@
  (action
   (run atdgen -t %{deps})))
 
+(rule
+ (targets specification_j.ml specification_j.mli)
+ (deps specification.atd)
+ (action
+  (run atdgen -j %{deps})))
+
+(rule
+ (targets specification_t.ml specification_t.mli)
+ (deps specification.atd)
+ (action
+  (run atdgen -t %{deps})))
+
+(rule
+ (targets specification_v.ml specification_v.mli)
+ (deps specification.atd)
+ (action
+  (run atdgen -v %{deps})))
+
 (library
  (name miiify)
  (modules
@@ -24,6 +42,11 @@
   header
   response
   prefer
+  specification
+  specification_util
+  specification_t
+  specification_j
+  specification_v
   config
   config_t
   config_j)

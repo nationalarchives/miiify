@@ -15,4 +15,5 @@ type config = {
   ~avoid_mid_air_collisions <ocaml default="false"> : bool;
   ~access_control_allow_origin <ocaml default="\"*\""> : string;
   ~access_control_max_age <ocaml default="\"86400\""> : string;
+  ~validate_annotation <ocaml default="false"> : bool;
 }

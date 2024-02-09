@@ -90,17 +90,17 @@ let post_annotation config db request =
       | true -> bad_request "annotation exists"
       | false -> (
           Dream.body request
-          >>= Controller.post_annotation ~db ~container_id ~annotation_id ~host
+          >>= Controller.post_annotation ~db ~container_id ~annotation_id ~host ~validate:config.validate_annotation
                 ~message
           >>= function
           | Ok result -> result >>= create_annotation
           | Error m -> bad_request m))
   | false -> not_found "container does not exist"
 
-let put_annotation_worker request db container_id annotation_id host message =
+let put_annotation_worker request db container_id annotation_id host message validate =
   let open Response in
   Dream.body request
-  >>= Controller.put_annotation ~db ~container_id ~annotation_id ~host ~message
+  >>= Controller.put_annotation ~db ~container_id ~annotation_id ~host ~message ~validate
   >>= function
   | Ok result -> result >>= update_annotation
   | Error m -> bad_request m
@@ -111,17 +111,18 @@ let put_annotation config db request =
   let container_id = Dream.param request "container_id" in
   let host = Header.get_host request config.id_proto in
   let message = Utils.Info.message request in
+  let validate = config.validate_annotation in
   Controller.get_annotation_hash ~db ~container_id ~annotation_id >>= function
   | Some hash -> (
       Header.get_if_match request |> function
       | Some etag when hash = etag ->
           put_annotation_worker request db container_id annotation_id host
-            message
+            message validate
       | None when config.avoid_mid_air_collisions = true ->
           precondition_failed "etag required"
       | None when config.avoid_mid_air_collisions = false ->
           put_annotation_worker request db container_id annotation_id host
-            message
+            message validate
       | _ -> precondition_failed "failed to match etag")
   | None -> not_found "annotation not found"
 

@@ -24,6 +24,7 @@ val post_annotation :
   annotation_id:string ->
   host:string ->
   message:string ->
+  validate:bool ->
   string ->
   (string Lwt.t, string) result Lwt.t
 
@@ -33,6 +34,7 @@ val put_annotation :
   annotation_id:string ->
   host:string ->
   message:string ->
+  validate:bool ->
   string ->
   (string Lwt.t, string) result Lwt.t
 

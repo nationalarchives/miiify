@@ -1,6 +1,6 @@
 {
   "miiify_status": "OK",
-  "miiify_version": "version 1.0.1",
+  "miiify_version": "version 1.0.2",
   "tls": false,
   "id_proto": "https",
   "interface": "0.0.0.0",
@@ -13,5 +13,6 @@
   "container_representation": "PreferContainedDescriptions",
   "avoid_mid_air_collisions": false,
   "access_control_allow_origin": "*",
-  "access_control_max_age": "86400"
+  "access_control_max_age": "86400",
+  "validate_annotation": false
 }

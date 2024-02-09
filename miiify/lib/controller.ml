@@ -22,28 +22,32 @@ let put_container ~db ~id ~host ~message data =
 let delete_container ~db ~id ~message =
   Model.delete_container ~db ~container_id:id ~message
 
-let post_annotation ~db ~container_id ~annotation_id ~host ~message data
-    =
-  Annotation.create ~container_id ~annotation_id ~host ~data |> function
-  | Ok json ->
-      let result =
-        Model.add_annotation ~db ~container_id ~annotation_id ~json ~message
-      in
-      Lwt.return_ok result
+let post_annotation ~db ~container_id ~annotation_id ~host ~message ~validate data =
+  Specification.validate ~data ~enabled:validate |> function
+  | Ok () -> (
+      Annotation.create ~container_id ~annotation_id ~host ~data |> function
+      | Ok json ->
+          let result =
+            Model.add_annotation ~db ~container_id ~annotation_id ~json ~message
+          in
+          Lwt.return_ok result
+      | Error m -> Lwt.return_error m)
   | Error m -> Lwt.return_error m
 
-let put_annotation ~db ~container_id ~annotation_id ~host ~message data
-    =
-  Annotation.update ~container_id ~annotation_id ~host ~data |> function
-  | Ok json ->
-      let result =
-        Model.update_annotation ~db ~container_id ~annotation_id ~json ~message
-      in
-      Lwt.return_ok result
+let put_annotation ~db ~container_id ~annotation_id ~host ~message ~validate data =
+  Specification.validate ~data ~enabled:validate |> function
+  | Ok () -> (
+    Annotation.update ~container_id ~annotation_id ~host ~data |> function
+    | Ok json ->
+        let result =
+          Model.update_annotation ~db ~container_id ~annotation_id ~json ~message
+        in
+        Lwt.return_ok result
+    | Error m -> Lwt.return_error m)
   | Error m -> Lwt.return_error m
 
-let container_exists ~db ~id =
-  Model.container_exists ~db ~container_id:id
+
+let container_exists ~db ~id = Model.container_exists ~db ~container_id:id
 
 let annotation_exists ~db ~container_id ~annotation_id =
   Model.annotation_exists ~db ~container_id ~annotation_id
@@ -64,11 +68,8 @@ let get_annotation_page ~config ~db ~id ~page ~target =
       ~length:limit ~target
     >|= Annotation.page ~total ~page ~target ~limit
 
-let get_collection_hash ~db ~id =
-  Model.get_collection_hash ~db ~container_id:id
-
-let get_container_hash ~db ~id =
-  Model.get_container_hash ~db ~container_id:id
+let get_collection_hash ~db ~id = Model.get_collection_hash ~db ~container_id:id
+let get_container_hash ~db ~id = Model.get_container_hash ~db ~container_id:id
 
 let get_annotation_hash ~db ~container_id ~annotation_id =
   Model.get_annotation_hash ~db ~container_id ~annotation_id
@@ -101,6 +102,4 @@ let delete_manifest ~db ~id ~message =
   Model.delete_manifest ~db ~manifest_id:id ~message
 
 let manifest_exists ~db ~id = Model.manifest_exists ~db ~manifest_id:id
-
-let get_manifest_hash ~db ~id =
-  Model.get_manifest_hash ~db ~manifest_id:id
+let get_manifest_hash ~db ~id = Model.get_manifest_hash ~db ~manifest_id:id
