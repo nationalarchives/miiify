@@ -1,0 +1,11 @@
+{
+  "type": "Annotation",
+  "motivation": "commenting",
+  "body": {
+    "type": "TextualBody",
+    "language": "en",
+    "format": "text/plain",
+    "value": "Very nice marketplace"
+  },
+  "target": "https://iiif.io/api/cookbook/recipe/0266-full-canvas-annotation/canvas-1"
+}
