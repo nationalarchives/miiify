@@ -159,7 +159,7 @@ cd miiify/test
 
 ### Documentation
 
-[API specification](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/nationalarchives/miiify/breaking/v1/doc/swagger.yml)
+[API specification](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/nationalarchives/miiify/main/doc/swagger.yml)
 
 
 
