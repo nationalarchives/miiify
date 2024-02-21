@@ -6,13 +6,22 @@ open Config_t
 let create ~config = Db.create ~fname:config.repository_name
 
 let get_container ~db ~container_id =
-  let* data = Db.get ~db ~key:[ container_id; "main" ]  in
+  let* data = Db.get ~db ~key:[ container_id; "main" ] in
   from_string data |> Lwt.return
+
+let filter_items_helper item keys target =
+  item |> Util.path keys |> function
+  | Some x -> x = `String target
+  | None -> false
 
 let filter_items target items =
   match target with
   | Some target ->
-      List.filter (fun x -> x |> Util.member "target" = `String target) items
+      List.filter
+        (fun item ->
+          filter_items_helper item [ "target" ] target
+          || filter_items_helper item [ "target"; "source" ] target)
+        items
   | None -> items
 
 let get_annotations ~db ~container_id ~offset ~length ~target =
