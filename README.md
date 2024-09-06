@@ -144,7 +144,7 @@ Simple [video tutorial](https://miiifystore.s3.eu-west-2.amazonaws.com/presentat
 
 ### Other key features
 
-* Support for validating annotations using [ATD](https://atd.readthedocs.io/en/latest/atd-language.html#introduction)
+* Support for validating annotations using [ATD](https://atd.readthedocs.io/en/latest/atd-language.html#introduction) with a detailed example available [here](https://raw.githubusercontent.com/jptmoore/maniiifest/main/src/specification.atd)
 * Easy to use with Docker and Kubernetes
 * Support for ETag caching and collision avoidance
 * Simple key/value interface for working with IIIF manifests
