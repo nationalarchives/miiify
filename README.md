@@ -1,6 +1,8 @@
 ### Introduction
 
-Miiify is a light-weight web annotation server using an embedded database. Its primary use case is to support [IIIF](https://iiif.io/) applications. There is a choice of two storage backends:
+Miiify is a light-weight web annotation server using an embedded database. Its primary use case is to support [IIIF](https://iiif.io/) applications where it separates the annotation content away from the manifest. This has the advantage of simplifying the manifest and providing persistent access to each annotation through its own unique identifier. Miiify follows the Web Annotation Model and Protocol which means annotations are structured into [containers](https://www.w3.org/TR/annotation-protocol/#annotation-containers). The following [video tutorial](https://miiifystore.s3.eu-west-2.amazonaws.com/presentations/simple-external-annotation.mp4) helps illustrates this and how the server can interact with a IIIF viewer.
+
+There is a choice of two storage backends depending on requirements:
 
 #### git
 
@@ -8,7 +10,7 @@ Designed to be compatible with the Git protocol. This means annotations can be a
 
 #### pack
 
-Designed to be highly-scalable and disk efficient. This backend uses technology that is part of the distributed ledger used within the Tezos blockchain.
+Designed to be highly-scalable and disk efficient. This backend uses technology that is part of the distributed ledger used within the [Tezos blockchain](https://tezos.com/).
 
 ### Getting started
 
