@@ -31,6 +31,10 @@ let () =
          Dream.get "/version" (View.get_version config);
          Dream.head "/version" (View.head_version config);
          Dream.options "/version" View.options_version;
+         (* /backend *)
+         Dream.get "/backend" (View.get_backend config);
+         Dream.head "/backend" (View.head_backend config);
+         Dream.options "/backend" View.options_backend;
          (* /annotations/ *)
          Dream.post "/annotations/" (View.post_container config db);
          Dream.options "/annotations/" View.options_create_container;
