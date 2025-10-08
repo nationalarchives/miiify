@@ -60,6 +60,8 @@ docker compose down
 
 Annotations are organised into containers and can be retrieved in pages to display within IIIF viewers such as [Mirador](https://projectmirador.org/). To filter the annotation page to a specific IIIF canvas an additional target parameter can be supplied. The examples below use [httpie](https://httpie.io/) with a live demo server which spins down when inactive.
 
+**Note**: Annotations are returned in lexicographic (alphabetical) order by their annotation ID, ensuring consistent ordering across different storage backends (pack and git).
+
 Create an annotation container called my-container:
 ```bash
 https miiify.onrender.com/annotations/ < miiify/test/container1.json Slug:my-container
