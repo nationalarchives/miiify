@@ -7,6 +7,9 @@ let options_status _ = Response.options_status
 let get_version config _ = Response.version config.miiify_version
 let head_version config request = get_version config request >>= Response.head
 let options_version _ = Response.options_version
+let get_backend config _ = Response.backend config.backend
+let head_backend config request = get_backend config request >>= Response.head
+let options_backend _ = Response.options_backend
 let options_container _ = Response.options_container
 let options_create_container _ = Response.options_create_container
 

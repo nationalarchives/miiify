@@ -9,6 +9,7 @@ module Header : sig
   val vary_prefer : (string * string) list
   val options_status : (string * string) list
   val options_version : (string * string) list
+  val options_backend : (string * string) list
   val options_container : (string * string) list
   val options_create_container : (string * string) list
   val options_annotations : (string * string) list
@@ -45,6 +46,7 @@ end = struct
   let vary_prefer = [ ("Vary", "Prefer") ]
   let options_status = [ ("Allow", "OPTIONS, HEAD, GET") ]
   let options_version = [ ("Allow", "OPTIONS, HEAD, GET") ]
+  let options_backend = [ ("Allow", "OPTIONS, HEAD, GET") ]
   let options_container = [ ("Allow", "OPTIONS, HEAD, GET, PUT, DELETE") ]
   let options_create_container = [ ("Allow", "OPTIONS, POST") ]
   let options_annotations = [ ("Allow", "OPTIONS, HEAD, GET, POST") ]
@@ -71,6 +73,11 @@ let version message =
   Dream.html ~headers:Header.options_version ~status:`OK message
 
 let options_version = Dream.empty ~headers:Header.options_version `OK
+
+let backend message =
+  Dream.html ~headers:Header.options_backend ~status:`OK message
+
+let options_backend = Dream.empty ~headers:Header.options_backend `OK
 
 let precondition_failed message =
   Dream.html ~status:`Precondition_Failed message

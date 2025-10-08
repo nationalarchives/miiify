@@ -1,5 +1,6 @@
 open Lwt
 open Lwt.Syntax
+
 module Store = Irmin_git_unix.FS.KV (Irmin.Contents.String)
 module Store_info = Irmin_unix.Info (Store.Info)
 
@@ -24,8 +25,9 @@ let get ~db ~key =
 let get_tree ~db ~key ~offset ~length =
   let* store = db in
   let* tree = Store.get_tree store key in
-  Store.Tree.list tree [] ~offset ~length
-  >>= Lwt_list.map_s (fun (k, _) -> get ~db ~key:(List.append key [ k ]))
+  let* items = Store.Tree.list tree [] ~offset ~length in
+  let sorted_items = List.sort (fun (k1, _) (k2, _) -> String.compare k1 k2) items in
+  Lwt_list.map_s (fun (k, _) -> get ~db ~key:(List.append key [ k ])) sorted_items
 
 let delete ~db ~key ~message =
   let* store = db in
@@ -47,4 +49,10 @@ let exists ~db ~key =
 
 let total ~db ~key =
   let* store = db in
-  Store.list store key >|= List.length
+  let* exists = Store.mem_tree store key in
+  if exists then
+    let+ list = Store.list store key in
+    List.length list
+  else
+    Lwt.return 0
+

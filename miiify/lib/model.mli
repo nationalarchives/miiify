@@ -1,4 +1,4 @@
-val create : config:Config_t.config -> Db.t
+val create : config:Config_t.config -> Db.t Lwt.t
 
 val get_container : db:Db.t -> container_id:string -> Yojson.Basic.t Lwt.t
 

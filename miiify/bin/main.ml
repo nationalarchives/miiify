@@ -17,7 +17,7 @@ let cors handler req =
   Lwt.return res
 
 let () =
-  let db = Model.create ~config in
+  let db = Lwt_main.run (Model.create ~config) in
   Dream.run ~interface:config.interface ~tls:config.tls ~port:config.port
     ~certificate_file:config.certificate_file ~key_file:config.key_file
   @@ Dream.logger @@ cors
@@ -31,6 +31,10 @@ let () =
          Dream.get "/version" (View.get_version config);
          Dream.head "/version" (View.head_version config);
          Dream.options "/version" View.options_version;
+         (* /backend *)
+         Dream.get "/backend" (View.get_backend config);
+         Dream.head "/backend" (View.head_backend config);
+         Dream.options "/backend" View.options_backend;
          (* /annotations/ *)
          Dream.post "/annotations/" (View.post_container config db);
          Dream.options "/annotations/" View.options_create_container;

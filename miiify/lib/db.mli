@@ -1,6 +1,8 @@
 type t
 
-val create : fname:string -> t
+val set_backend : string -> unit
+
+val create : fname:string -> t Lwt.t
 
 val set : db: t -> key:string list -> data:string -> message:string -> unit Lwt.t
 

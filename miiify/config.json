@@ -1,6 +1,6 @@
 {
   "miiify_status": "OK",
-  "miiify_version": "version 1.0.3",
+  "miiify_version": "version 1.0.5",
   "tls": false,
   "id_proto": "https",
   "interface": "0.0.0.0",
@@ -9,6 +9,7 @@
   "key_file": "server.key",
   "repository_name": "db",
   "repository_author": "miiify.rocks",
+  "backend": "pack",
   "container_page_limit": 200,
   "container_representation": "PreferContainedDescriptions",
   "avoid_mid_air_collisions": false,
