@@ -32,6 +32,8 @@
  (name miiify)
  (modules
   db
+  storage_pack
+  storage_git
   model
   view
   annotation

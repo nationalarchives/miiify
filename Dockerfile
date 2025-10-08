@@ -1,8 +1,12 @@
 FROM ocaml/opam:alpine-ocaml-5.1 as build
 
 # Install system dependencies
-RUN sudo apk add --update libev-dev openssl-dev gmp-dev libffi-dev
+RUN sudo apk add --update libev-dev openssl-dev gmp-dev libffi-dev git
 ADD miiify .
+
+# Update opam repository to get latest package versions
+RUN opam update
+
 RUN opam install . --deps-only
 # Build project
 RUN opam exec -- dune build bin/main.exe --profile=release

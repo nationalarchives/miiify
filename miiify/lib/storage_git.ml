@@ -48,6 +48,10 @@ let exists ~db ~key =
 
 let total ~db ~key =
   let* store = db in
-  let+ list = Store.list store key in
-  List.length list
+  let* exists = Store.mem_tree store key in
+  if exists then
+    let+ list = Store.list store key in
+    List.length list
+  else
+    Lwt.return 0
 

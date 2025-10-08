@@ -1,4 +1,4 @@
 (test
  (name miiify)
- (libraries miiify))
+ (libraries miiify alcotest-lwt lwt yojson))
 

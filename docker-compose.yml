@@ -1,25 +1,13 @@
 version: "3"
 
 services:
-  git:
-    image: jptmoore/miiify:git
+  miiify:
+    image: jptmoore/miiify:latest
     build: .
+    environment:
+      - MIIIFY_BACKEND=${MIIIFY_BACKEND:-pack}
     ports:
       - "10000:10000"
-      - "8080:10000"
-      - "80:10000"
-      - "443:10000"
-    #volumes:
-    #  - ./db:/home/miiify/db
-    restart: always
-  pack:
-    image: jptmoore/miiify:pack
-    build: .
-    ports:
-      - "10000:10000"
-      - "8080:10000"
-      - "80:10000"
-      - "443:10000"
-    #volumes:
-    #  - ./db:/home/miiify/db
+    volumes:
+      - ./db:/home/miiify/db
     restart: always

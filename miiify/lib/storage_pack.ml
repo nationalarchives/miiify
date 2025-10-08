@@ -14,11 +14,10 @@ module Repo_config = struct
   let index_log_size = 2_500_000
   let merge_throttle = `Block_writes
   let indexing_strategy = Irmin_pack.Indexing_strategy.minimal
-  let fresh = false
-
-  let config =
+  
+  let config ?(fresh=false) fname =
     Irmin_pack.config ~fresh ~index_log_size ~merge_throttle ~indexing_strategy
-      ~readonly
+      ~readonly fname
 end
 
 module StoreMaker = Irmin_pack_unix.KV (Conf)
@@ -30,9 +29,20 @@ let info message = Store_info.v ~author:"miiify.rocks" "%s" message
 type t = Store.t Lwt.t
 
 let create ~fname =
+  (* Try to open existing store first, create fresh if it fails *)
   let config = Repo_config.config fname in
-  let repo = Store.Repo.v config in
-  let* repo = repo in
+  let* repo_result = 
+    Lwt.catch 
+      (fun () -> Store.Repo.v config >|= fun repo -> Ok repo)
+      (fun exn -> Lwt.return (Error exn))
+  in
+  let* repo = match repo_result with
+    | Ok repo -> Lwt.return repo
+    | Error _ ->
+        (* Store doesn't exist or is corrupted, create fresh *)
+        let fresh_config = Repo_config.config ~fresh:true fname in
+        Store.Repo.v fresh_config
+  in
   Store.main repo
 
 let set ~db ~key ~data ~message =
@@ -69,6 +79,10 @@ let exists ~db ~key =
 
 let total ~db ~key =
   let* store = db in
-  let* tree = Store.get_tree store key in
-  Store.Tree.length tree []
+  let* exists = Store.mem_tree store key in
+  if exists then
+    let* tree = Store.get_tree store key in
+    Store.Tree.length tree []
+  else
+    Lwt.return 0
 

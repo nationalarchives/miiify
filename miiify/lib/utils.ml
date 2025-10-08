@@ -54,7 +54,13 @@ end = struct
     let data = File.read_file !config_file in
     match Config.parse ~data with
     | Error message -> failwith message
-    | Ok config -> config
+    | Ok config -> 
+        (* Override backend from environment variable if set *)
+        let backend = match Sys.getenv_opt "MIIIFY_BACKEND" with
+          | Some env_backend -> env_backend
+          | None -> config.backend
+        in
+        { config with backend }
 end
 
 module Math : sig

@@ -10,6 +10,7 @@ type config = {
   ~key_file <ocaml default="\"server.key\""> : string;
   ~repository_name <ocaml default="\"db\""> : string; 
   ~repository_author <ocaml default="\"miiify.rocks\""> : string;
+  ~backend <ocaml default="\"pack\""> : string;
   ~container_page_limit <ocaml default="200"> : int;
   ~container_representation <ocaml default="\"PreferContainedDescriptions\""> : string;
   ~avoid_mid_air_collisions <ocaml default="false"> : bool;

@@ -3,7 +3,9 @@ open Lwt.Syntax
 open Yojson.Basic
 open Config_t
 
-let create ~config = Db.create ~fname:config.repository_name
+let create ~config = 
+  Db.set_backend config.backend;
+  Db.create ~fname:config.repository_name
 
 let get_container ~db ~container_id =
   let* data = Db.get ~db ~key:[ container_id; "main" ] in

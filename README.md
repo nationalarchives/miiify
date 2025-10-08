@@ -12,26 +12,40 @@ Designed to be compatible with the Git protocol. This means annotations can be a
 
 Designed to be highly-scalable and disk efficient. This backend uses technology that is part of the distributed ledger used within the [Tezos blockchain](https://tezos.com/).
 
+### Backend Configuration
+
+The storage backend can be configured at runtime using the `MIIIFY_BACKEND` environment variable:
+
+- `MIIIFY_BACKEND=pack` - Uses the pack backend (default)
+- `MIIIFY_BACKEND=git` - Uses the git backend
+
+This allows the same Docker image to be deployed with different storage configurations without rebuilding.
+
 ### Getting started
 
-Miiify can be run with Docker using either the git or pack backend. The example below uses the pack backend.
+Miiify can be run with Docker using either the git or pack backend. The backend is configured using environment variables at runtime.
 
-#### Starting server
+#### Starting server with pack backend (default)
 
 ```bash
-docker compose pull pack
-docker compose up pack -d
+docker compose up -d
+```
+
+#### Starting server with git backend
+
+```bash
+MIIIFY_BACKEND=git docker compose up -d
 ```
 
 #### Check the server is running
 
 ```bash
-http :
+http :10000
 ```
 
 #### Stopping server
 ```bash
-docker compose down pack
+docker compose down
 ```
 
 ### Basic concepts
@@ -153,11 +167,21 @@ Simple [video tutorial](https://miiifystore.s3.eu-west-2.amazonaws.com/presentat
 
 ### Building from source
 
-To build your own native Docker images:
+To build your own Docker image:
+```bash
+docker compose build
 ```
+
+To test with different backends:
+```bash
 cd miiify/test
-./build.sh pack
-```
+
+# Test pack backend
+./test.sh pack
+
+# Test git backend  
+./test.sh git
+
 
 ### Documentation
 
