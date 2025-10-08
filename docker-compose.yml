@@ -9,5 +9,8 @@ services:
     ports:
       - "10000:10000"
     volumes:
-      - ./db:/home/miiify/db
+      - miiify_data:/home/miiify/db
     restart: always
+
+volumes:
+  miiify_data:

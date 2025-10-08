@@ -24,6 +24,9 @@ COPY --from=build /home/opam/_build/default/bin/main.exe ./app
 COPY --from=build /home/opam/config.json ./config.json
 COPY assets assets
 
+# Create db directory and set ownership for miiify user
+RUN mkdir -p db && chown -R miiify:miiify db
+
 USER miiify
 
 RUN openssl req -x509 -newkey rsa:4096 -keyout server.key -out server.crt -days 3650 -nodes -subj "/C=UK/ST=foo/L=bar/O=baz/OU= Department/CN=localhost.local"
