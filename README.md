@@ -14,12 +14,20 @@ Designed to be highly-scalable and disk efficient. This backend uses technology 
 
 ### Backend Configuration
 
-The storage backend can be configured at runtime using the `MIIIFY_BACKEND` environment variable:
+The storage backend can be configured in two ways:
 
-- `MIIIFY_BACKEND=pack` - Uses the pack backend (default)
-- `MIIIFY_BACKEND=git` - Uses the git backend
+1. **Environment variable** (recommended for deployment): Use the `MIIIFY_BACKEND` environment variable:
+   - `MIIIFY_BACKEND=pack` - Uses the pack backend (default)
+   - `MIIIFY_BACKEND=git` - Uses the git backend
 
-This allows the same Docker image to be deployed with different storage configurations without rebuilding.
+2. **Configuration file**: Set the `backend` field in `miiify/config.json`:
+   ```json
+   {
+     "backend": "pack"
+   }
+   ```
+
+The environment variable takes precedence over the config file setting. This allows the same Docker image to be deployed with different storage configurations without rebuilding.
 
 ### Getting started
 
@@ -182,6 +190,9 @@ cd miiify/test
 # Test git backend  
 ./test.sh git
 
+# Test both backends
+./test.sh both
+```
 
 ### Documentation
 
