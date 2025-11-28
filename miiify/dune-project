@@ -29,11 +29,14 @@
    (>= 3.6.0))
   (atdgen
    (>= 2.2.1))
+  (atdgen-runtime
+   (>= 2.2.1))
   (ptime
    (>= 0.8.5))
   (uuidm
-   (>= 0.9.7)))
+   (>= 0.9.7))
+  ;; test dependencies
+  (alcotest-lwt :with-test)
+  (yojson :with-test))
  (tags
   (web annotation git irmin)))
-
-; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project
