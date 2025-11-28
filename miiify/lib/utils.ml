@@ -36,6 +36,28 @@ end
 module Cmd : sig
   val parse : unit -> Config_t.config
 end = struct
+  module EnvOverride = struct
+    let string name default =
+      match Sys.getenv_opt name with
+      | Some v -> v
+      | None -> default
+      
+    let int name default =
+      match Sys.getenv_opt name with
+      | Some v -> (try int_of_string v with _ -> default)
+      | None -> default
+      
+    let bool name default =
+      match Sys.getenv_opt name with
+      | Some v -> (
+          match String.lowercase_ascii v with
+          | "true" | "1" | "yes" -> true
+          | "false" | "0" | "no" -> false
+          | _ -> default
+        )
+      | None -> default
+  end
+
   let config_file = ref "config.json"
 
   let parse_worker () =
@@ -55,12 +77,19 @@ end = struct
     match Config.parse ~data with
     | Error message -> failwith message
     | Ok config -> 
-        (* Override backend from environment variable if set *)
-        let backend = match Sys.getenv_opt "MIIIFY_BACKEND" with
-          | Some env_backend -> env_backend
-          | None -> config.backend
-        in
-        { config with backend }
+        { config with
+          backend = EnvOverride.string "MIIIFY_BACKEND" config.backend;
+          port = EnvOverride.int "MIIIFY_PORT" config.port;
+          interface = EnvOverride.string "MIIIFY_INTERFACE" config.interface;
+          tls = EnvOverride.bool "MIIIFY_TLS" config.tls;
+          id_proto = EnvOverride.string "MIIIFY_ID_PROTO" config.id_proto;
+          certificate_file = EnvOverride.string "MIIIFY_CERTIFICATE_FILE" config.certificate_file;
+          key_file = EnvOverride.string "MIIIFY_KEY_FILE" config.key_file;
+          repository_name = EnvOverride.string "MIIIFY_REPOSITORY_NAME" config.repository_name;
+          container_page_limit = EnvOverride.int "MIIIFY_CONTAINER_PAGE_LIMIT" config.container_page_limit;
+          access_control_allow_origin = EnvOverride.string "MIIIFY_ACCESS_CONTROL_ALLOW_ORIGIN" config.access_control_allow_origin;
+          validate_annotation = EnvOverride.bool "MIIIFY_VALIDATE_ANNOTATION" config.validate_annotation;
+        }
 end
 
 module Math : sig

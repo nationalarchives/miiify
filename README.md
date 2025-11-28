@@ -12,22 +12,46 @@ Designed to be compatible with the Git protocol. This means annotations can be a
 
 Designed to be highly-scalable and disk efficient. This backend uses technology that is part of the distributed ledger used within the [Tezos blockchain](https://tezos.com/).
 
-### Backend Configuration
+### Configuration
 
-The storage backend can be configured in two ways:
+Miiify can be configured using environment variables or a configuration file (`miiify/config.json`). Environment variables take precedence over the configuration file, making it easy to deploy the same Docker image with different settings.
 
-1. **Environment variable** (recommended for deployment): Use the `MIIIFY_BACKEND` environment variable:
-   - `MIIIFY_BACKEND=pack` - Uses the pack backend (default)
-   - `MIIIFY_BACKEND=git` - Uses the git backend
+#### Environment Variables
 
-2. **Configuration file**: Set the `backend` field in `miiify/config.json`:
-   ```json
-   {
-     "backend": "pack"
-   }
-   ```
+Configuration options can be overridden using environment variables with the `MIIIFY_` prefix:
 
-The environment variable takes precedence over the config file setting. This allows the same Docker image to be deployed with different storage configurations without rebuilding.
+**Storage & Database:**
+- `MIIIFY_BACKEND` - Storage backend: `pack` (default) or `git`
+- `MIIIFY_REPOSITORY_NAME` - Database directory name (default: `db`)
+
+**Server Settings:**
+- `MIIIFY_PORT` - Server port (default: `10000`)
+- `MIIIFY_INTERFACE` - Network interface to bind to (default: `0.0.0.0`)
+
+**TLS/HTTPS:**
+- `MIIIFY_TLS` - Enable TLS: `true` (default) or `false`
+- `MIIIFY_ID_PROTO` - Protocol for generated URLs: `https` (default) or `http`
+- `MIIIFY_CERTIFICATE_FILE` - TLS certificate path (default: `server.crt`)
+- `MIIIFY_KEY_FILE` - TLS private key path (default: `server.key`)
+
+**Features:**
+- `MIIIFY_CONTAINER_PAGE_LIMIT` - Maximum items per page (default: `200`)
+- `MIIIFY_ACCESS_CONTROL_ALLOW_ORIGIN` - CORS origin (default: `*`)
+- `MIIIFY_VALIDATE_ANNOTATION` - Enable annotation validation: `true` or `false` (default: `false`)
+
+**Examples:**
+
+```bash
+# Use git backend with HTTP on port 8080
+MIIIFY_BACKEND=git MIIIFY_TLS=false MIIIFY_ID_PROTO=http MIIIFY_PORT=8080 docker compose up
+
+# Production deployment with custom page limit
+MIIIFY_BACKEND=pack MIIIFY_CONTAINER_PAGE_LIMIT=100 docker compose up
+```
+
+#### Configuration File
+
+Alternatively, settings can be specified in `miiify/config.json`. See the file for the complete structure and available options.
 
 ### Getting started
 
