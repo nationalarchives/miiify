@@ -7,15 +7,6 @@ open Miiify
 module Git_store = Storage_git.Store
 module Pack_store = Storage_pack.Store
 
-let validate_annotation content =
-  try
-    let _ = Specification_j.specification_of_string content in
-    Ok ()
-  with
-  | Yojson.Json_error msg -> Error ("JSON parse error: " ^ msg)
-  | Atdgen_runtime.Oj_run.Error msg -> Error ("Schema validation error: " ^ msg)
-  | e -> Error ("Validation error: " ^ Printexc.to_string e)
-
 let rec copy_tree git_store pack_store path validate =
   let* git_tree = Git_store.get_tree git_store path in
   let* entries = Git_store.Tree.list git_tree [] in
@@ -34,15 +25,33 @@ let rec copy_tree git_store pack_store path validate =
     if is_contents then
       let* data = Git_store.get git_store current_path in
       
-      (* Validate if flag is set and path looks like an annotation *)
+      (* Always validate path structure *)
+      let* () = 
+        match Utils.Validation.validate_path current_path with
+        | Ok () -> Lwt.return_unit
+        | Error msg ->
+            let* () = Lwt_io.printlf "✗ Invalid structure: %s" msg in
+            Lwt.fail (Failure ("Structure validation failed: " ^ msg))
+      in
+      
+      (* Always validate basic JSON *)
+      let* () = 
+        match Utils.Validation.validate_basic_json data with
+        | Ok () -> Lwt.return_unit
+        | Error msg ->
+            let* () = Lwt_io.printlf "✗ %s: %s" (String.concat "/" current_path) msg in
+            Lwt.fail (Failure ("JSON validation failed for " ^ String.concat "/" current_path))
+      in
+      
+      (* Validate against schema if flag is set and path is an annotation *)
       let* () = 
         if validate && List.mem "collection" current_path then
-          match validate_annotation data with
+          match Utils.Validation.validate_annotation data with
           | Ok () -> 
               Lwt.return_unit
           | Error msg ->
-              let* () = Lwt_io.printlf "✗ Validation failed for %s: %s" (String.concat "/" current_path) msg in
-              Lwt.fail (Failure ("Validation failed for " ^ String.concat "/" current_path))
+              let* () = Lwt_io.printlf "✗ Schema validation failed for %s: %s" (String.concat "/" current_path) msg in
+              Lwt.fail (Failure ("Schema validation failed for " ^ String.concat "/" current_path))
         else
           Lwt.return_unit
       in
@@ -94,7 +103,7 @@ let pack_path =
   Arg.(value & opt string "db-pack" & info ["pack"; "p"] ~docv:"DIR" ~doc)
 
 let validate_flag =
-  let doc = "Validate annotations against specification.atd schema during compilation" in
+  let doc = "Enable strict schema validation against specification.atd (structure and JSON syntax always validated)" in
   Arg.(value & flag & info ["validate"; "v"] ~doc)
 
 let cmd =
@@ -103,6 +112,8 @@ let cmd =
     `S Manpage.s_description;
     `P "Compiles a Git-based miiify store into an optimized Pack store for production.";
     `P "The Git store is useful for development and version control, while Pack provides better runtime performance.";
+    `P "Always validates: path structure and JSON syntax.";
+    `P "With --validate: also validates annotations against W3C schema.";
     `P "Example:";
     `Pre "  miiify-compile";
     `Pre "  miiify-compile --git ./db --pack ./db-pack";

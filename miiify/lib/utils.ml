@@ -29,3 +29,61 @@ end = struct
   let calculate_page total limit =
     int_of_float (Float.ceil (float_of_int total /. float_of_int limit)) - 1
 end
+
+module Validation : sig
+  val is_valid_container_name : string -> bool
+  val is_valid_json_file : string -> bool
+  val validate_basic_json : string -> (unit, string) result
+  val validate_annotation : string -> (unit, string) result
+  val validate_path : string list -> (unit, string) result
+end = struct
+  let is_valid_container_name name =
+    (* Container names must be URL-safe: alphanumeric, hyphens, underscores *)
+    let length = String.length name in
+    length > 0 && length <= 255 &&
+    String.for_all (fun c ->
+      (c >= 'a' && c <= 'z') ||
+      (c >= 'A' && c <= 'Z') ||
+      (c >= '0' && c <= '9') ||
+      c = '-' || c = '_'
+    ) name
+
+  let is_valid_json_file filename =
+    (* Must end with .json and not be hidden *)
+    String.ends_with ~suffix:".json" filename &&
+    not (String.starts_with ~prefix:"." filename)
+
+  let validate_basic_json content =
+    (* Check if content is at least parseable as JSON *)
+    try
+      let _ = Yojson.Basic.from_string content in
+      Ok ()
+    with
+    | Yojson.Json_error msg -> Error ("Invalid JSON: " ^ msg)
+    | e -> Error ("Parse error: " ^ Printexc.to_string e)
+
+  let validate_annotation content =
+    try
+      let _ = Specification_j.specification_of_string content in
+      Ok ()
+    with
+    | Yojson.Json_error msg -> Error ("JSON parse error: " ^ msg)
+    | Atdgen_runtime.Oj_run.Error msg -> Error ("Schema validation error: " ^ msg)
+    | e -> Error ("Validation error: " ^ Printexc.to_string e)
+
+  let validate_path path =
+    (* Validate structure: must be <container>/main or <container>/collection/<slug> *)
+    match path with
+    | [] -> Error "Empty path"
+    | [container; "main"] ->
+        if is_valid_container_name container then Ok ()
+        else Error (Printf.sprintf "Invalid container name '%s' (use only a-z, A-Z, 0-9, -, _)" container)
+    | [container; "collection"; slug] ->
+        if not (is_valid_container_name container) then
+          Error (Printf.sprintf "Invalid container name '%s' (use only a-z, A-Z, 0-9, -, _)" container)
+        else if String.length slug = 0 then
+          Error "Empty annotation slug"
+        else
+          Ok ()
+    | _ -> Error (Printf.sprintf "Invalid path structure: %s (must be <container>/main or <container>/collection/<slug>)" (String.concat "/" path))
+end

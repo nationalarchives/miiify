@@ -4,45 +4,11 @@ open Lwt.Syntax
 open Cmdliner
 open Miiify
 
-let validate_annotation content =
-  try
-    let _ = Specification_j.specification_of_string content in
-    Ok ()
-  with
-  | Yojson.Json_error msg -> Error ("JSON parse error: " ^ msg)
-  | Atdgen_runtime.Oj_run.Error msg -> Error ("Schema validation error: " ^ msg)
-  | e -> Error ("Validation error: " ^ Printexc.to_string e)
-
-let is_valid_container_name name =
-  (* Container names must be URL-safe: alphanumeric, hyphens, underscores *)
-  let length = String.length name in
-  length > 0 && length <= 255 &&
-  String.for_all (fun c ->
-    (c >= 'a' && c <= 'z') ||
-    (c >= 'A' && c <= 'Z') ||
-    (c >= '0' && c <= '9') ||
-    c = '-' || c = '_'
-  ) name
-
-let is_valid_json_file filename =
-  (* Must end with .json and not be hidden *)
-  String.ends_with ~suffix:".json" filename &&
-  not (String.starts_with ~prefix:"." filename)
-
-let validate_basic_json content =
-  (* Check if content is at least parseable as JSON *)
-  try
-    let _ = Yojson.Basic.from_string content in
-    Ok ()
-  with
-  | Yojson.Json_error msg -> Error ("Invalid JSON: " ^ msg)
-  | e -> Error ("Parse error: " ^ Printexc.to_string e)
-
 let import_annotation git_store container_id path validate =
   let filename = Filename.basename path in
   
   (* Validate it's a JSON file *)
-  if not (is_valid_json_file filename) then
+  if not (Utils.Validation.is_valid_json_file filename) then
     Lwt.fail (Failure (Printf.sprintf "Invalid file: %s (must be *.json)" filename))
   else
   
@@ -59,7 +25,7 @@ let import_annotation git_store container_id path validate =
   
   (* Always validate basic JSON structure *)
   let* () = 
-    match validate_basic_json content with
+    match Utils.Validation.validate_basic_json content with
     | Ok () -> Lwt.return_unit
     | Error msg ->
         let* () = Lwt_io.printlf "✗ %s/%s - %s" container_id filename msg in
@@ -69,7 +35,7 @@ let import_annotation git_store container_id path validate =
   (* Validate against schema if flag is set *)
   let* () = 
     if validate then
-      match validate_annotation content with
+      match Utils.Validation.validate_annotation content with
       | Ok () -> 
           Lwt.return_unit
       | Error msg ->
@@ -142,7 +108,7 @@ let import_directory input_dir git_path validate =
                      |> List.map (fun name -> (name, Filename.concat scan_dir name))
                      |> List.filter (fun (_, path) -> Sys.is_directory path)
                      |> List.filter (fun (name, _) ->
-                         if not (is_valid_container_name name) then (
+                         if not (Utils.Validation.is_valid_container_name name) then (
                            Printf.fprintf stderr "Warning: Skipping invalid container name '%s' (use only a-z, A-Z, 0-9, -, _)\n%!" name;
                            false
                          ) else
@@ -181,7 +147,7 @@ let import_directory input_dir git_path validate =
       
       (* Filter to only .json files (must be actual files) *)
       let json_files = all_files
-                       |> List.filter is_valid_json_file
+                       |> List.filter Utils.Validation.is_valid_json_file
                        |> List.map (fun f -> (f, Filename.concat container_path f))
                        |> List.filter (fun (_, path) -> not (Sys.is_directory path))
                        |> List.map snd
@@ -191,7 +157,7 @@ let import_directory input_dir git_path validate =
       let non_json_files = all_files
                            |> List.filter (fun f -> 
                                not (String.starts_with ~prefix:"." f) && 
-                               not (is_valid_json_file f))
+                               not (Utils.Validation.is_valid_json_file f))
                            |> List.map (fun f -> (f, Filename.concat container_path f))
                            |> List.filter (fun (_, path) -> not (Sys.is_directory path))
       in
