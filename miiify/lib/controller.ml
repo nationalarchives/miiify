@@ -104,28 +104,3 @@ let get_annotation ~db ~container_id ~annotation_id ~base_url =
 let delete_annotation ~db ~container_id ~annotation_id ~message =
   Model.delete_annotation ~db ~container_id ~annotation_id ~message
 
-(* Manifest functions removed - not used in simplified read-only API *)
-(* 
-let get_manifest ~db ~id =
-  Model.get_manifest ~db ~manifest_id:id >|= Manifest.manifest
-
-let post_manifest ~db ~id ~message data =
-  Manifest.create ~data |> function
-  | Ok json ->
-      let result = Model.add_manifest ~db ~manifest_id:id ~json ~message in
-      Lwt.return_ok result
-  | Error m -> Lwt.return_error m
-
-let put_manifest ~db ~id ~message data =
-  Manifest.update ~data |> function
-  | Ok json ->
-      let result = Model.update_manifest ~db ~manifest_id:id ~json ~message in
-      Lwt.return_ok result
-  | Error m -> Lwt.return_error m
-
-let delete_manifest ~db ~id ~message =
-  Model.delete_manifest ~db ~manifest_id:id ~message
-
-let manifest_exists ~db ~id = Model.manifest_exists ~db ~manifest_id:id
-let get_manifest_hash ~db ~id = Model.get_manifest_hash ~db ~manifest_id:id
-*)

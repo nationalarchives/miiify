@@ -1,5 +1,0 @@
-{
-  "@context": "http://iiif.io/api/presentation/3/context.json",
-  "type": "AnnotationCollection",
-  "label": "A Container for Web Annotations"
-}
