@@ -2,20 +2,13 @@
 
 open Cmdliner
 
-let serve repository_name port page_limit base_url =
+let serve repository_name port page_limit _base_url =
   (* Initialize Pack store first *)
   let db = Lwt_main.run (
-    let open Lwt.Syntax in
-    let* () = Lwt_io.printl "Miiify Server" in
-    let* () = Lwt_io.printlf "Repository: %s" repository_name in
-    let* () = Lwt_io.printlf "Base URL: %s" base_url in
     Miiify.Model.create ~repository_name
   ) in
   
-  (* Then start Dream server (which takes over event loop) *)
-  Printf.printf "Starting API server on port %d\n" port;
-  Printf.printf "Page limit: %d\n%!" page_limit;
-  
+  (* Start Dream server (which takes over event loop) *)
   Dream.run ~interface:"0.0.0.0" ~port
   @@ Dream.logger
   @@ Dream.router
