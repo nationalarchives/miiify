@@ -1,271 +1,220 @@
 # Miiify
 
-A lightweight, Git-backed web annotation server for IIIF applications using Irmin storage technology.
+**Web annotations versioned like code, served like a database.**
 
-## Overview
+Traditional annotation servers require databases, complex configuration, and specialized deployment. They separate your annotations from your content workflows.
 
-Miiify provides persistent, structured access to web annotations through a read-only HTTP API.
+Miiify solves this by treating annotations like source code: store them in Git, serve them from an optimized runtime.
 
-- **Git backend** for annotation authoring and collaboration
-- **Pack backend** for high-performance runtime queries
+Your annotations evolve like a codebase. IIIF scholars and content specialists who already use Git for documentation can contribute annotations using the same workflow—commit, review, merge. No database setup, no config files, just JSON files and Git.
 
-This separation enables Git-based workflows (pull requests, reviews, versioning) while maintaining fast, scalable annotation delivery.
+Miiify uses the same storage technology that powers the Tezos blockchain (Irmin), giving your annotations blockchain-grade immutability and integrity. Deploy across multiple locations for digital preservation—each location independently compiles from Git to create verifiable identical copies.
 
-## Architecture
+## Quick Start
 
-### Storage Backends
+Create annotations as JSON files and serve them via HTTP API.
 
-**Git** - For development and collaboration:
-- Standard Git operations (commit, push, pull, merge)
-- Human-readable storage (JSON files)
-- Version control and audit trails
-- Pull request workflows for annotation review
-
-**Pack** - For production runtime:
-- Highly-compressed, disk-efficient storage
-- Fast concurrent reads
-- Based on Irmin Pack (used in Tezos blockchain)
-- Compiled from Git for deployment
-
-### Command Overview
-
-```
-miiify clone     Clone remote Git repository
-miiify pull      Pull updates from remote repository
-miiify import    Import JSON files into Git store (development)
-miiify compile   Compile Git store to Pack store (deployment)
-miiify serve     Run HTTP API server from Pack store
-```
-
-## Workflows
-
-### Production Workflow
+### 1. Create Annotation Files
 
 ```bash
-# 1. Clone annotation repository
-miiify-clone https://github.com/org/annotations.git --git ./db
+# Create directory structure
+mkdir -p annotations/my-canvas
 
-# 2. Update from remote (as needed)
-miiify-pull --git ./db --remote origin --branch main
+# Create an annotation
+cat > annotations/my-canvas/highlight-1.json << 'EOF'
+{
+  "type": "Annotation",
+  "motivation": "highlighting",
+  "body": {
+    "type": "TextualBody",
+    "value": "Important passage",
+    "purpose": "commenting"
+  },
+  "target": "https://example.com/iiif/canvas/1#xywh=100,100,200,50"
+}
+EOF
 
-# 3. Compile to Pack for runtime
-miiify-compile --git ./db --pack ./db-pack --validate
-
-# 4. Run HTTP server
-miiify-serve --repository ./db-pack --port 10000 --page-limit 200
+# Create another annotation
+cat > annotations/my-canvas/comment-1.json << 'EOF'
+{
+  "type": "Annotation",
+  "motivation": "commenting",
+  "body": {
+    "type": "TextualBody",
+    "value": "This is a fascinating detail",
+    "purpose": "commenting"
+  },
+  "target": "https://example.com/iiif/canvas/1#xywh=300,150,100,75"
+}
+EOF
 ```
 
-### Development Workflow
+### 2. Import and Compile
 
 ```bash
-# 1. Import local JSON files
-miiify-import --input ./annotations --git ./db --validate
+# Import JSON files into Git storage
+miiify-import --input ./annotations --git ./db-git
 
-# 2. Compile to Pack
-miiify-compile --git ./db --pack ./db-pack
+# Compile to Pack storage for serving
+miiify-compile --git ./db-git --pack ./db-pack
+```
 
-# 3. Test locally
+### 3. Run Server
+
+```bash
+# Start the HTTP API server
 miiify-serve --repository ./db-pack --port 10000
 ```
 
-### Collaborative Git Workflow
+### 4. Access Annotations
 
 ```bash
-# Clone repository
-git clone https://github.com/org/annotations.git
+# Get annotation (both formats work)
+curl http://localhost:10000/my-canvas/highlight-1
+curl http://localhost:10000/my-canvas/highlight-1.json
 
-# Create annotations (standard JSON files)
-cd annotations/my-container/collection/
-echo '{"type":"Annotation",...}' > ann-001.json
+# List all annotations
+curl http://localhost:10000/my-canvas/
+```
 
-# Commit and push
-git add .
-git commit -m "Add new annotations"
-git push
-
-# On server: pull, compile, restart
-miiify-pull --git ./db
-miiify-compile --git ./db --pack ./db-pack --validate
-systemctl restart miiify
+**Using an existing Git repository?** Use `miiify-clone` instead of creating files manually:
+```bash
+miiify-clone https://github.com/org/annotations.git --git ./db-git
+miiify-compile --git ./db-git --pack ./db-pack
+miiify-serve --repository ./db-pack --port 10000
 ```
 
 ## Commands
 
-### miiify-clone
-
-Clone a remote Git repository containing annotations.
-
-```bash
-miiify-clone <repository-url> [OPTIONS]
-
-Options:
-  --git <dir>           Git store directory (default: db)
-  --remote <name>       Remote name (default: origin)
-  --branch <name>       Branch name (default: main)
-```
-
-**Example:**
-```bash
-miiify-clone https://github.com/org/annotations.git --git ./annotation-db
-```
-
-### miiify-pull
-
-Pull updates from remote Git repository.
-
-```bash
-miiify-pull [OPTIONS]
-
-Options:
-  --git <dir>           Git store directory (default: db)
-  --remote <name>       Remote name (default: origin)
-  --branch <name>       Branch name (default: main)
-```
-
-**Example:**
-```bash
-miiify-pull --git ./db --branch production
-```
-
 ### miiify-import
 
-Import JSON annotation files into Git store (development tool).
+Import JSON annotation files into Git store.
 
 ```bash
 miiify-import [OPTIONS]
 
 Options:
-  --input <dir>         Directory containing JSON files (default: db)
-  --git <dir>           Git store directory (default: db)
-  --validate            Validate annotations during import
-```
-
-**File structure expected:**
-```
-annotations/
-├── container-1/
-│   ├── main.json              # Container metadata
-│   └── collection/
-│       ├── ann-001.json       # Annotation files
-│       ├── ann-002.json
-│       └── ...
-└── container-2/
-    ├── main.json
-    └── collection/
-        └── ...
+  --input <dir>         Directory containing JSON files (default: ./annotations)
+  --git <dir>           Git store directory (default: db-git)
 ```
 
 **Example:**
 ```bash
-miiify-import --input ./my-annotations --git ./db --validate
+miiify-import --input ./annotations --git ./db-git
 ```
 
 ### miiify-compile
 
-Compile Git store to Pack store for production deployment.
+Compile Git store to Pack store for serving.
 
 ```bash
 miiify-compile [OPTIONS]
 
 Options:
-  --git <dir>           Git store directory (default: db)
+  --git <dir>           Git store directory (default: db-git)
   --pack <dir>          Pack store directory (default: db-pack)
-  --validate            Validate annotations during compilation
 ```
 
 **Example:**
 ```bash
-miiify-compile --git ./annotation-db --pack ./prod-db --validate
+miiify-compile --git ./db-git --pack ./db-pack
 ```
 
 ### miiify-serve
 
-Run HTTP API server from Pack store (read-only).
+Run HTTP API server from Pack store.
 
 ```bash
 miiify-serve [OPTIONS]
 
 Options:
-  --repository <dir>    Pack store directory (default: db)
+  --repository <dir>    Pack store directory (default: db-pack)
   --port <number>       Server port (default: 10000)
   --page-limit <number> Maximum items per page (default: 200)
+  --base-url <url>      Base URL for annotation IDs (default: http://localhost:10000)
 ```
 
 **Example:**
 ```bash
-miiify-serve --repository ./db-pack --port 8080 --page-limit 100
+miiify-serve --repository ./db-pack --port 8080 --base-url https://example.com
 ```
 
 ## HTTP API
 
 The server provides a read-only HTTP API for retrieving annotations.
 
+### URL Structure
+
+Annotations use a simple `/<container>/<slug>` URL pattern:
+- **Container**: Directory name (e.g., `my-canvas`, `page-42`)
+- **Slug**: Filename without `.json` extension (e.g., `highlight-1`, `comment-3`)
+- Both formats work: `/<container>/<slug>` and `/<container>/<slug>.json`
+
 ### Endpoints
 
-**Status Check**
-```bash
-GET /
-GET /version
 ```
-
-**Get Container**
-```bash
-GET /annotations/:container_id
-```
-
-**Get Annotation Page**
-```bash
-GET /annotations/:container_id/?page=0
-GET /annotations/:container_id/?page=0&target=<uri>
-```
-
-**Get Single Annotation**
-```bash
-GET /annotations/:container_id/:annotation_id
+GET /                          # Server status
+GET /version                   # Version info
+GET /:container                # Get container metadata
+GET /:container/               # List annotations (paginated)
+GET /:container/:slug          # Get specific annotation
 ```
 
 ### Examples
 
-Using [httpie](https://httpie.io/):
-
 ```bash
-# Check server status
-http localhost:10000/
+# Get annotation (both work)
+curl http://localhost:10000/my-canvas/highlight-1
+curl http://localhost:10000/my-canvas/highlight-1.json
 
-# Get container metadata
-http localhost:10000/annotations/my-container
+# List all annotations in container
+curl http://localhost:10000/my-canvas/
 
-# Get first page of annotations
-http localhost:10000/annotations/my-container/?page=0
+# Pagination
+curl http://localhost:10000/my-canvas/?page=0
+curl http://localhost:10000/my-canvas/?page=1
 
-# Filter annotations by target
-http localhost:10000/annotations/my-container/?page=0&target=https://example.com/canvas1
-
-# Get specific annotation
-http localhost:10000/annotations/my-container/ann-001
+# Filter by target
+curl "http://localhost:10000/my-canvas/?target=https://example.com/iiif/canvas/1"
 ```
 
 ### Response Format
+
+**Single Annotation:**
+```json
+{
+  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "id": "http://localhost:10000/my-canvas/highlight-1",
+  "type": "Annotation",
+  "motivation": "highlighting",
+  "body": {
+    "type": "TextualBody",
+    "value": "Important passage",
+    "purpose": "commenting"
+  },
+  "target": "https://example.com/iiif/canvas/1#xywh=100,100,200,50",
+  "created": "2024-01-15T10:30:00Z"
+}
+```
 
 **Annotation Page:**
 ```json
 {
   "@context": "http://iiif.io/api/presentation/3/context.json",
-  "id": "http://localhost:10000/annotations/my-container/?page=0",
+  "id": "http://localhost:10000/my-canvas/?page=0",
   "type": "AnnotationPage",
-  "startIndex": 0,
   "items": [
     {
       "@context": "http://www.w3.org/ns/anno.jsonld",
-      "id": "http://localhost:10000/annotations/my-container/ann-001",
+      "id": "http://localhost:10000/my-canvas/highlight-1",
       "type": "Annotation",
       "body": { ... },
-      "target": "https://example.com/canvas1",
+      "target": "https://example.com/iiif/canvas/1#xywh=100,100,200,50",
       "created": "2024-01-15T10:30:00Z"
     }
   ],
   "partOf": {
-    "id": "http://localhost:10000/annotations/my-container/",
+    "id": "http://localhost:10000/my-canvas/",
     "type": "AnnotationCollection",
     "label": "My Annotations",
     "total": 42,
@@ -273,17 +222,3 @@ http localhost:10000/annotations/my-container/ann-001
   }
 }
 ```
-
-## Validation
-
-Optional ATD-based validation during import and compilation using [ATDgen](https://atd.readthedocs.io/).
-
-**Enable validation:**
-```bash
-miiify-import --input ./annotations --git ./db --validate
-miiify-compile --git ./db --pack ./db-pack --validate
-```
-
-**Custom specification:**
-Place `specification.atd` in your annotation directory. See [example specification](https://raw.githubusercontent.com/jptmoore/maniiifest/main/src/specification.atd).
-
