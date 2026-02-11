@@ -86,6 +86,44 @@ miiify-serve --repository ./db-pack --port 10000
 
 ## Commands
 
+### miiify-clone
+
+Clone a remote Git repository into Irmin Git store.
+
+```bash
+miiify-clone <repo-url> [OPTIONS]
+
+Arguments:
+  <repo-url>            Remote Git repository URL
+
+Options:
+  --git <dir>           Git store directory (default: db)
+```
+
+**Example:**
+```bash
+miiify-clone https://github.com/org/annotations.git --git ./db-git
+```
+
+### miiify-pull
+
+Pull updates from remote and merge into Irmin Git store.
+
+```bash
+miiify-pull [OPTIONS]
+
+Options:
+  --git <dir>           Git store directory (default: db)
+  --remote <name>       Remote name (default: origin)
+  --branch <name>       Branch name (default: main)
+```
+
+**Example:**
+```bash
+miiify-pull --git ./db-git
+miiify-pull --remote upstream --branch develop --git ./db-git
+```
+
 ### miiify-import
 
 Import JSON annotation files into Git store.
