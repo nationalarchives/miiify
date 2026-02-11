@@ -13,20 +13,60 @@ let validate_annotation content =
   | Atdgen_runtime.Oj_run.Error msg -> Error ("Schema validation error: " ^ msg)
   | e -> Error ("Validation error: " ^ Printexc.to_string e)
 
+let is_valid_container_name name =
+  (* Container names must be URL-safe: alphanumeric, hyphens, underscores *)
+  let length = String.length name in
+  length > 0 && length <= 255 &&
+  String.for_all (fun c ->
+    (c >= 'a' && c <= 'z') ||
+    (c >= 'A' && c <= 'Z') ||
+    (c >= '0' && c <= '9') ||
+    c = '-' || c = '_'
+  ) name
+
+let is_valid_json_file filename =
+  (* Must end with .json and not be hidden *)
+  String.ends_with ~suffix:".json" filename &&
+  not (String.starts_with ~prefix:"." filename)
+
+let validate_basic_json content =
+  (* Check if content is at least parseable as JSON *)
+  try
+    let _ = Yojson.Basic.from_string content in
+    Ok ()
+  with
+  | Yojson.Json_error msg -> Error ("Invalid JSON: " ^ msg)
+  | e -> Error ("Parse error: " ^ Printexc.to_string e)
+
 let import_annotation git_store container_id path validate =
   let filename = Filename.basename path in
+  
+  (* Validate it's a JSON file *)
+  if not (is_valid_json_file filename) then
+    Lwt.fail (Failure (Printf.sprintf "Invalid file: %s (must be *.json)" filename))
+  else
+  
   (* Strip .json extension to create slug *)
-  let slug = 
-    if String.length filename > 5 && String.ends_with ~suffix:".json" filename then
-      String.sub filename 0 (String.length filename - 5)
-    else
-      filename
-  in
+  let slug = String.sub filename 0 (String.length filename - 5) in
+  
+  (* Validate slug is not empty after stripping *)
+  if String.length slug = 0 then
+    Lwt.fail (Failure (Printf.sprintf "Invalid filename: %s (cannot be just '.json')" filename))
+  else
   
   let* content_lines = Lwt_io.lines_of_file path |> Lwt_stream.to_list in
   let content = String.concat "\n" content_lines in
   
-  (* Validate if flag is set *)
+  (* Always validate basic JSON structure *)
+  let* () = 
+    match validate_basic_json content with
+    | Ok () -> Lwt.return_unit
+    | Error msg ->
+        let* () = Lwt_io.printlf "✗ %s/%s - %s" container_id filename msg in
+        Lwt.fail (Failure ("Invalid JSON in " ^ path))
+  in
+  
+  (* Validate against schema if flag is set *)
   let* () = 
     if validate then
       match validate_annotation content with
@@ -75,21 +115,100 @@ let import_directory input_dir git_path validate =
     in
     
     (* Find all container directories *)
-    let containers = Sys.readdir scan_dir 
-                     |> Array.to_list
+    let all_items = Sys.readdir scan_dir |> Array.to_list in
+    
+    (* Check for JSON files at root level (not allowed) *)
+    let root_files = all_items
+                     |> List.filter (fun f -> not (String.starts_with ~prefix:"." f))
+                     |> List.map (fun f -> (f, Filename.concat scan_dir f))
+                     |> List.filter (fun (_, path) -> not (Sys.is_directory path))
+                     |> List.filter (fun (name, _) -> String.ends_with ~suffix:".json" name)
+    in
+    let* () = 
+      if List.length root_files > 0 then (
+        let* () = Lwt_io.eprintlf "Error: Found %d .json files at root level (must be inside container directories)" 
+          (List.length root_files) in
+        let* () = Lwt_list.iter_s (fun (name, _) ->
+          Lwt_io.eprintlf "  - %s" name
+        ) root_files in
+        Lwt.fail (Failure "Invalid layout: annotations must be in <container>/<annotation>.json structure")
+      ) else
+        Lwt.return_unit
+    in
+    
+    let containers = all_items
                      |> List.filter (fun f -> 
                          not (String.starts_with ~prefix:"." f))
                      |> List.map (fun name -> (name, Filename.concat scan_dir name))
                      |> List.filter (fun (_, path) -> Sys.is_directory path)
+                     |> List.filter (fun (name, _) ->
+                         if not (is_valid_container_name name) then (
+                           Printf.fprintf stderr "Warning: Skipping invalid container name '%s' (use only a-z, A-Z, 0-9, -, _)\n%!" name;
+                           false
+                         ) else
+                           true)
+    in
+    
+    (* Validate we have at least one container *)
+    let* () = 
+      if List.length containers = 0 then (
+        let* () = Lwt_io.eprintl "Error: No valid container directories found" in
+        Lwt.fail (Failure "No containers to import")
+      ) else
+        Lwt.return_unit
     in
     
     (* Import files from each container *)
     let* total = Lwt_list.fold_left_s (fun count (container_id, container_path) ->
-      let files = Sys.readdir container_path
-                  |> Array.to_list
-                  |> List.filter (fun f -> not (String.starts_with ~prefix:"." f))
-                  |> List.map (Filename.concat container_path)
-                  |> List.filter (fun p -> not (Sys.is_directory p))
+      let all_files = Sys.readdir container_path |> Array.to_list in
+      
+      (* Check for subdirectories (not allowed) *)
+      let subdirs = all_files
+                    |> List.filter (fun f -> not (String.starts_with ~prefix:"." f))
+                    |> List.map (fun f -> (f, Filename.concat container_path f))
+                    |> List.filter (fun (_, path) -> Sys.is_directory path)
+      in
+      let* () = 
+        if List.length subdirs > 0 then (
+          let* () = Lwt_io.eprintlf "Error: Container '%s' contains subdirectories (not allowed)" container_id in
+          let* () = Lwt_list.iter_s (fun (name, _) -> 
+            Lwt_io.eprintlf "  - %s/" name
+          ) subdirs in
+          Lwt.fail (Failure (Printf.sprintf "Invalid layout: containers must only contain .json files, not subdirectories"))
+        ) else
+          Lwt.return_unit
+      in
+      
+      (* Filter to only .json files (must be actual files) *)
+      let json_files = all_files
+                       |> List.filter is_valid_json_file
+                       |> List.map (fun f -> (f, Filename.concat container_path f))
+                       |> List.filter (fun (_, path) -> not (Sys.is_directory path))
+                       |> List.map snd
+      in
+      
+      (* Warn about non-JSON files *)
+      let non_json_files = all_files
+                           |> List.filter (fun f -> 
+                               not (String.starts_with ~prefix:"." f) && 
+                               not (is_valid_json_file f))
+                           |> List.map (fun f -> (f, Filename.concat container_path f))
+                           |> List.filter (fun (_, path) -> not (Sys.is_directory path))
+      in
+      let* () = 
+        if List.length non_json_files > 0 then
+          Lwt_io.eprintlf "Warning: Skipping %d non-JSON files in %s/" 
+            (List.length non_json_files) container_id
+        else
+          Lwt.return_unit
+      in
+      
+      (* Warn about empty containers *)
+      let* () = 
+        if List.length json_files = 0 then
+          Lwt_io.eprintlf "Warning: No JSON files found in %s/" container_id
+        else
+          Lwt.return_unit
       in
       
       (* Create container metadata if it doesn't exist *)
@@ -107,13 +226,19 @@ let import_directory input_dir git_path validate =
       
       let* () = Lwt_list.iter_s (fun path ->
         import_annotation git_store container_id path validate
-      ) files in
+      ) json_files in
       
-      Lwt.return (count + List.length files)
+      Lwt.return (count + List.length json_files)
     ) 0 containers in
     
     let* () = Lwt_io.printl "" in
-    Lwt_io.printlf "Imported %d annotations from %d containers" total (List.length containers)
+    let* () = 
+      if total = 0 then
+        Lwt_io.eprintl "Warning: No annotations imported (no valid .json files found)"
+      else
+        Lwt_io.printlf "Imported %d annotations from %d containers" total (List.length containers)
+    in
+    Lwt.return_unit
   )
 
 let input_dir =
