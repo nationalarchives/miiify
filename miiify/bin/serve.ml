@@ -25,7 +25,7 @@ let serve repository_name port page_limit base_url =
 
 let repository_arg =
   let doc = "Repository directory path" in
-  Arg.(value & opt string "db" & info ["repository"; "r"] ~docv:"DIR" ~doc)
+  Arg.(value & opt string "db-pack" & info ["repository"; "r"] ~docv:"DIR" ~doc)
 
 let port_arg =
   let doc = "Server port" in
