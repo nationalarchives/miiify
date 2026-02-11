@@ -15,10 +15,18 @@ let validate_annotation content =
 
 let import_annotation git_store path validate =
   let filename = Filename.basename path in
+  (* Strip .json extension to create slug *)
+  let slug = 
+    if String.length filename > 5 && String.ends_with ~suffix:".json" filename then
+      String.sub filename 0 (String.length filename - 5)
+    else
+      filename
+  in
+  
   let* content_lines = Lwt_io.lines_of_file path |> Lwt_stream.to_list in
   let content = String.concat "\n" content_lines in
   
-  let* () = Lwt_io.printlf "Importing %s (%d lines)" filename (List.length content_lines) in
+  let* () = Lwt_io.printlf "Importing %s -> %s (%d lines)" filename slug (List.length content_lines) in
   
   (* Validate if flag is set *)
   let* () = 
@@ -34,12 +42,12 @@ let import_annotation git_store path validate =
       Lwt.return_unit
   in
   
-  (* Store in annotations/<filename> *)
-  let key = ["annotations"; filename] in
+  (* Store in annotations/<slug> (without .json extension) *)
+  let key = ["annotations"; slug] in
   let message = Printf.sprintf "Import %s" filename in
   
   let* () = Storage_git.set ~db:git_store ~key ~data:content ~message in
-  Lwt_io.printlf "✓ Imported %s" filename
+  Lwt_io.printlf "✓ Imported %s" slug
 
 let import_directory input_dir git_path validate =
   Lwt_main.run (

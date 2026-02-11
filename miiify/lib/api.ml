@@ -2,6 +2,13 @@
 
 open Lwt.Syntax
 
+(* Helper to strip .json extension from slug *)
+let strip_json_ext slug =
+  if String.length slug > 5 && String.sub slug (String.length slug - 5) 5 = ".json" then
+    String.sub slug 0 (String.length slug - 5)
+  else
+    slug
+
 (* Status endpoint *)
 let get_status _request =
   Dream.json {|{"status":"ok"}|}
@@ -32,6 +39,6 @@ let get_annotations page_limit db request =
 (* Get a single annotation *)
 let get_annotation db request =
   let container_id = Dream.param request "container_id" in
-  let annotation_id = Dream.param request "annotation_id" in
+  let annotation_id = Dream.param request "annotation_id" |> strip_json_ext in
   let* data = Controller.get_annotation ~db ~container_id ~annotation_id in
   Dream.json data

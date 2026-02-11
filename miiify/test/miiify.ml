@@ -10,7 +10,7 @@ let create_test_db test_name =
 let container_json = {|{
   "type": "AnnotationCollection",
   "@context": "http://www.w3.org/ns/anno.jsonld",
-  "id": "http://localhost:10000/annotations/test-container/",
+  "id": "http://localhost:10000/test-container/",
   "label": "Test Container"
 }|}
 

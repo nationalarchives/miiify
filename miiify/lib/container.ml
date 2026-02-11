@@ -7,13 +7,13 @@ let is_container json =
   | `String "AnnotationCollection" -> true
   | _ -> false
 
-let create_worker json id host =
+let create_worker json id base_url =
   let open Util in
   if
     json |> member "id" = `Null
     && json |> member "created" = `Null
   then
-    let iri = host ^ "/annotations/" ^ id ^ "/" in
+    let iri = base_url ^ "/" ^ id ^ "/" in
     let timestamp = Utils.Time.get_timestamp () in
     let id = `String iri in
     let type_ = json |> member "type" in
@@ -32,16 +32,16 @@ let create_worker json id host =
       |> Utils.Json.filter_null)
   else Result.error "an id or created/modified timestamp can not be supplied"
 
-let create ~data ~id ~host =
+let create ~data ~id ~base_url =
   match from_string data with
   | exception Yojson.Json_error m -> Result.error m
   | json ->
-      if is_container json then create_worker json id host
+      if is_container json then create_worker json id base_url
       else Result.error "container type not found"
 
-let update_worker json id host =
+let update_worker json id base_url =
   let open Util in
-  let iri = host ^ "/annotations/" ^ id in
+  let iri = base_url ^ "/" ^ id in
   let id = `String iri in
   let id' = json |> member "id" in
   if id = id' then
@@ -53,12 +53,12 @@ let update_worker json id host =
     else Result.error "a modified timestamp can not be supplied"
   else Result.error "the id supplied was not valid"
 
-let update ~data ~id ~host =
+let update ~data ~id ~base_url =
   match from_string data with
   | exception Yojson.Json_error m -> Result.error m
   | json ->
       if is_container json then
-        update_worker json id host
+        update_worker json id base_url
       else Result.error "container type not found"
 
 let annotation_page_id json target =

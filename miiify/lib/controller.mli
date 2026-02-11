@@ -3,7 +3,7 @@ val get_container : db:Db.t -> container_id:string -> string Lwt.t
 val post_container :
   db:Db.t ->
   id:string ->
-  host:string ->
+  base_url:string ->
   message:string ->
   string ->
   (string Lwt.t, string) result Lwt.t
@@ -11,7 +11,7 @@ val post_container :
 val put_container :
   db:Db.t ->
   id:string ->
-  host:string ->
+  base_url:string ->
   message:string ->
   string ->
   (string Lwt.t, string) result Lwt.t
@@ -22,7 +22,7 @@ val post_annotation :
   db:Db.t ->
   container_id:string ->
   annotation_id:string ->
-  host:string ->
+  base_url:string ->
   message:string ->
   validate:bool ->
   string ->
@@ -32,7 +32,7 @@ val put_annotation :
   db:Db.t ->
   container_id:string ->
   annotation_id:string ->
-  host:string ->
+  base_url:string ->
   message:string ->
   validate:bool ->
   string ->

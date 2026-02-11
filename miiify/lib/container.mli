@@ -1,8 +1,8 @@
 val create :
-  data:string -> id:string -> host:string -> (Yojson.Basic.t, string) result
+  data:string -> id:string -> base_url:string -> (Yojson.Basic.t, string) result
 
 val update :
-  data:string -> id:string -> host:string -> (Yojson.Basic.t, string) result
+  data:string -> id:string -> base_url:string -> (Yojson.Basic.t, string) result
 
 val collection :
   Yojson.Basic.t -> total:int -> limit:int -> target:string option -> string

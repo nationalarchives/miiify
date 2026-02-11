@@ -4,15 +4,15 @@ open Lwt.Infix
 let get_container ~db ~container_id =
   Model.get_container ~db ~container_id >|= Container.container
 
-let post_container ~db ~id ~host ~message data =
-  Container.create ~id ~host ~data |> function
+let post_container ~db ~id ~base_url ~message data =
+  Container.create ~id ~base_url ~data |> function
   | Ok json ->
       let result = Model.add_container ~db ~container_id:id ~json ~message in
       Lwt.return_ok result
   | Error m -> Lwt.return_error m
 
-let put_container ~db ~id ~host ~message data =
-  Container.update ~id ~host ~data |> function
+let put_container ~db ~id ~base_url ~message data =
+  Container.update ~id ~base_url ~data |> function
   | Ok json ->
       let result = Model.update_container ~db ~container_id:id ~json ~message in
       Lwt.return_ok result
@@ -21,10 +21,10 @@ let put_container ~db ~id ~host ~message data =
 let delete_container ~db ~id ~message =
   Model.delete_container ~db ~container_id:id ~message
 
-let post_annotation ~db ~container_id ~annotation_id ~host ~message ~validate data =
+let post_annotation ~db ~container_id ~annotation_id ~base_url ~message ~validate data =
   Specification.validate ~data ~enabled:validate |> function
   | Ok () -> (
-      Annotation.create ~container_id ~annotation_id ~host ~data |> function
+      Annotation.create ~container_id ~annotation_id ~base_url ~data |> function
       | Ok json ->
           let result =
             Model.add_annotation ~db ~container_id ~annotation_id ~json ~message
@@ -33,10 +33,10 @@ let post_annotation ~db ~container_id ~annotation_id ~host ~message ~validate da
       | Error m -> Lwt.return_error m)
   | Error m -> Lwt.return_error m
 
-let put_annotation ~db ~container_id ~annotation_id ~host ~message ~validate data =
+let put_annotation ~db ~container_id ~annotation_id ~base_url ~message ~validate data =
   Specification.validate ~data ~enabled:validate |> function
   | Ok () -> (
-    Annotation.update ~container_id ~annotation_id ~host ~data |> function
+    Annotation.update ~container_id ~annotation_id ~base_url ~data |> function
     | Ok json ->
         let result =
           Model.update_annotation ~db ~container_id ~annotation_id ~json ~message
