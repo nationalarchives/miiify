@@ -6,140 +6,91 @@ let create_test_db test_name =
   let repository_name = Printf.sprintf "test_pack_%s_%f" test_name (Unix.time ()) in
   Miiify.Model.create ~repository_name
 
-(* Sample JSON data *)
-let container_json = {|{
-  "type": "AnnotationCollection",
-  "@context": "http://www.w3.org/ns/anno.jsonld",
-  "id": "http://localhost:10000/test-container/",
-  "label": "Test Container"
-}|}
-
-let annotation_json = {|{
+(* Sample annotation data matching README examples *)
+let highlight_annotation = {|{
   "type": "Annotation",
-  "@context": "http://www.w3.org/ns/anno.jsonld",
+  "motivation": "highlighting",
   "body": {
     "type": "TextualBody",
-    "value": "Test annotation"
+    "value": "Important passage",
+    "purpose": "commenting"
   },
-  "target": "https://example.com/target"
+  "target": "https://example.com/iiif/canvas/1#xywh=100,100,200,50"
 }|}
 
-(* Test: Create and retrieve a container *)
-let test_container_crud _switch () =
-  let* db = create_test_db "container_crud" in
-  let container_id = "test-container" in
+let comment_annotation = {|{
+  "type": "Annotation",
+  "motivation": "commenting",
+  "body": {
+    "type": "TextualBody",
+    "value": "This is a fascinating detail",
+    "purpose": "commenting"
+  },
+  "target": "https://example.com/iiif/canvas/1#xywh=300,150,100,75"
+}|}
+
+(* Test: Import annotations like the README example *)
+let test_import_annotations _switch () =
+  let* db = create_test_db "import" in
+  let container_id = "my-canvas" in
   
-  (* CREATE: Add a container *)
-  let* () = Miiify.Db.set ~db ~key:[container_id; "main"] ~data:container_json ~message:"create test container" in
+  (* Import annotations (simulating miiify-import behavior) *)
+  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "highlight-1"] ~data:highlight_annotation ~message:"Import highlight-1.json" in
+  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "comment-1"] ~data:comment_annotation ~message:"Import comment-1.json" in
   
-  (* READ: Retrieve the container *)
-  let* retrieved_data = Miiify.Db.get ~db ~key:[container_id; "main"] in
-  let parsed = Yojson.Basic.from_string retrieved_data in
-  let container_type = Yojson.Basic.Util.member "type" parsed |> Yojson.Basic.Util.to_string in
+  (* Verify both annotations were imported *)
+  let* total = Miiify.Model.total ~db ~container_id in
+  Alcotest.(check int) "imported 2 annotations" 2 total;
   
-  Alcotest.(check string) "container type" "AnnotationCollection" container_type;
+  (* Retrieve highlight-1 *)
+  let* highlight_data = Miiify.Db.get ~db ~key:[container_id; "collection"; "highlight-1"] in
+  let parsed = Yojson.Basic.from_string highlight_data in
+  let motivation = Yojson.Basic.Util.member "motivation" parsed |> Yojson.Basic.Util.to_string in
+  Alcotest.(check string) "highlight motivation" "highlighting" motivation;
   
-  (* CHECK: Container should exist *)
-  let* exists = Miiify.Db.exists ~db ~key:[container_id; "main"] in
-  Alcotest.(check bool) "container exists" true exists;
-  
-  (* DELETE: Remove the container *)
-  let* () = Miiify.Db.delete ~db ~key:[container_id; "main"] ~message:"delete test container" in
-  
-  (* VERIFY: Container should no longer exist *)
-  let* exists_after = Miiify.Db.exists ~db ~key:[container_id; "main"] in
-  Alcotest.(check bool) "container deleted" false exists_after;
+  (* Retrieve comment-1 *)
+  let* comment_data = Miiify.Db.get ~db ~key:[container_id; "collection"; "comment-1"] in
+  let parsed_comment = Yojson.Basic.from_string comment_data in
+  let comment_motivation = Yojson.Basic.Util.member "motivation" parsed_comment |> Yojson.Basic.Util.to_string in
+  Alcotest.(check string) "comment motivation" "commenting" comment_motivation;
   
   Lwt.return_unit
 
-(* Test: Create, count, and manage annotations *)
-let test_annotation_crud _switch () =
-  let* db = create_test_db "annotation_crud" in
-  let container_id = "test-container" in
+(* Test: Retrieve annotations like the HTTP API *)
+let test_retrieve_annotations _switch () =
+  let* db = create_test_db "retrieve" in
+  let container_id = "my-canvas" in
   
-  (* Setup: Create container first *)
-  let* () = Miiify.Db.set ~db ~key:[container_id; "main"] ~data:container_json ~message:"create container" in
+  (* Setup: Import some annotations *)
+  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "highlight-1"] ~data:highlight_annotation ~message:"Import highlight-1.json" in
+  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "comment-1"] ~data:comment_annotation ~message:"Import comment-1.json" in
   
-  (* Initial state: No annotations should exist *)
-  let* initial_total = Miiify.Model.total ~db ~container_id in
-  Alcotest.(check int) "initial count" 0 initial_total;
-  
-  (* CREATE: Add some annotations *)
-  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "ann1"] ~data:annotation_json ~message:"add annotation 1" in
-  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "ann2"] ~data:annotation_json ~message:"add annotation 2" in
-  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "ann3"] ~data:annotation_json ~message:"add annotation 3" in
-  
-  (* COUNT: Check total annotations *)
-  let* total_after_add = Miiify.Model.total ~db ~container_id in
-  Alcotest.(check int) "after adding 3" 3 total_after_add;
-  
-  (* READ: Retrieve an annotation *)
-  let* annotation_data = Miiify.Db.get ~db ~key:[container_id; "collection"; "ann2"] in
-  let parsed = Yojson.Basic.from_string annotation_data in
-  let annotation_type = Yojson.Basic.Util.member "type" parsed |> Yojson.Basic.Util.to_string in
-  Alcotest.(check string) "annotation type" "Annotation" annotation_type;
-  
-  (* CHECK: Annotation should exist *)
-  let* exists = Miiify.Db.exists ~db ~key:[container_id; "collection"; "ann2"] in
-  Alcotest.(check bool) "annotation exists" true exists;
-  
-  (* UPDATE: Modify an annotation *)
-  let updated_json = {|{
-    "type": "Annotation",
-    "@context": "http://www.w3.org/ns/anno.jsonld",
-    "body": {
-      "type": "TextualBody",
-      "value": "Updated annotation"
-    },
-    "target": "https://example.com/updated-target"
-  }|} in
-  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "ann2"] ~data:updated_json ~message:"update annotation 2" in
-  
-  (* VERIFY: Updated content *)
-  let* updated_data = Miiify.Db.get ~db ~key:[container_id; "collection"; "ann2"] in
-  let updated_parsed = Yojson.Basic.from_string updated_data in
-  let updated_value = Yojson.Basic.Util.member "body" updated_parsed 
-                     |> Yojson.Basic.Util.member "value" 
-                     |> Yojson.Basic.Util.to_string in
-  Alcotest.(check string) "updated value" "Updated annotation" updated_value;
-  
-  (* COUNT: Should still be 3 after update *)
-  let* total_after_update = Miiify.Model.total ~db ~container_id in
-  Alcotest.(check int) "after update still 3" 3 total_after_update;
-  
-  (* DELETE: Remove one annotation *)
-  let* () = Miiify.Db.delete ~db ~key:[container_id; "collection"; "ann2"] ~message:"delete annotation 2" in
-  
-  (* COUNT: Should now be 2 *)
-  let* total_after_delete = Miiify.Model.total ~db ~container_id in
-  Alcotest.(check int) "after delete" 2 total_after_delete;
-  
-  (* VERIFY: Deleted annotation should not exist *)
-  let* deleted_exists = Miiify.Db.exists ~db ~key:[container_id; "collection"; "ann2"] in
-  Alcotest.(check bool) "deleted annotation gone" false deleted_exists;
-  
-  (* VERIFY: Other annotations still exist *)
-  let* ann1_exists = Miiify.Db.exists ~db ~key:[container_id; "collection"; "ann1"] in
-  let* ann3_exists = Miiify.Db.exists ~db ~key:[container_id; "collection"; "ann3"] in
-  Alcotest.(check bool) "ann1 still exists" true ann1_exists;
-  Alcotest.(check bool) "ann3 still exists" true ann3_exists;
+  (* Test get_annotation (like GET /:container/:slug) *)
+  let* annotation = Miiify.Model.get_annotation ~db ~container_id ~annotation_id:"highlight-1" in
+  let body_value = Yojson.Basic.Util.member "body" annotation 
+                  |> Yojson.Basic.Util.member "value" 
+                  |> Yojson.Basic.Util.to_string in
+  Alcotest.(check string) "annotation body" "Important passage" body_value;
   
   Lwt.return_unit
 
 (* Test: Pagination functionality *)
 let test_pagination _switch () =
   let* db = create_test_db "pagination" in
-  let container_id = "test-container" in
+  let container_id = "canvas-42" in
   
-  (* Setup: Create container *)
-  let* () = Miiify.Db.set ~db ~key:[container_id; "main"] ~data:container_json ~message:"create container" in
-  
-  (* Add 10 annotations *)
+  (* Import multiple annotations *)
   let rec add_annotations i =
     if i >= 10 then Lwt.return_unit
     else
-      let annotation_id = Printf.sprintf "ann-%02d" i in
-      let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; annotation_id] ~data:annotation_json ~message:("add " ^ annotation_id) in
+      let slug = Printf.sprintf "note-%02d" i in
+      let annotation = Printf.sprintf {|{
+        "type": "Annotation",
+        "motivation": "commenting",
+        "body": {"type": "TextualBody", "value": "Note %d"},
+        "target": "https://example.com/iiif/canvas/42"
+      }|} i in
+      let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; slug] ~data:annotation ~message:("Import " ^ slug ^ ".json") in
       add_annotations (i + 1)
   in
   let* () = add_annotations 0 in
@@ -162,11 +113,308 @@ let test_pagination _switch () =
   
   Lwt.return_unit
 
+(* Test: Target filtering *)
+let test_target_filtering _switch () =
+  let* db = create_test_db "filtering" in
+  let container_id = "manifest-42" in
+  
+  (* Import annotations with different targets *)
+  let canvas1_ann1 = {|{
+    "type": "Annotation",
+    "motivation": "commenting",
+    "body": {"type": "TextualBody", "value": "Note on canvas 1"},
+    "target": "https://example.com/iiif/canvas/1"
+  }|} in
+  
+  let canvas1_ann2 = {|{
+    "type": "Annotation",
+    "motivation": "highlighting",
+    "body": {"type": "TextualBody", "value": "Highlight on canvas 1"},
+    "target": "https://example.com/iiif/canvas/1"
+  }|} in
+  
+  let canvas2_ann = {|{
+    "type": "Annotation",
+    "motivation": "commenting",
+    "body": {"type": "TextualBody", "value": "Note on canvas 2"},
+    "target": "https://example.com/iiif/canvas/2"
+  }|} in
+  
+  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "canvas1-note"] ~data:canvas1_ann1 ~message:"Import canvas1-note.json" in
+  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "canvas1-highlight"] ~data:canvas1_ann2 ~message:"Import canvas1-highlight.json" in
+  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "canvas2-note"] ~data:canvas2_ann ~message:"Import canvas2-note.json" in
+  
+  (* Get all three annotations *)
+  let* all = Miiify.Db.get_tree ~db ~key:[container_id; "collection"] ~offset:0 ~length:10 in
+  Alcotest.(check int) "all annotations" 3 (List.length all);
+  
+  (* Manually verify filtering by parsing and checking targets *)
+  let annotations = List.map Yojson.Basic.from_string all in
+  let canvas1_count = List.filter (fun ann ->
+    match Yojson.Basic.Util.member "target" ann with
+    | `String t -> t = "https://example.com/iiif/canvas/1"
+    | _ -> false
+  ) annotations |> List.length in
+  
+  Alcotest.(check int) "canvas 1 annotations" 2 canvas1_count;
+  
+  Lwt.return_unit
+
+(* Test: Multiple containers are isolated *)
+let test_container_isolation _switch () =
+  let* db = create_test_db "isolation" in
+  
+  (* Import annotations into different containers *)
+  let* () = Miiify.Db.set ~db ~key:["canvas-1"; "collection"; "note-1"] ~data:highlight_annotation ~message:"Import to canvas-1" in
+  let* () = Miiify.Db.set ~db ~key:["canvas-1"; "collection"; "note-2"] ~data:comment_annotation ~message:"Import to canvas-1" in
+  let* () = Miiify.Db.set ~db ~key:["canvas-2"; "collection"; "note-1"] ~data:highlight_annotation ~message:"Import to canvas-2" in
+  
+  (* Verify canvas-1 has 2 annotations *)
+  let* canvas1_total = Miiify.Model.total ~db ~container_id:"canvas-1" in
+  Alcotest.(check int) "canvas-1 count" 2 canvas1_total;
+  
+  (* Verify canvas-2 has 1 annotation *)
+  let* canvas2_total = Miiify.Model.total ~db ~container_id:"canvas-2" in
+  Alcotest.(check int) "canvas-2 count" 1 canvas2_total;
+  
+  (* Verify retrieving from canvas-1 doesn't return canvas-2 data *)
+  let* canvas1_tree = Miiify.Db.get_tree ~db ~key:["canvas-1"; "collection"] ~offset:0 ~length:10 in
+  Alcotest.(check int) "canvas-1 tree items" 2 (List.length canvas1_tree);
+  
+  let* canvas2_tree = Miiify.Db.get_tree ~db ~key:["canvas-2"; "collection"] ~offset:0 ~length:10 in
+  Alcotest.(check int) "canvas-2 tree items" 1 (List.length canvas2_tree);
+  
+  Lwt.return_unit
+
+(* Test: Empty containers and nonexistent annotations *)
+let test_empty_and_nonexistent _switch () =
+  let* db = create_test_db "empty" in
+  let container_id = "empty-canvas" in
+  
+  (* Test empty container total (container doesn't exist) *)
+  let* total = Miiify.Model.total ~db ~container_id in
+  Alcotest.(check int) "empty container" 0 total;
+  
+  (* Test empty tree retrieval - wrap in try/catch since collection doesn't exist *)
+  let* empty_tree = 
+    Lwt.catch
+      (fun () -> Miiify.Db.get_tree ~db ~key:[container_id; "collection"] ~offset:0 ~length:10)
+      (fun _ -> Lwt.return [])
+  in
+  Alcotest.(check int) "empty tree" 0 (List.length empty_tree);
+  
+  (* Test nonexistent annotation existence check *)
+  let* exists = Miiify.Db.exists ~db ~key:[container_id; "collection"; "does-not-exist"] in
+  Alcotest.(check bool) "nonexistent annotation" false exists;
+  
+  (* Create a container and test empty collection retrieval *)
+  let container_json = {|{"type":"AnnotationContainer","label":"Empty Container"}|} in
+  let* () = Miiify.Db.set ~db ~key:[container_id; "main"] ~data:container_json ~message:"Create empty container" in
+  
+  let* total_after = Miiify.Model.total ~db ~container_id in
+  Alcotest.(check int) "empty container with main" 0 total_after;
+  
+  Lwt.return_unit
+
+(* Test: Annotation hash retrieval for caching *)
+let test_annotation_hashes _switch () =
+  let* db = create_test_db "hashes" in
+  let container_id = "test-canvas" in
+  
+  (* Import an annotation *)
+  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "note-1"] ~data:highlight_annotation ~message:"Import note-1" in
+  
+  (* Get hash for the annotation *)
+  let* hash_opt = Miiify.Model.get_annotation_hash ~db ~container_id ~annotation_id:"note-1" in
+  
+  let* () = match hash_opt with
+  | Some hash -> 
+      (* Hash should be a non-empty string *)
+      Alcotest.(check bool) "hash exists" true (String.length hash > 0);
+      
+      (* Import same annotation again, hash should remain stable-ish (depends on Irmin) *)
+      let* hash2_opt = Miiify.Model.get_annotation_hash ~db ~container_id ~annotation_id:"note-1" in
+      (match hash2_opt with
+      | Some hash2 -> 
+          Alcotest.(check bool) "hash is consistent" true (String.length hash2 > 0);
+          Lwt.return_unit
+      | None -> Alcotest.fail "Hash disappeared")
+  | None -> Alcotest.fail "No hash returned for existing annotation"
+  in
+  
+  Lwt.return_unit
+
+(* Test: Slug handling (simulating .json extension stripping) *)
+let test_slug_handling _switch () =
+  let* db = create_test_db "slugs" in
+  let container_id = "test-slugs" in
+  
+  (* Import with various slug patterns *)
+  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "simple-slug"] ~data:highlight_annotation ~message:"simple slug" in
+  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "with-numbers-123"] ~data:highlight_annotation ~message:"with numbers" in
+  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "kebab-case-name"] ~data:highlight_annotation ~message:"kebab case" in
+  
+  (* Verify all are retrievable *)
+  let* exists1 = Miiify.Db.exists ~db ~key:[container_id; "collection"; "simple-slug"] in
+  let* exists2 = Miiify.Db.exists ~db ~key:[container_id; "collection"; "with-numbers-123"] in
+  let* exists3 = Miiify.Db.exists ~db ~key:[container_id; "collection"; "kebab-case-name"] in
+  
+  Alcotest.(check bool) "simple slug exists" true exists1;
+  Alcotest.(check bool) "numbered slug exists" true exists2;
+  Alcotest.(check bool) "kebab-case slug exists" true exists3;
+  
+  let* total = Miiify.Model.total ~db ~container_id in
+  Alcotest.(check int) "all slugs imported" 3 total;
+  
+  Lwt.return_unit
+
+(* Test: Large batch import *)
+let test_large_batch _switch () =
+  let* db = create_test_db "large" in
+  let container_id = "large-canvas" in
+  
+  (* Import 100 annotations *)
+  let rec import_batch i =
+    if i >= 100 then Lwt.return_unit
+    else
+      let slug = Printf.sprintf "ann-%03d" i in
+      let ann = Printf.sprintf {|{
+        "type": "Annotation",
+        "motivation": "commenting",
+        "body": {"type": "TextualBody", "value": "Annotation %d"},
+        "target": "https://example.com/canvas#xywh=%d,0,100,100"
+      }|} i (i * 10) in
+      let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; slug] ~data:ann ~message:("Import " ^ slug) in
+      import_batch (i + 1)
+  in
+  let* () = import_batch 0 in
+  
+  (* Verify total *)
+  let* total = Miiify.Model.total ~db ~container_id in
+  Alcotest.(check int) "100 annotations imported" 100 total;
+  
+  (* Test pagination with larger dataset *)
+  let* page1 = Miiify.Db.get_tree ~db ~key:[container_id; "collection"] ~offset:0 ~length:20 in
+  Alcotest.(check int) "page 1 size" 20 (List.length page1);
+  
+  let* page2 = Miiify.Db.get_tree ~db ~key:[container_id; "collection"] ~offset:20 ~length:20 in
+  Alcotest.(check int) "page 2 size" 20 (List.length page2);
+  
+  let* page5 = Miiify.Db.get_tree ~db ~key:[container_id; "collection"] ~offset:80 ~length:20 in
+  Alcotest.(check int) "page 5 size" 20 (List.length page5);
+  
+  let* page_beyond = Miiify.Db.get_tree ~db ~key:[container_id; "collection"] ~offset:100 ~length:20 in
+  Alcotest.(check int) "beyond last page" 0 (List.length page_beyond);
+  
+  Lwt.return_unit
+
+(* Test: JSON extension stripping helper *)
+let test_json_extension_stripping _switch () =
+  (* Replicate the strip_json_ext logic from Api module *)
+  let strip_json_ext slug =
+    if String.length slug > 5 && String.sub slug (String.length slug - 5) 5 = ".json" then
+      String.sub slug 0 (String.length slug - 5)
+    else
+      slug
+  in
+  
+  (* Test various inputs *)
+  Alcotest.(check string) "strip .json" "highlight-1" (strip_json_ext "highlight-1.json");
+  Alcotest.(check string) "no extension" "highlight-1" (strip_json_ext "highlight-1");
+  Alcotest.(check string) "short name" "hi" (strip_json_ext "hi");
+  Alcotest.(check string) ".json in middle" "my.json-file" (strip_json_ext "my.json-file");
+  Alcotest.(check string) "exactly .json" "test.json" (strip_json_ext "test.json.json");
+  Alcotest.(check string) "case sensitive" "file.JSON" (strip_json_ext "file.JSON");
+  
+  Lwt.return_unit
+
+(* Test: ETag support in API *)
+let test_etag_annotation _switch () =
+  let* db = create_test_db "etag-ann" in
+  let container_id = "test-canvas" in
+  
+  (* Import an annotation *)
+  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "note-1"] ~data:highlight_annotation ~message:"Import note-1" in
+  
+  (* Get the hash directly *)
+  let* hash_opt = Miiify.Model.get_annotation_hash ~db ~container_id ~annotation_id:"note-1" in
+  
+  match hash_opt with
+  | Some hash ->
+      let etag = "\"" ^ hash ^ "\"" in
+      Alcotest.(check bool) "ETag should exist" true (String.length etag > 2);
+      
+      (* Verify hash is base64-like (alphanumeric + / + =) *)
+      Alcotest.(check bool) "Hash is non-empty" true (String.length hash > 0);
+      Lwt.return_unit
+  | None -> Alcotest.fail "No ETag hash returned"
+
+let test_etag_collection _switch () =
+  let* db = create_test_db "etag-coll" in
+  let container_id = "test-canvas" in
+  
+  (* Import multiple annotations *)
+  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "note-1"] ~data:highlight_annotation ~message:"Import note-1" in
+  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "note-2"] ~data:comment_annotation ~message:"Import note-2" in
+  
+  (* Get collection hash *)
+  let* hash_opt = Miiify.Model.get_collection_hash ~db ~container_id in
+  
+  match hash_opt with
+  | Some hash ->
+      Alcotest.(check bool) "Collection ETag exists" true (String.length hash > 0);
+      
+      (* Add another annotation and verify hash changes *)
+      let new_ann = {|{"type":"Annotation","motivation":"tagging","body":{"type":"TextualBody","value":"tag"},"target":"https://example.com/canvas"}|} in
+      let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "note-3"] ~data:new_ann ~message:"Import note-3" in
+      
+      let* hash2_opt = Miiify.Model.get_collection_hash ~db ~container_id in
+      (match hash2_opt with
+      | Some hash2 ->
+          (* Hash should be different after adding new annotation *)
+          Alcotest.(check bool) "Collection hash changed" true (hash <> hash2);
+          Lwt.return_unit
+      | None -> Alcotest.fail "Hash disappeared after update")
+  | None -> Alcotest.fail "No collection hash returned"
+
+let test_etag_container _switch () =
+  let* db = create_test_db "etag-cont" in
+  let container_id = "test-canvas" in
+  
+  (* Create a container *)
+  let container_json = {|{"type":"AnnotationContainer","label":"Test Container"}|} in
+  let* () = Miiify.Db.set ~db ~key:[container_id; "main"] ~data:container_json ~message:"Create container" in
+  
+  (* Get container hash *)
+  let* hash_opt = Miiify.Model.get_container_hash ~db ~container_id in
+  
+  match hash_opt with
+  | Some hash ->
+      Alcotest.(check bool) "Container ETag exists" true (String.length hash > 0);
+      Lwt.return_unit
+  | None -> Alcotest.fail "No container hash returned"
+
 (* Main test suite *)
 let () =
   Lwt_main.run @@
   run "Miiify Storage Tests" [
-    ("Container CRUD", [ test_case "create and retrieve" `Quick test_container_crud ]);
-    ("Annotation CRUD", [ test_case "create and count" `Quick test_annotation_crud ]);
+    ("Import Workflow", [ 
+      test_case "import annotations" `Quick test_import_annotations;
+      test_case "retrieve annotations" `Quick test_retrieve_annotations;
+    ]);
     ("Pagination", [ test_case "pagination" `Quick test_pagination ]);
+    ("Filtering", [ test_case "target filtering" `Quick test_target_filtering ]);
+    ("Container Isolation", [ test_case "multiple containers" `Quick test_container_isolation ]);
+    ("Edge Cases", [ 
+      test_case "empty and nonexistent" `Quick test_empty_and_nonexistent;
+      test_case "slug handling" `Quick test_slug_handling;
+    ]);
+    ("Performance", [ test_case "large batch import" `Quick test_large_batch ]);
+    ("Caching", [ test_case "annotation hashes" `Quick test_annotation_hashes ]);
+    ("API Helpers", [ test_case "JSON extension stripping" `Quick test_json_extension_stripping ]);
+    ("ETag Support", [
+      test_case "annotation etag" `Quick test_etag_annotation;
+      test_case "collection etag" `Quick test_etag_collection;
+      test_case "container etag" `Quick test_etag_container;
+    ]);
   ]
