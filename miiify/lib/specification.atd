@@ -1,21 +1,100 @@
+(* Web Annotation Data Model - Annotation validation only *)
 
-type specification = {
-  ?id : id_t;
-  t <json name="type"> : [ Annotation ];
-  motivation : [ Motivation <json name="commenting"> ]; 
-  body : body_t;
-  target : target_t;
-  ?created : string option;
-  ?modified : string option
+type specification = annotation_t
+
+type annotation_t = {
+  ?context <json name="@context"> : context_t option;
+  ?id : id_t option;
+  _type <json name="type"> : type_t;
+  ?motivation : motivation_t option;
+  ?created : created_t option;
+  ?creator : creator_t option;
+  ?modified : modified_t option;
+  ?body : body_t option;
+  ?target : target_t option;
 }
 
-type body_t = {
-  t <json name="type"> : [ TextualBody ];
-  language : [ Language  <json name="en"> ];
-  format : [ Format <json name="text/plain"> ];
-  value : value_t
+type context_t = [
+  | T1 of string
+  | T2 of string list
+]
+
+type body_t = [
+  | T1 of annotation_body_t
+  | T2 of annotation_body_t list
+]
+
+type annotation_body_t = [
+  | T1 of annotation_body_simple_t
+  | T2 of string
+]
+
+type annotation_body_simple_t = {
+  ?id : id_t option;
+  ?_type <json name="type"> : type_t option;
+  ?format : format_t option;
+  ?language : language_t option;
+  ?value : value_t option;
+  ?purpose : purpose_t option;
 }
 
-type id_t = string option <ocaml valid="Specification_util.validate_id">
-type target_t = string <ocaml valid="Specification_util.validate_target">
-type value_t = string <ocaml valid="Specification_util.validate_value">
+type target_t = [
+  | T1 of annotation_target_t
+  | T2 of annotation_target_t list
+]
+
+type annotation_target_t = [
+  | T1 of string
+  | T2 of annotation_target_complex_t
+]  
+
+type annotation_target_complex_t = {
+  ?id : id_t option;
+  ?_type <json name="type"> : type_t option;
+  ?source : source_t option;
+  ?selector : selector_t option;
+}
+
+type source_t = string
+
+type selector_t = {
+  ?_type <json name="type"> : type_t option;
+  ?value : value_t option;
+}
+
+type creator_t = [
+  | T1 of creator_item_t
+  | T2 of creator_item_t list
+]
+
+type creator_item_t = [
+  | T1 of string
+  | T2 of creator_detail_t
+]
+
+type creator_detail_t = {
+  ?id : id_t option;
+  ?_type <json name="type"> : type_t option;
+  ?name : name_t option;
+  ?nickname : nickname_t option;
+}
+
+type motivation_t = [
+  | T1 of string
+  | T2 of string list
+]
+
+type language_t = [
+  | T1 of string
+  | T2 of string list
+]
+
+type id_t = string
+type type_t = string
+type format_t = string
+type value_t = string
+type purpose_t = string
+type created_t = string
+type modified_t = string
+type name_t = string
+type nickname_t = string
