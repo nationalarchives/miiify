@@ -18,10 +18,10 @@ let get_version _request =
   Dream.json {|{"version":"2.0.0","name":"miiify"}|}
 
 (* Get a container (annotation collection) *)
-let get_container db request =
+let get_container base_url db request =
   let container_id = Dream.param request "container_id" in
   let* hash_opt = Model.get_container_hash ~db ~container_id in
-  let etag = Option.map (fun h -> "\"" ^ h ^ "\"") hash_opt in
+  let  etag = Option.map (fun h -> "\"" ^ h ^ "\"") hash_opt in
   
   (* Check If-None-Match *)
   let if_none_match = Dream.header request "If-None-Match" in
@@ -29,7 +29,7 @@ let get_container db request =
   | (Some tag, Some client_tag) when tag = client_tag ->
       Dream.respond ~status:`Not_Modified ""
   | _ ->
-      let* data = Controller.get_container ~db ~container_id in
+      let* data = Controller.get_container ~db ~container_id ~base_url in
       let* response = Dream.json data in
       (match etag with
       | Some tag -> Dream.add_header response "ETag" tag
@@ -37,34 +37,58 @@ let get_container db request =
       Lwt.return response
 
 (* Get all annotations in a container with pagination *)
-let get_annotations page_limit db request =
+let get_annotations base_url page_limit db request =
   let container_id = Dream.param request "container_id" in
-  let page = 
-    match Dream.query request "page" with
-    | Some p -> (try int_of_string p with _ -> 0)
-    | None -> 0
-  in
-  let* hash_opt = Model.get_collection_hash ~db ~container_id in
-  let etag = Option.map (fun h -> "\"" ^ h ^ "\"") hash_opt in
   
-  (* Check If-None-Match *)
-  let if_none_match = Dream.header request "If-None-Match" in
-  match (etag, if_none_match) with
-  | (Some tag, Some client_tag) when tag = client_tag ->
-      Dream.respond ~status:`Not_Modified ""
-  | _ ->
-      let* data = Controller.get_annotation_page ~page_limit ~db ~id:container_id ~page ~target:None in
-      match data with
-      | Some json -> 
-          let* response = Dream.json json in
+  (* Check if container exists first *)
+  let* exists = Model.container_exists ~db ~container_id in
+  if not exists then
+    Dream.respond ~status:`Not_Found "Container not found"
+  else
+  
+  (* Check if page query parameter is present *)
+  match Dream.query request "page" with
+  | None ->
+      (* No page param - return AnnotationCollection with embedded first page *)
+      let* hash_opt = Model.get_collection_hash ~db ~container_id in
+      let etag = Option.map (fun h -> "\"" ^ h ^ "\"") hash_opt in
+      
+      let if_none_match = Dream.header request "If-None-Match" in
+      (match (etag, if_none_match) with
+      | (Some tag, Some client_tag) when tag = client_tag ->
+          Dream.respond ~status:`Not_Modified ""
+      | _ ->
+          let* data = Controller.get_annotation_collection ~page_limit ~db ~id:container_id ~target:None ~base_url in
+          let* response = Dream.json data in
           (match etag with
           | Some tag -> Dream.add_header response "ETag" tag
           | None -> ());
-          Lwt.return response
-      | None -> Dream.respond ~status:`Not_Found "Page not found"
+          Lwt.return response)
+  
+  | Some page_str ->
+      (* Page param present - return AnnotationPage with items *)
+      let page = try int_of_string page_str with _ -> 0 in
+      
+      let* hash_opt = Model.get_collection_hash ~db ~container_id in
+      let etag = Option.map (fun h -> "\"" ^ h ^ "\"") hash_opt in
+      
+      let if_none_match = Dream.header request "If-None-Match" in
+      (match (etag, if_none_match) with
+      | (Some tag, Some client_tag) when tag = client_tag ->
+          Dream.respond ~status:`Not_Modified ""
+      | _ ->
+          let* data = Controller.get_annotation_page ~page_limit ~db ~id:container_id ~page ~target:None ~base_url in
+          match data with
+          | Some json -> 
+              let* response = Dream.json json in
+              (match etag with
+              | Some tag -> Dream.add_header response "ETag" tag
+              | None -> ());
+              Lwt.return response
+          | None -> Dream.respond ~status:`Not_Found "Page not found")
 
 (* Get a single annotation *)
-let get_annotation db request =
+let get_annotation base_url db request =
   let container_id = Dream.param request "container_id" in
   let annotation_id = Dream.param request "annotation_id" |> strip_json_ext in
   let* hash_opt = Model.get_annotation_hash ~db ~container_id ~annotation_id in
@@ -76,7 +100,7 @@ let get_annotation db request =
   | (Some tag, Some client_tag) when tag = client_tag ->
       Dream.respond ~status:`Not_Modified ""
   | _ ->
-      let* data = Controller.get_annotation ~db ~container_id ~annotation_id in
+      let* data = Controller.get_annotation ~db ~container_id ~annotation_id ~base_url in
       let* response = Dream.json data in
       (match etag with
       | Some tag -> Dream.add_header response "ETag" tag

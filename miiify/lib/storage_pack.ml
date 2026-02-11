@@ -54,11 +54,24 @@ let get ~db ~key =
   Store.get store key
 
 let get_tree ~db ~key ~offset ~length =
-  let* store = db in
-  let* tree = Store.get_tree store key in
+  let* st = db in
+  let* tree = Store.get_tree st key in
   let* items = Store.Tree.list tree [] ~offset ~length in
   let sorted_items = List.sort (fun (k1, _) (k2, _) -> String.compare k1 k2) items in
-  Lwt_list.map_s (fun (k, _) -> get ~db ~key:(List.append key [ k ])) sorted_items
+  Lwt_list.map_s (fun (k, _) ->
+    let full_key = List.append key [ k ] in
+    Store.get st full_key) sorted_items
+
+let get_tree_with_keys ~db ~key ~offset ~length =
+  let* st = db in
+  let* tree = Store.get_tree st key in
+  let* items = Store.Tree.list tree [] ~offset ~length in
+  let sorted_items = List.sort (fun (k1, _) (k2, _) -> String.compare k1 k2) items in
+  Lwt_list.map_s (fun (k, _) -> 
+    let full_key = List.append key [ k ] in
+    let* value = Store.get st full_key in
+    Lwt.return (k, value)
+  ) sorted_items
 
 let delete ~db ~key ~message =
   let* store = db in

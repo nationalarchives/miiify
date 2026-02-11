@@ -84,6 +84,34 @@ miiify-compile --git ./db-git --pack ./db-pack
 miiify-serve --repository ./db-pack --port 10000
 ```
 
+## ID Management
+
+Miiify automatically generates W3C-compliant annotation IDs at runtime—you never include IDs in your JSON files.
+
+**How it works:**
+- IDs are derived from your filesystem structure: `<base-url>/<container>/<slug>`
+- Container = directory name (e.g., `my-canvas`)
+- Slug = filename without `.json` extension (e.g., `highlight-1`)
+- Base URL is configurable via `--base-url` flag
+
+**Example:**
+```bash
+# Your file: annotations/my-canvas/highlight-1.json
+# Served as: http://localhost:10000/my-canvas/highlight-1
+# With ID: "id": "http://localhost:10000/my-canvas/highlight-1"
+```
+
+**Deployment flexibility:**
+```bash
+# Development
+miiify-serve --base-url http://localhost:10000
+
+# Production
+miiify-serve --base-url https://annotations.example.org
+```
+
+Same JSON files, different IDs based on deployment. No database updates, no file edits—just change the flag.
+
 ## Commands
 
 ### miiify-clone
@@ -193,8 +221,9 @@ Annotations use a simple `/<container>/<slug>` URL pattern:
 ```
 GET /                          # Server status
 GET /version                   # Version info
-GET /:container                # Get container metadata
-GET /:container/               # List annotations (paginated)
+GET /:container                # Get container metadata (AnnotationContainer)
+GET /:container/               # Get collection with first page (AnnotationCollection)
+GET /:container/?page=N        # Get specific page (AnnotationPage)
 GET /:container/:slug          # Get specific annotation
 ```
 
@@ -205,15 +234,15 @@ GET /:container/:slug          # Get specific annotation
 curl http://localhost:10000/my-canvas/highlight-1
 curl http://localhost:10000/my-canvas/highlight-1.json
 
-# List all annotations in container
+# Get collection with first page embedded
 curl http://localhost:10000/my-canvas/
 
-# Pagination
+# Get specific page
 curl http://localhost:10000/my-canvas/?page=0
 curl http://localhost:10000/my-canvas/?page=1
 
 # Filter by target
-curl "http://localhost:10000/my-canvas/?target=https://example.com/iiif/canvas/1"
+curl "http://localhost:10000/my-canvas/?page=0&target=https://example.com/iiif/canvas/1"
 ```
 
 ### Response Format

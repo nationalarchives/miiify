@@ -20,7 +20,7 @@ let rec copy_tree git_store pack_store path validate =
   let* git_tree = Git_store.get_tree git_store path in
   let* entries = Git_store.Tree.list git_tree [] in
   
-  Lwt_list.iter_s (fun (name, _tree) ->
+  Lwt_list.fold_left_s (fun count (name, _tree) ->
     let step_name = Irmin.Type.to_string Git_store.Path.step_t name in
     let current_path = path @ [step_name] in
     
@@ -36,55 +36,53 @@ let rec copy_tree git_store pack_store path validate =
       
       (* Validate if flag is set and path looks like an annotation *)
       let* () = 
-        if validate && List.mem "annotations" current_path then
+        if validate && List.mem "collection" current_path then
           match validate_annotation data with
           | Ok () -> 
-              let* () = Lwt_io.printlf "  ✓ Validated %s" (String.concat "/" current_path) in
               Lwt.return_unit
           | Error msg ->
-              let* () = Lwt_io.printlf "  ✗ Validation failed for %s: %s" (String.concat "/" current_path) msg in
+              let* () = Lwt_io.printlf "✗ Validation failed for %s: %s" (String.concat "/" current_path) msg in
               Lwt.fail (Failure ("Validation failed for " ^ String.concat "/" current_path))
         else
           Lwt.return_unit
       in
       
       let message = Printf.sprintf "Compile: %s" (String.concat "/" current_path) in
-      Pack_store.set_exn pack_store current_path data 
+      let* () = Pack_store.set_exn pack_store current_path data 
         ~info:(Storage_pack.info message)
+      in
+      Lwt.return (count + 1)
     else
-      copy_tree git_store pack_store current_path validate
-  ) entries
+      let* subcount = copy_tree git_store pack_store current_path validate in
+      Lwt.return (count + subcount)
+  ) 0 entries
 
 let compile_stores git_path pack_path validate =
   Lwt_main.run (
     let* () = Lwt_io.printl "Miiify Compile" in
     let* () = Lwt_io.printlf "Source: Git (%s)" git_path in
     let* () = Lwt_io.printlf "Target: Pack (%s)" pack_path in
-    let* () = Lwt_io.printlf "Validate: %b" validate in
     let* () = Lwt_io.printl "" in
     
     (* Initialize Git store *)
-    let* () = Lwt_io.printl "Opening Git store..." in
     let git_config = Irmin_git.config ~bare:true git_path in
     let* git_repo = Git_store.Repo.v git_config in
     let* git_store = Git_store.main git_repo in
     
     (* Initialize fresh Pack store *)
-    let* () = Lwt_io.printl "Creating fresh Pack store..." in
     let pack_config = Storage_pack.Repo_config.config ~fresh:true pack_path in
     let* pack_repo = Pack_store.Repo.v pack_config in
     let* pack_store = Pack_store.main pack_repo in
     
-    (* Copy all entries *)
-    let* () = Lwt_io.printl "Copying data..." in
-    let* () = copy_tree git_store pack_store [] validate in
+    (* Copy all entries and count them *)
+    let* total = copy_tree git_store pack_store [] validate in
     
     (* Close repositories *)
     let* () = Git_store.Repo.close git_repo in
     let* () = Pack_store.Repo.close pack_repo in
     
     let* () = Lwt_io.printl "" in
-    Lwt_io.printl "✓ Compilation complete!"
+    Lwt_io.printlf "Compiled %d items to Pack store" total
   )
 
 let git_path =

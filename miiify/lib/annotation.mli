@@ -21,3 +21,5 @@ val page :
   string option
 
 val annotation : Yojson.Basic.t -> string
+
+val inject_id : Yojson.Basic.t -> container_id:string -> annotation_id:string -> base_url:string -> Yojson.Basic.t

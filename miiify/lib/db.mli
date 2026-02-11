@@ -10,6 +10,8 @@ val get : db: t -> key:string list -> string Lwt.t
 
 val get_tree : db: t -> key:string list ->  offset:int -> length:int -> string list Lwt.t
 
+val get_tree_with_keys : db:t -> key:string list -> offset:int -> length:int -> (string * string) list Lwt.t
+
 val delete : db:t -> key:string list -> message:string -> unit Lwt.t
 
 val get_hash : db: t -> key:string list -> string option Lwt.t

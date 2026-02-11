@@ -10,6 +10,14 @@ val get_annotations :
   target:string option ->
   Yojson.Basic.t Lwt.t
 
+val get_annotations_with_ids :
+  db:Db.t ->
+  container_id:string ->
+  offset:int ->
+  length:int ->
+  target:string option ->
+  (Yojson.Basic.t * (string * Yojson.Basic.t) list * Yojson.Basic.t) Lwt.t
+
 val get_annotation :
   db:Db.t -> container_id:string -> annotation_id:string -> Yojson.Basic.t Lwt.t
 

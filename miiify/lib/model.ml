@@ -36,6 +36,17 @@ let get_annotations ~db ~container_id ~offset ~length ~target =
   let annotations = `Assoc [ ("items", `List filtered_items) ] in
   Util.combine container annotations |> Lwt.return
 
+let get_annotations_with_ids ~db ~container_id ~offset ~length ~target =
+  let* main = Db.get ~db ~key:[ container_id; "main" ] in
+  let container = from_string main in
+  let* collection =
+    Db.get_tree_with_keys ~db ~key:[ container_id; "collection" ] ~offset ~length
+  in
+  let items = List.map (fun (slug, json_str) -> (slug, from_string json_str)) collection in
+  let filtered_items = filter_items target (List.map snd items) in
+  let annotations = `Assoc [ ("items", `List filtered_items) ] in
+  Lwt.return (container, items, annotations)
+
 let get_annotation ~db ~container_id ~annotation_id =
   let* data = Db.get ~db ~key:[ container_id; "collection"; annotation_id ] in
   from_string data |> Lwt.return

@@ -13,7 +13,7 @@ let validate_annotation content =
   | Atdgen_runtime.Oj_run.Error msg -> Error ("Schema validation error: " ^ msg)
   | e -> Error ("Validation error: " ^ Printexc.to_string e)
 
-let import_annotation git_store path validate =
+let import_annotation git_store container_id path validate =
   let filename = Filename.basename path in
   (* Strip .json extension to create slug *)
   let slug = 
@@ -26,35 +26,41 @@ let import_annotation git_store path validate =
   let* content_lines = Lwt_io.lines_of_file path |> Lwt_stream.to_list in
   let content = String.concat "\n" content_lines in
   
-  let* () = Lwt_io.printlf "Importing %s -> %s (%d lines)" filename slug (List.length content_lines) in
-  
   (* Validate if flag is set *)
   let* () = 
     if validate then
       match validate_annotation content with
       | Ok () -> 
-          let* () = Lwt_io.printl "  ✓ Validation passed" in
           Lwt.return_unit
       | Error msg ->
-          let* () = Lwt_io.printlf "  ✗ Validation failed: %s" msg in
+          let* () = Lwt_io.printlf "✗ Validation failed: %s/%s - %s" container_id filename msg in
           Lwt.fail (Failure ("Validation failed for " ^ path))
     else
       Lwt.return_unit
   in
   
-  (* Store in annotations/<slug> (without .json extension) *)
-  let key = ["annotations"; slug] in
-  let message = Printf.sprintf "Import %s" filename in
+  (* Store in container/collection/slug structure *)
+  let key = [container_id; "collection"; slug] in
+  let message = Printf.sprintf "Import %s/%s" container_id filename in
   
   let* () = Storage_git.set ~db:git_store ~key ~data:content ~message in
-  Lwt_io.printlf "✓ Imported %s" slug
+  Lwt_io.printlf "  %s/%s" container_id filename
 
 let import_directory input_dir git_path validate =
+  (* Check if input directory exists before entering Lwt *)
+  if not (Sys.file_exists input_dir) then (
+    Printf.eprintf "Error: Input directory does not exist: %s\n" input_dir;
+    exit 1
+  );
+  if not (Sys.is_directory input_dir) then (
+    Printf.eprintf "Error: Path is not a directory: %s\n" input_dir;
+    exit 1
+  );
+  
   Lwt_main.run (
     let* () = Lwt_io.printl "Miiify Import" in
     let* () = Lwt_io.printlf "Input: %s" input_dir in
     let* () = Lwt_io.printlf "Git:   %s" git_path in
-    let* () = Lwt_io.printlf "Validate: %b" validate in
     let* () = Lwt_io.printl "" in
     
     let git_store = Storage_git.create ~fname:git_path in
@@ -68,32 +74,46 @@ let import_directory input_dir git_path validate =
         input_dir
     in
     
-    let* () = 
-      if scan_dir = annotations_dir then
-        Lwt_io.printl "Using annotations/ subdirectory"
-      else
-        Lwt.return_unit
+    (* Find all container directories *)
+    let containers = Sys.readdir scan_dir 
+                     |> Array.to_list
+                     |> List.filter (fun f -> 
+                         not (String.starts_with ~prefix:"." f))
+                     |> List.map (fun name -> (name, Filename.concat scan_dir name))
+                     |> List.filter (fun (_, path) -> Sys.is_directory path)
     in
     
-    (* Find all files in source directory *)
-    let files = Sys.readdir scan_dir 
-                |> Array.to_list
-                |> List.filter (fun f -> 
-                    not (String.starts_with ~prefix:"." f))
-                |> List.map (Filename.concat scan_dir)
-                |> List.filter (fun p -> not (Sys.is_directory p))
-    in
+    (* Import files from each container *)
+    let* total = Lwt_list.fold_left_s (fun count (container_id, container_path) ->
+      let files = Sys.readdir container_path
+                  |> Array.to_list
+                  |> List.filter (fun f -> not (String.starts_with ~prefix:"." f))
+                  |> List.map (Filename.concat container_path)
+                  |> List.filter (fun p -> not (Sys.is_directory p))
+      in
+      
+      (* Create container metadata if it doesn't exist *)
+      let* container_exists = Storage_git.exists ~db:git_store ~key:[container_id; "main"] in
+      let* () = 
+        if not container_exists then
+          let now = Ptime_clock.now () in
+          let timestamp = Ptime.to_rfc3339 now in
+          let container_json = Printf.sprintf {|{"type":"AnnotationContainer","label":"%s","created":"%s"}|} container_id timestamp in
+          let message = Printf.sprintf "Create container %s" container_id in
+          Storage_git.set ~db:git_store ~key:[container_id; "main"] ~data:container_json ~message
+        else
+          Lwt.return_unit
+      in
+      
+      let* () = Lwt_list.iter_s (fun path ->
+        import_annotation git_store container_id path validate
+      ) files in
+      
+      Lwt.return (count + List.length files)
+    ) 0 containers in
     
-    let* () = Lwt_io.printlf "Found %d annotation files" (List.length files) in
     let* () = Lwt_io.printl "" in
-    
-    (* Import each file *)
-    let* () = Lwt_list.iter_s (fun path ->
-      import_annotation git_store path validate
-    ) files in
-    
-    let* () = Lwt_io.printl "" in
-    Lwt_io.printl "Import complete!"
+    Lwt_io.printlf "Imported %d annotations from %d containers" total (List.length containers)
   )
 
 let input_dir =

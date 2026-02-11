@@ -1,4 +1,4 @@
-val get_container : db:Db.t -> container_id:string -> string Lwt.t
+val get_container : db:Db.t -> container_id:string -> base_url:string -> string Lwt.t
 
 val post_container :
   db:Db.t ->
@@ -44,7 +44,7 @@ val annotation_exists :
   db:Db.t -> container_id:string -> annotation_id:string -> bool Lwt.t
 
 val get_annotation :
-  db:Db.t -> container_id:string -> annotation_id:string -> string Lwt.t
+  db:Db.t -> container_id:string -> annotation_id:string -> base_url:string -> string Lwt.t
 
 val delete_annotation :
   db:Db.t ->
@@ -64,6 +64,7 @@ val get_annotation_collection :
   db:Db.t ->
   id:string ->
   target:string option ->
+  base_url:string ->
   string Lwt.t
 
 val get_annotation_page :
@@ -72,6 +73,7 @@ val get_annotation_page :
   id:string ->
   page:int ->
   target:string option ->
+  base_url:string ->
   string option Lwt.t
 
 (* Manifest functions removed - not used in simplified read-only API *)

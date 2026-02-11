@@ -2,7 +2,7 @@
 
 open Cmdliner
 
-let serve repository_name port page_limit _base_url =
+let serve repository_name port page_limit base_url =
   (* Initialize Pack store first *)
   let db = Lwt_main.run (
     Miiify.Model.create ~repository_name
@@ -18,9 +18,9 @@ let serve repository_name port page_limit _base_url =
          Dream.get "/version" Miiify.Api.get_version;
          
          (* Read-only annotation endpoints using /<container>/<slug> format *)
-         Dream.get "/:container_id" (Miiify.Api.get_container db);
-         Dream.get "/:container_id/" (Miiify.Api.get_annotations page_limit db);
-         Dream.get "/:container_id/:annotation_id" (Miiify.Api.get_annotation db);
+         Dream.get "/:container_id" (Miiify.Api.get_container base_url db);
+         Dream.get "/:container_id/" (Miiify.Api.get_annotations base_url page_limit db);
+         Dream.get "/:container_id/:annotation_id" (Miiify.Api.get_annotation base_url db);
        ]
 
 let repository_arg =

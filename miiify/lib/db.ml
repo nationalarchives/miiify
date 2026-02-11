@@ -36,6 +36,11 @@ let get_tree ~db ~(key : string list) ~offset ~length =
   | Pack_db pack_db -> Pack.get_tree ~db:pack_db ~key ~offset ~length
   | Git_db git_db -> Git.get_tree ~db:git_db ~key ~offset ~length
 
+let get_tree_with_keys ~db ~(key : string list) ~offset ~length =
+  match db with
+  | Pack_db pack_db -> Pack.get_tree_with_keys ~db:pack_db ~key ~offset ~length
+  | Git_db git_db -> Git.get_tree_with_keys ~db:git_db ~key ~offset ~length
+
 let delete ~db ~(key : string list) ~message =
   match db with
   | Pack_db pack_db -> Pack.delete ~db:pack_db ~key ~message
