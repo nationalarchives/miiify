@@ -19,6 +19,7 @@
 
 (package
  (name miiify)
+ (version 2.0.0)
  (synopsis "A web annotation server")
  (description
   "A simple web annotation server built from the same principles at Git")
