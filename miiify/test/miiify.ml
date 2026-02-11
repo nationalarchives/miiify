@@ -1,27 +1,10 @@
 open Lwt.Syntax
 open Alcotest_lwt
 
-(* Test configuration *)
-let test_config backend =
-  Miiify.Config_t.{
-    miiify_status = "OK";
-    miiify_version = "test version 1.0.0";
-    tls = false;
-    id_proto = "https";
-    interface = "0.0.0.0";
-    port = 10000;
-    certificate_file = "server.crt";
-    key_file = "server.key";
-    repository_name = "test_crud_db";
-    repository_author = "test@miiify.rocks";
-    backend = backend;
-    container_page_limit = 100;
-    container_representation = "PreferContainedDescriptions";
-    avoid_mid_air_collisions = false;
-    access_control_allow_origin = "*";
-    access_control_max_age = "86400";
-    validate_annotation = false;
-  }
+(* Helper to create a fresh database *)
+let create_test_db test_name =
+  let repository_name = Printf.sprintf "test_pack_%s_%f" test_name (Unix.time ()) in
+  Miiify.Model.create ~repository_name
 
 (* Sample JSON data *)
 let container_json = {|{
@@ -41,15 +24,9 @@ let annotation_json = {|{
   "target": "https://example.com/target"
 }|}
 
-(* Helper to create a fresh database *)
-let create_test_db backend_name test_name =
-  let config = test_config backend_name in
-  let unique_config = { config with repository_name = Printf.sprintf "test_%s_%s_%f" backend_name test_name (Unix.time ()) } in
-  Miiify.Model.create ~config:unique_config
-
 (* Test: Create and retrieve a container *)
-let test_container_crud backend_name _switch () =
-  let* db = create_test_db backend_name "container_crud" in
+let test_container_crud _switch () =
+  let* db = create_test_db "container_crud" in
   let container_id = "test-container" in
   
   (* CREATE: Add a container *)
@@ -76,8 +53,8 @@ let test_container_crud backend_name _switch () =
   Lwt.return_unit
 
 (* Test: Create, count, and manage annotations *)
-let test_annotation_crud backend_name _switch () =
-  let* db = create_test_db backend_name "annotation_crud" in
+let test_annotation_crud _switch () =
+  let* db = create_test_db "annotation_crud" in
   let container_id = "test-container" in
   
   (* Setup: Create container first *)
@@ -150,8 +127,8 @@ let test_annotation_crud backend_name _switch () =
   Lwt.return_unit
 
 (* Test: Pagination functionality *)
-let test_pagination backend_name _switch () =
-  let* db = create_test_db backend_name "pagination" in
+let test_pagination _switch () =
+  let* db = create_test_db "pagination" in
   let container_id = "test-container" in
   
   (* Setup: Create container *)
@@ -185,19 +162,11 @@ let test_pagination backend_name _switch () =
   
   Lwt.return_unit
 
-(* Create test suite for a specific backend *)
-let create_backend_tests backend_name =
-  let prefix = Printf.sprintf "[%s]" backend_name in
-  [
-    test_case (prefix ^ " container CRUD") `Quick (test_container_crud backend_name);
-    test_case (prefix ^ " annotation CRUD") `Quick (test_annotation_crud backend_name);
-    test_case (prefix ^ " pagination") `Quick (test_pagination backend_name);
-  ]
-
 (* Main test suite *)
 let () =
   Lwt_main.run @@
-  run "Miiify CRUD Tests" [
-    ("Pack Backend", create_backend_tests "pack");
-    ("Git Backend", create_backend_tests "git");
+  run "Miiify Storage Tests" [
+    ("Container CRUD", [ test_case "create and retrieve" `Quick test_container_crud ]);
+    ("Annotation CRUD", [ test_case "create and count" `Quick test_annotation_crud ]);
+    ("Pagination", [ test_case "pagination" `Quick test_pagination ]);
   ]

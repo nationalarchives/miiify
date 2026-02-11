@@ -1,0 +1,99 @@
+(** Clone remote Git repository into Irmin Git store *)
+
+open Lwt.Syntax
+open Cmdliner
+
+module Store = Irmin_git_unix.FS.KV(Irmin.Contents.String)
+module Sync = Irmin.Sync.Make(Store)
+
+let clone_repo repo_url git_path =
+  Lwt_main.run (
+    let* () = Lwt_io.printl "Miiify Clone" in
+    let* () = Lwt_io.printlf "Remote: %s" repo_url in
+    let* () = Lwt_io.printlf "Local:  %s" git_path in
+    let* () = Lwt_io.printl "" in
+    
+    Lwt.catch (fun () ->
+      let* () = Lwt_io.printl "Initializing Git store..." in
+      let config = Irmin_git.config ~bare:true git_path in
+      let* repo = Store.Repo.v config in
+      let* store = Store.main repo in
+      
+      let* () = Lwt_io.printl "Fetching from remote..." in
+      let* remote = Store.remote repo_url in
+      
+      (* Fetch from remote - this will pull all branches and refs *)
+      let* result = Sync.fetch store remote in
+      
+      match result with
+      | Ok (`Head head_ref) ->
+          (* Set HEAD to point to the fetched branch *)
+          let* () = Store.Head.set store head_ref in
+          let* () = Lwt_io.printl "Successfully cloned repository" in
+          let* () = Lwt_io.printlf "Git store ready at: %s" git_path in
+          Lwt.return_unit
+      | Ok `Empty ->
+          let* () = Lwt_io.printl "Warning: Remote repository is empty" in
+          Lwt.return_unit
+      | Error (`Msg msg) ->
+          let* () = Lwt_io.printlf "Fetch failed: %s" msg in
+          Lwt.fail_with msg
+    ) (fun exn ->
+      let error_msg = Printexc.to_string exn in
+      
+      (* Detect network/connectivity errors *)
+      let is_network_error = 
+        String.lowercase_ascii error_msg |> fun msg ->
+        List.exists (fun pattern -> 
+          try Str.search_forward (Str.regexp_case_fold pattern) msg 0 >= 0 
+          with Not_found -> false
+        ) ["handshake"; "not found"; "not reachable"; "connection"; "timeout"; "network"]
+      in
+      
+      if is_network_error then
+        (* Network/proxy issue *)
+        let* () = Lwt_io.printl "Network connection failed" in
+        let* () = Lwt_io.printl "" in
+        let* () = Lwt_io.printl "Unable to reach remote repository (likely network/proxy issue)." in
+        let* () = Lwt_io.printl "" in
+        let* () = Lwt_io.printl "Solutions:" in
+        let* () = Lwt_io.printl "1. Try from outside corporate network/proxy" in
+        let* () = Lwt_io.printl "2. Try SSH URL: git@github.com:user/repo.git" in
+        let* () = Lwt_io.printl "3. Use manual workflow:" in
+        let* () = Lwt_io.printlf "   git clone %s" repo_url in
+        let* () = Lwt_io.printlf "   miiify-import --input <cloned-dir> --git %s" git_path in
+        Lwt.return_unit
+      else
+        let* () = Lwt_io.printlf "Clone failed: %s" error_msg in
+        let* () = Lwt_io.printl "" in
+        let* () = Lwt_io.printl "Troubleshooting:" in
+        let* () = Lwt_io.printl "- Check repository URL is correct" in
+        let* () = Lwt_io.printl "- For private repos, ensure SSH keys are configured" in
+        let* () = Lwt_io.printl "- Check network connectivity" in
+        Lwt.return_unit
+    )
+  )
+
+let repo_url =
+  let doc = "Remote Git repository URL" in
+  Arg.(required & pos 0 (some string) None & info [] ~docv:"REPO_URL" ~doc)
+
+let git_path =
+  let doc = "Local Irmin Git store directory" in
+  Arg.(value & opt string "db" & info ["git"; "g"] ~docv:"DIR" ~doc)
+
+let cmd =
+  let doc = "Clone remote Git repository into Irmin Git store" in
+  let man = [
+    `S Manpage.s_description;
+    `P "Clones a remote Git repository into a local Irmin Git store.";
+    `P "Fetches from remote using Irmin's native sync mechanism.";
+    `P "Example:";
+    `Pre "  miiify-clone https://github.com/org/annotations.git";
+    `Pre "  miiify-clone https://github.com/org/annotations.git --git ./my-db";
+  ] in
+  let info = Cmd.info "clone" ~version:"0.1.0" ~doc ~man in
+  Cmd.v info Term.(const clone_repo $ repo_url $ git_path)
+
+let () =
+  exit (Cmd.eval cmd)

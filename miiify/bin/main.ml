@@ -1,74 +1,56 @@
-open Miiify
-open Lwt.Syntax
+(** Miiify - Main command dispatcher *)
 
-let config = Utils.Cmd.parse ()
-
-let cors handler req =
-  let handlers =
-    [
-      ("Access-Control-Allow-Origin", config.access_control_allow_origin);
-      ("Access-Control-Max-Age", config.access_control_max_age);
-    ]
-  in
-  let* res = handler req in
-  handlers
-  |> List.map (fun (key, value) -> Dream.add_header res key value)
-  |> ignore;
-  Lwt.return res
+open Cmdliner
 
 let () =
-  let db = Lwt_main.run (Model.create ~config) in
-  Dream.run ~interface:config.interface ~tls:config.tls ~port:config.port
-    ~certificate_file:config.certificate_file ~key_file:config.key_file
-  @@ Dream.logger @@ cors
-  @@ Dream.router
-       [
-         (* /status *)
-         Dream.get "/" (View.get_status config);
-         Dream.head "/" (View.head_status config);
-         Dream.options "/" View.options_status;
-         (* /version *)
-         Dream.get "/version" (View.get_version config);
-         Dream.head "/version" (View.head_version config);
-         Dream.options "/version" View.options_version;
-         (* /backend *)
-         Dream.get "/backend" (View.get_backend config);
-         Dream.head "/backend" (View.head_backend config);
-         Dream.options "/backend" View.options_backend;
-         (* /annotations/ *)
-         Dream.post "/annotations/" (View.post_container config db);
-         Dream.options "/annotations/" View.options_create_container;
-         (* /annotations/:container_id *)
-         Dream.get "/annotations/:container_id" (View.get_container db);
-         Dream.head "/annotations/:container_id" (View.head_container db);
-         Dream.put "/annotations/:container_id" (View.put_container config db);
-         Dream.delete "/annotations/:container_id"
-           (View.delete_container config db);
-         Dream.options "/annotations/:container_id" View.options_container;
-         (* /annotations/:container_id/ *)
-         Dream.post "/annotations/:container_id/"
-           (View.post_annotation config db);
-         Dream.get "/annotations/:container_id/"
-           (View.get_annotations config db);
-         Dream.options "/annotations/:container_id/" View.options_annotations;
-         Dream.head "/annotations/:container_id/"
-           (View.head_annotations config db);
-         (* /annotations/:container_id/:annotation_id *)
-         Dream.get "/annotations/:container_id/:annotation_id"
-           (View.get_annotation db);
-         Dream.options "/annotations/:container_id/:annotation_id"
-           View.options_annotation;
-         Dream.head "/annotations/:container_id/:annotation_id"
-           (View.head_annotation db);
-         Dream.delete "/annotations/:container_id/:annotation_id"
-           (View.delete_annotation config db);
-         Dream.put "/annotations/:container_id/:annotation_id"
-           (View.put_annotation config db);
-         (* /manifest/:manifest_id *)
-         Dream.post "/manifest/:manifest_id" (View.post_manifest db);
-         Dream.get "/manifest/:manifest_id" (View.get_manifest db);
-         Dream.head "/manifest/:manifest_id" (View.head_manifest db);
-         Dream.put "/manifest/:manifest_id" (View.put_manifest config db);
-         Dream.delete "/manifest/:manifest_id" (View.delete_manifest config db);
-         Dream.options "/manifest/:manifest_id" View.options_manifest;
-       ]
+  
+  (* Subcommands *)
+  let clone_cmd = 
+    let doc = "Clone remote Git repository as bare repository" in
+    let info = Cmd.info "clone" ~version:"0.1.0" ~doc in
+    Cmd.v info (Term.ret (Term.const (`Help (`Auto, None))))
+  in
+  
+  let pull_cmd =
+    let doc = "Pull updates from remote and merge into Git store" in
+    let info = Cmd.info "pull" ~version:"0.1.0" ~doc in
+    Cmd.v info (Term.ret (Term.const (`Help (`Auto, None))))
+  in
+  
+  let import_cmd =
+    let doc = "Import JSON annotation files into Git store" in
+    let info = Cmd.info "import" ~version:"0.1.0" ~doc in
+    Cmd.v info (Term.ret (Term.const (`Help (`Auto, None))))
+  in
+  
+  let compile_cmd =
+    let doc = "Compile Git store into optimized Pack store" in
+    let info = Cmd.info "compile" ~version:"0.1.0" ~doc in
+    Cmd.v info (Term.ret (Term.const (`Help (`Auto, None))))
+  in
+  
+  let serve_cmd =
+    let doc = "Serve miiify API from Git or Pack store" in
+    let info = Cmd.info "serve" ~version:"0.1.0" ~doc in
+    Cmd.v info (Term.ret (Term.const (`Help (`Auto, None))))
+  in
+  
+  let default_cmd =
+    let doc = "Web annotation server with Git and Pack backends" in
+    let man = [
+      `S Manpage.s_description;
+      `P "Miiify is a lightweight web annotation server implementing the W3C Web Annotation Protocol.";
+      `P "It separates human collaboration (Git) from machine queries (Pack) for optimal workflows.";
+      `P "See 'miiify COMMAND --help' for subcommand usage.";
+      `S Manpage.s_commands;
+      `P "clone - Clone remote Git repository";
+      `P "pull - Pull updates from remote";
+      `P "import - Import JSON files (dev only)";
+      `P "compile - Compile Git to Pack";
+      `P "serve - Serve API from Git or Pack";
+    ] in
+    let info = Cmd.info "miiify" ~version:"0.1.0" ~doc ~man in
+    Cmd.group info [clone_cmd; pull_cmd; import_cmd; compile_cmd; serve_cmd]
+  in
+  
+  exit (Cmd.eval default_cmd)
