@@ -125,3 +125,7 @@ See [doc/commands.md](doc/commands.md) for the full command reference.
 ## HTTP API
 
 See [doc/api.md](doc/api.md) for the full HTTP API reference.
+
+## Scaling
+
+See [doc/scaling.md](doc/scaling.md) for horizontal scaling strategies from single projects to institution-wide deployments serving millions of annotations.
