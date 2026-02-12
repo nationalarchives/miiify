@@ -2,6 +2,8 @@
 
 This document explains how to scale Miiify from a single project to institution-wide deployment serving millions of annotations.
 
+**Note:** In this document, "container" refers to an annotation container (a collection of annotations as defined in the [W3C Web Annotation Data Model](https://www.w3.org/TR/annotation-model/#collections)), not Docker containers.
+
 ## Horizontal Scaling
 
 **Miiify scales to millions of annotations** through simple horizontal partitioning - run multiple independent instances and route container requests to the appropriate deployment.
