@@ -57,9 +57,10 @@ let clone_repo repo_url git_path =
         let* () = Lwt_io.printl "Unable to reach remote repository (likely network/proxy issue)." in
         let* () = Lwt_io.printl "" in
         let* () = Lwt_io.printl "Solutions:" in
-        let* () = Lwt_io.printl "1. Try from outside corporate network/proxy" in
-        let* () = Lwt_io.printl "2. Try SSH URL: git@github.com:user/repo.git" in
-        let* () = Lwt_io.printl "3. Use manual workflow:" in
+        let* () = Lwt_io.printl "1. Check network connectivity" in
+        let* () = Lwt_io.printl "2. Try from outside corporate network/proxy" in
+        let* () = Lwt_io.printl "3. Use HTTPS URLs (SSH not supported)" in
+        let* () = Lwt_io.printl "4. Use manual workflow:" in
         let* () = Lwt_io.printlf "   git clone %s" repo_url in
         let* () = Lwt_io.printlf "   miiify-import --input <cloned-dir> --git %s" git_path in
         Lwt.return_unit
@@ -67,9 +68,11 @@ let clone_repo repo_url git_path =
         let* () = Lwt_io.printlf "Clone failed: %s" error_msg in
         let* () = Lwt_io.printl "" in
         let* () = Lwt_io.printl "Troubleshooting:" in
-        let* () = Lwt_io.printl "- Check repository URL is correct" in
-        let* () = Lwt_io.printl "- For private repos, ensure SSH keys are configured" in
+        let* () = Lwt_io.printl "- Check repository URL is correct (use HTTPS)" in
+        let* () = Lwt_io.printl "- For private repos, use token: https://TOKEN@github.com/user/repo.git" in
         let* () = Lwt_io.printl "- Check network connectivity" in
+        let* () = Lwt_io.printl "" in
+        let* () = Lwt_io.printl "Note: SSH URLs (git@github.com:...) are not currently supported." in
         Lwt.return_unit
     )
   )
@@ -96,4 +99,6 @@ let cmd =
   Cmd.v info Term.(const clone_repo $ repo_url $ git_path)
 
 let () =
+  (* Initialize RNG for git-paf/mirage-crypto *)
+  Mirage_crypto_rng_unix.use_default ();
   exit (Cmd.eval cmd)

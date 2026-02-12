@@ -6,11 +6,11 @@ open Cmdliner
 module Store = Irmin_git_unix.FS.KV(Irmin.Contents.String)
 module Sync = Irmin.Sync.Make(Store)
 
-let pull_updates git_path remote branch =
+let pull_updates git_path remote_url branch =
   Lwt_main.run (
     let* () = Lwt_io.printl "Miiify Pull" in
     let* () = Lwt_io.printlf "Store:  %s" git_path in
-    let* () = Lwt_io.printlf "Remote: %s" remote in
+    let* () = Lwt_io.printlf "Remote: %s" remote_url in
     let* () = Lwt_io.printlf "Branch: %s" branch in
     let* () = Lwt_io.printl "" in
     
@@ -21,7 +21,7 @@ let pull_updates git_path remote branch =
       let* store = Store.main repo in
       
       let* () = Lwt_io.printl "Pulling from remote..." in
-      let* remote_ref = Store.remote remote in
+      let* remote_ref = Store.remote remote_url in
       
       (* Pull from remote - fetches and merges into current branch *)
       let* result = Sync.pull store remote_ref `Set in
@@ -60,9 +60,10 @@ let pull_updates git_path remote branch =
         let* () = Lwt_io.printl "Unable to reach remote repository (likely network/proxy issue)." in
         let* () = Lwt_io.printl "" in
         let* () = Lwt_io.printl "Solutions:" in
-        let* () = Lwt_io.printl "1. Try from outside corporate network/proxy" in
-        let* () = Lwt_io.printl "2. Try SSH URL instead of HTTPS" in
-        let* () = Lwt_io.printl "3. Use manual workflow:" in
+        let* () = Lwt_io.printl "1. Check network connectivity" in
+        let* () = Lwt_io.printl "2. Try from outside corporate network/proxy" in
+        let* () = Lwt_io.printl "3. Ensure using HTTPS URLs (SSH not supported)" in
+        let* () = Lwt_io.printl "4. Use manual workflow:" in
         let* () = Lwt_io.printl "   cd <repo> && git pull" in
         let* () = Lwt_io.printlf "   miiify-import --input <repo> --git %s" git_path in
         Lwt.return_unit
@@ -81,9 +82,9 @@ let git_path =
   let doc = "Local Irmin Git store directory" in
   Arg.(value & opt string "db" & info ["git"; "g"] ~docv:"DIR" ~doc)
 
-let remote =
-  let doc = "Remote name" in
-  Arg.(value & opt string "origin" & info ["remote"; "r"] ~docv:"REMOTE" ~doc)
+let remote_url =
+  let doc = "Remote repository URL (e.g., https://github.com/user/repo.git)" in
+  Arg.(required & pos 0 (some string) None & info [] ~docv:"URL" ~doc)
 
 let branch =
   let doc = "Branch name" in
@@ -96,11 +97,13 @@ let cmd =
     `P "Fetches updates from the remote repository and merges them into the local Irmin Git store.";
     `P "Handles conflict resolution using Irmin's merge capabilities.";
     `P "Example:";
-    `Pre "  miiify-pull";
-    `Pre "  miiify-pull --remote upstream --branch develop";
+    `Pre "  miiify-pull https://github.com/user/annotations.git";
+    `Pre "  miiify-pull https://github.com/user/repo.git --git ./db-git --branch main";
   ] in
   let info = Cmd.info "pull" ~version:"0.1.0" ~doc ~man in
-  Cmd.v info Term.(const pull_updates $ git_path $ remote $ branch)
+  Cmd.v info Term.(const pull_updates $ git_path $ remote_url $ branch)
 
 let () =
+  (* Initialize RNG for git-paf/mirage-crypto *)
+  Mirage_crypto_rng_unix.use_default ();
   exit (Cmd.eval cmd)

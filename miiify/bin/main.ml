@@ -17,6 +17,12 @@ let () =
     Cmd.v info (Term.ret (Term.const (`Help (`Auto, None))))
   in
   
+  let push_cmd =
+    let doc = "Push local changes to remote Git repository" in
+    let info = Cmd.info "push" ~version:"0.1.0" ~doc in
+    Cmd.v info (Term.ret (Term.const (`Help (`Auto, None))))
+  in
+  
   let import_cmd =
     let doc = "Import JSON annotation files into Git store" in
     let info = Cmd.info "import" ~version:"0.1.0" ~doc in
@@ -45,12 +51,13 @@ let () =
       `S Manpage.s_commands;
       `P "clone - Clone remote Git repository";
       `P "pull - Pull updates from remote";
+      `P "push - Push local changes to remote";
       `P "import - Import JSON files (dev only)";
       `P "compile - Compile Git to Pack";
       `P "serve - Serve API from Git or Pack";
     ] in
     let info = Cmd.info "miiify" ~version:"0.1.0" ~doc ~man in
-    Cmd.group info [clone_cmd; pull_cmd; import_cmd; compile_cmd; serve_cmd]
+    Cmd.group info [clone_cmd; pull_cmd; push_cmd; import_cmd; compile_cmd; serve_cmd]
   in
   
   exit (Cmd.eval default_cmd)

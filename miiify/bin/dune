@@ -14,6 +14,11 @@
  (libraries miiify cmdliner irmin-git.unix irmin.unix lwt lwt.unix str))
 
 (executable
+ (name push)
+ (public_name miiify-push)
+ (libraries miiify cmdliner irmin-git.unix irmin.unix lwt lwt.unix str))
+
+(executable
  (name import)
  (public_name miiify-import)
  (libraries miiify cmdliner))

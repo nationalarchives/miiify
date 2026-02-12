@@ -138,19 +138,51 @@ miiify-clone https://github.com/org/annotations.git --git ./db-git
 Pull updates from remote and merge into Irmin Git store.
 
 ```bash
-miiify-pull [OPTIONS]
+miiify-pull <repo-url> [OPTIONS]
+
+Arguments:
+  <repo-url>            Remote Git repository URL
 
 Options:
   --git <dir>           Git store directory (default: db)
-  --remote <name>       Remote name (default: origin)
   --branch <name>       Branch name (default: main)
 ```
 
 **Example:**
 ```bash
-miiify-pull --git ./db-git
-miiify-pull --remote upstream --branch develop --git ./db-git
+miiify-pull https://github.com/org/annotations.git --git ./db-git
+miiify-pull https://github.com/org/repo.git --git ./db-git --branch develop
 ```
+
+**Note:** Use HTTPS URLs. SSH URLs (git@github.com:...) are not currently supported.
+
+### miiify-push
+
+Push local changes to remote Git repository.
+
+```bash
+miiify-push <repo-url> [OPTIONS]
+
+Arguments:
+  <repo-url>            Remote Git repository URL
+
+Options:
+  --git <dir>           Git store directory (default: db)
+  --branch <name>       Branch name (default: main)
+```
+
+**Example:**
+```bash
+# For public repos with GitHub token
+miiify-push https://TOKEN@github.com/org/annotations.git --git ./db-git
+
+# Or use manual git push (recommended)
+cd ./db-git
+git remote add origin https://github.com/org/annotations.git
+git push origin main
+```
+
+**Note:** Push requires authentication. Use HTTPS URLs with a GitHub Personal Access Token, or use manual git push. SSH URLs are not currently supported.
 
 ### miiify-import
 
