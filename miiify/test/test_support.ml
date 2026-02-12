@@ -73,41 +73,85 @@ let workspace_root () =
     Filename.dirname (Filename.dirname (Filename.dirname cwd))
   else cwd
 
-let create_test_db_from_files test_name =
-  let timestamp = Unix.time () |> string_of_float in
-  let temp_dir = Printf.sprintf "/tmp/miiify_test_%s_%s" test_name timestamp in
+let build_root () =
+  (* When run under dune, Sys.executable_name typically looks like:
+     .../_build/default/test/<name>.exe
+     We want .../_build/default
+  *)
+  let exe = Sys.executable_name in
+  let test_dir = Filename.dirname exe in
+  Filename.dirname test_dir
+
+let import_exe () = Filename.concat (build_root ()) "bin/import.exe"
+
+let compile_exe () = Filename.concat (build_root ()) "bin/compile.exe"
+
+type temp_workspace = {
+  temp_dir : string;
+  annotations_dir : string;
+  git_repo : string;
+  pack_repo : string;
+}
+
+let make_temp_workspace test_name =
+  let ts = int_of_float (Unix.time ()) in
+  let pid = Unix.getpid () in
+  let temp_dir = Printf.sprintf "/tmp/miiify_test_%s_%d_%d" test_name pid ts in
   let annotations_dir = temp_dir ^ "/annotations" in
   let git_repo = temp_dir ^ "/db-git" in
   let pack_repo = temp_dir ^ "/db-pack" in
 
   Unix.mkdir temp_dir 0o755;
   Unix.mkdir annotations_dir 0o755;
-  Unix.mkdir (annotations_dir ^ "/my-canvas") 0o755;
+  { temp_dir; annotations_dir; git_repo; pack_repo }
 
-  write_file (annotations_dir ^ "/my-canvas/highlight-1.json") highlight_annotation;
-  write_file (annotations_dir ^ "/my-canvas/comment-1.json") comment_annotation;
+let write_annotation_file ~annotations_dir ~container_id ~slug ~contents =
+  let container_dir = Filename.concat annotations_dir container_id in
+  if not (Sys.file_exists container_dir) then Unix.mkdir container_dir 0o755;
+  let path = Filename.concat container_dir (slug ^ ".json") in
+  write_file path contents;
+  path
 
-  let root = workspace_root () in
-
-  let import_cmd =
-    Printf.sprintf
-      "cd %s && dune exec miiify-import -- --input %s --git %s > /dev/null 2>&1"
-      (Filename.quote root) (Filename.quote annotations_dir)
+let run_miiify_import ~annotations_dir ~git_repo =
+  let cmd =
+    Printf.sprintf "%s --input %s --git %s > /dev/null 2>&1"
+      (Filename.quote (import_exe ())) (Filename.quote annotations_dir)
       (Filename.quote git_repo)
   in
-  let import_result = Sys.command import_cmd in
+  Sys.command cmd
+
+let run_miiify_compile ~git_repo ~pack_repo =
+  let cmd =
+    Printf.sprintf "%s --git %s --pack %s > /dev/null 2>&1"
+      (Filename.quote (compile_exe ())) (Filename.quote git_repo)
+      (Filename.quote pack_repo)
+  in
+  Sys.command cmd
+
+let create_test_db_from_files test_name =
+  let ws = make_temp_workspace test_name in
+
+  let _ =
+    write_annotation_file ~annotations_dir:ws.annotations_dir
+      ~container_id:"my-canvas" ~slug:"highlight-1" ~contents:highlight_annotation
+  in
+  let _ =
+    write_annotation_file ~annotations_dir:ws.annotations_dir
+      ~container_id:"my-canvas" ~slug:"comment-1" ~contents:comment_annotation
+  in
+
+  let import_result =
+    run_miiify_import ~annotations_dir:ws.annotations_dir ~git_repo:ws.git_repo
+  in
   if import_result <> 0 then
     Lwt.fail_with (Printf.sprintf "Import failed with code %d" import_result)
   else
-    let compile_cmd =
-      Printf.sprintf
-        "cd %s && dune exec miiify-compile -- --git %s --pack %s > /dev/null 2>&1"
-        (Filename.quote root) (Filename.quote git_repo) (Filename.quote pack_repo)
+    let compile_result =
+      run_miiify_compile ~git_repo:ws.git_repo ~pack_repo:ws.pack_repo
     in
-    let compile_result = Sys.command compile_cmd in
     if compile_result <> 0 then
       Lwt.fail_with (Printf.sprintf "Compile failed with code %d" compile_result)
-    else Miiify.Model.create ~repository_name:pack_repo
+    else Miiify.Model.create ~repository_name:ws.pack_repo
 
 let create_test_db_pack test_name =
   let repository_name =

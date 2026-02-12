@@ -2,6 +2,10 @@
  (name storage_test)
  (libraries miiify alcotest-lwt lwt yojson))
 
+(alias
+ (name runtest)
+ (deps ../bin/import.exe ../bin/compile.exe))
+
 (test
  (name api_test)
  (libraries miiify alcotest-lwt lwt yojson dream))

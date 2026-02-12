@@ -89,11 +89,17 @@ Miiify injects stable, URL-based annotation `id` fields at serve time—you neve
 
 These IDs are plain HTTP URLs derived from `--base-url` and the request path (suitable for use as Web Annotation identifiers).
 
+If an annotation file supplies a top-level `id`, `miiify-import`/`miiify-compile` will error: the server owns the `id` value.
+
 **How it works:**
 - IDs are derived from your filesystem structure: `<base-url>/<container>/<slug>`
 - Container = directory name (e.g., `my-canvas`)
 - Slug = filename without `.json` extension (e.g., `highlight-1`)
 - Base URL is configurable via `--base-url` flag
+
+**Ordering:**
+- When listing annotations (collection/pages), items are returned sorted lexicographically by slug/ID.
+- If you care about a specific order within a canvas/container, choose slugs accordingly (for example, zero-pad: `note-0001`, `note-0010` so `note-0010` doesn’t sort before `note-0002`).
 
 **Example:**
 ```bash

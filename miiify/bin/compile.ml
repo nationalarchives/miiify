@@ -41,6 +41,21 @@ let rec copy_tree git_store pack_store path validate =
             let* () = Lwt_io.printlf "✗ %s: %s" (String.concat "/" git_path) msg in
             Lwt.fail (Failure ("JSON validation failed for " ^ String.concat "/" git_path))
       in
+
+      (* Enforce ID management rule: user-supplied IDs are not allowed. *)
+      let* () =
+        match Utils.Validation.reject_top_level_id data with
+        | Ok () -> Lwt.return_unit
+        | Error _ ->
+            let* () =
+              Lwt_io.printlf
+                "✗ %s supplies an 'id' field. Remove it; Miiify derives 'id' from --base-url and the file path."
+                (String.concat "/" git_path)
+            in
+            Lwt.fail
+              (Failure
+                 ("ID validation failed for " ^ String.concat "/" git_path))
+      in
       
       (* Validate against schema if flag is set *)
       let* () = 

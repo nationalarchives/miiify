@@ -3,6 +3,52 @@ open Alcotest_lwt
 
 open Test_support
 
+(* Test: Reject user-supplied IDs during import *)
+let test_import_rejects_user_id _switch () =
+  let ws = make_temp_workspace "reject_user_id" in
+  let bad_annotation =
+    {|{
+  "id": "http://example.invalid/should-not-be-here",
+  "type": "Annotation",
+  "motivation": "commenting",
+  "body": {"type": "TextualBody", "value": "Has an id"},
+  "target": "https://example.com/iiif/canvas/1"
+}|}
+  in
+  let _ =
+    write_annotation_file ~annotations_dir:ws.annotations_dir
+      ~container_id:"my-canvas" ~slug:"bad-1" ~contents:bad_annotation
+  in
+  let exit_code =
+    run_miiify_import ~annotations_dir:ws.annotations_dir ~git_repo:ws.git_repo
+  in
+  Alcotest.(check bool) "import fails when id present" true (exit_code <> 0);
+  Lwt.return_unit
+
+(* Test: Reject user-supplied IDs during compile (data may come from clone/pull) *)
+let test_compile_rejects_user_id _switch () =
+  let ws = make_temp_workspace "compile_reject_user_id" in
+  let bad_annotation =
+    {|{
+  "id": "http://example.invalid/should-not-be-here",
+  "type": "Annotation",
+  "motivation": "commenting",
+  "body": {"type": "TextualBody", "value": "Has an id"},
+  "target": "https://example.com/iiif/canvas/1"
+}|}
+  in
+
+  (* Simulate a cloned Git store: flat keys [container; slug] *)
+  let git_db = Miiify.Storage_git.create ~fname:ws.git_repo in
+  let* () =
+    Miiify.Storage_git.set ~db:git_db ~key:[ "my-canvas"; "bad-1" ]
+      ~data:bad_annotation ~message:"seed bad annotation"
+  in
+
+  let exit_code = run_miiify_compile ~git_repo:ws.git_repo ~pack_repo:ws.pack_repo in
+  Alcotest.(check bool) "compile fails when id present" true (exit_code <> 0);
+  Lwt.return_unit
+
 (* Test: Import annotations like the README example *)
 let test_import_annotations _switch () =
   let* db = create_test_db_pack "import" in
@@ -494,6 +540,8 @@ let () =
   Lwt_main.run @@
   run "Miiify Storage Tests" [
     ("Import Workflow", [ 
+      test_case "reject user-supplied id" `Quick test_import_rejects_user_id;
+      test_case "compile rejects user-supplied id" `Quick test_compile_rejects_user_id;
       test_case "import annotations" `Quick test_import_annotations;
       test_case "retrieve annotations" `Quick test_retrieve_annotations;
     ]);
