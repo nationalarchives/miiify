@@ -209,7 +209,7 @@ let test_empty_and_nonexistent _switch () =
   
   (* Create a container and test empty collection retrieval *)
   let container_json = {|{"type":"AnnotationContainer","label":"Empty Container"}|} in
-  let* () = Miiify.Db.set ~db ~key:[container_id; "main"] ~data:container_json ~message:"Create empty container" in
+  let* () = Miiify.Db.set ~db ~key:[container_id; "metadata"] ~data:container_json ~message:"Create empty container" in
   
   let* total_after = Miiify.Model.total ~db ~container_id in
   Alcotest.(check int) "empty container with main" 0 total_after;
@@ -383,7 +383,7 @@ let test_etag_container _switch () =
   
   (* Create a container *)
   let container_json = {|{"type":"AnnotationContainer","label":"Test Container"}|} in
-  let* () = Miiify.Db.set ~db ~key:[container_id; "main"] ~data:container_json ~message:"Create container" in
+  let* () = Miiify.Db.set ~db ~key:[container_id; "metadata"] ~data:container_json ~message:"Create container" in
   
   (* Get container hash *)
   let* hash_opt = Miiify.Model.get_container_hash ~db ~container_id in
@@ -420,7 +420,7 @@ let test_id_container _switch () =
   
   (* Create container *)
   let container_json = {|{"type":"AnnotationContainer","label":"Test Container"}|} in
-  let* () = Miiify.Db.set ~db ~key:[container_id; "main"] ~data:container_json ~message:"Create container" in
+  let* () = Miiify.Db.set ~db ~key:[container_id; "metadata"] ~data:container_json ~message:"Create container" in
   
   (* Get container with ID injection *)
   let* result = Miiify.Controller.get_container ~db ~container_id ~base_url in
@@ -438,7 +438,7 @@ let test_id_collection _switch () =
   
   (* Create container and annotations *)
   let container_json = {|{"type":"AnnotationContainer","label":"My Canvas"}|} in
-  let* () = Miiify.Db.set ~db ~key:[container_id; "main"] ~data:container_json ~message:"Create container" in
+  let* () = Miiify.Db.set ~db ~key:[container_id; "metadata"] ~data:container_json ~message:"Create container" in
   let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "highlight-1"] ~data:highlight_annotation ~message:"Import annotation" in
   
   (* Get collection with ID injection *)
@@ -470,7 +470,7 @@ let test_id_page _switch () =
   
   (* Create container and annotation *)
   let container_json = {|{"type":"AnnotationContainer","label":"My Canvas"}|} in
-  let* () = Miiify.Db.set ~db ~key:[container_id; "main"] ~data:container_json ~message:"Create container" in
+  let* () = Miiify.Db.set ~db ~key:[container_id; "metadata"] ~data:container_json ~message:"Create container" in
   let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "highlight-1"] ~data:highlight_annotation ~message:"Import annotation" in
   
   (* Get page 0 *)

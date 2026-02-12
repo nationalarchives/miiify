@@ -45,8 +45,8 @@ let import_annotation git_store container_id path validate =
       Lwt.return_unit
   in
   
-  (* Store in container/collection/slug structure *)
-  let key = [container_id; "collection"; slug] in
+  (* Store in flat structure: container/slug *)
+  let key = [container_id; slug] in
   let message = Printf.sprintf "Import %s/%s" container_id filename in
   
   let* () = Storage_git.set ~db:git_store ~key ~data:content ~message in
@@ -177,19 +177,7 @@ let import_directory input_dir git_path validate =
           Lwt.return_unit
       in
       
-      (* Create container metadata if it doesn't exist *)
-      let* container_exists = Storage_git.exists ~db:git_store ~key:[container_id; "main"] in
-      let* () = 
-        if not container_exists then
-          let now = Ptime_clock.now () in
-          let timestamp = Ptime.to_rfc3339 now in
-          let container_json = Printf.sprintf {|{"type":"AnnotationContainer","label":"%s","created":"%s"}|} container_id timestamp in
-          let message = Printf.sprintf "Create container %s" container_id in
-          Storage_git.set ~db:git_store ~key:[container_id; "main"] ~data:container_json ~message
-        else
-          Lwt.return_unit
-      in
-      
+      (* Import annotation files *)
       let* () = Lwt_list.iter_s (fun path ->
         import_annotation git_store container_id path validate
       ) json_files in

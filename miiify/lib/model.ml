@@ -7,7 +7,7 @@ let create ~repository_name =
   Db.create ~fname:repository_name
 
 let get_container ~db ~container_id =
-  let* data = Db.get ~db ~key:[ container_id; "main" ] in
+  let* data = Db.get ~db ~key:[ container_id; "metadata" ] in
   from_string data |> Lwt.return
 
 let filter_items_helper item keys target =
@@ -26,7 +26,7 @@ let filter_items target items =
   | None -> items
 
 let get_annotations ~db ~container_id ~offset ~length ~target =
-  let* main = Db.get ~db ~key:[ container_id; "main" ] in
+  let* main = Db.get ~db ~key:[ container_id; "metadata" ] in
   let container = from_string main in
   let* collection =
     Db.get_tree ~db ~key:[ container_id; "collection" ] ~offset ~length
@@ -37,7 +37,7 @@ let get_annotations ~db ~container_id ~offset ~length ~target =
   Util.combine container annotations |> Lwt.return
 
 let get_annotations_with_ids ~db ~container_id ~offset ~length ~target =
-  let* main = Db.get ~db ~key:[ container_id; "main" ] in
+  let* main = Db.get ~db ~key:[ container_id; "metadata" ] in
   let container = from_string main in
   let* collection =
     Db.get_tree_with_keys ~db ~key:[ container_id; "collection" ] ~offset ~length
@@ -76,11 +76,11 @@ let update_container ~db ~container_id ~json ~message =
   add_container ~db ~container_id ~json ~message
 
 let delete_container ~db ~container_id ~message =
-  Db.delete ~db ~key:[ container_id; "main" ] ~message >>= fun () ->
+  Db.delete ~db ~key:[ container_id; "metadata" ] ~message >>= fun () ->
   Db.delete ~db ~key:[ container_id; "collection" ] ~message
 
 let container_exists ~db ~container_id =
-  Db.exists ~db ~key:[ container_id; "main" ]
+  Db.exists ~db ~key:[ container_id; "metadata" ]
 
 let annotation_exists ~db ~container_id ~annotation_id =
   Db.exists ~db ~key:[ container_id; "collection"; annotation_id ]
@@ -89,7 +89,7 @@ let get_collection_hash ~db ~container_id =
   Db.get_hash ~db ~key:[ container_id; "collection" ]
 
 let get_container_hash ~db ~container_id =
-  Db.get_hash ~db ~key:[ container_id; "main" ]
+  Db.get_hash ~db ~key:[ container_id; "metadata" ]
 
 let total ~db ~container_id = Db.total ~db ~key:[ container_id; "collection" ]
 
