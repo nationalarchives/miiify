@@ -1,3 +1,0 @@
-*/5 * * * * $HOME/git/miiify/k8s/update-miiify.sh >/dev/null 2>&1
-
-
