@@ -30,6 +30,7 @@
   utils
   specification
   specification_util
+    specification_json_adapter
   specification_t
   specification_j
   specification_v)

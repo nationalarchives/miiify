@@ -12,7 +12,7 @@ type annotation_t = {
   ?modified : modified_t option;
   ?body : body_t option;
   ?target : target_t option;
-}
+} <json adapter.ocaml="Specification_json_adapter">
 
 type context_t = [
   | T1 of string

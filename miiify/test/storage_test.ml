@@ -3,6 +3,11 @@ open Alcotest_lwt
 
 open Test_support
 
+let test_schema_validation_accepts_highlight _switch () =
+  match Miiify.Utils.Validation.validate_annotation highlight_annotation with
+  | Ok () -> Lwt.return_unit
+  | Error msg -> Alcotest.fail msg
+
 (* Test: Reject user-supplied IDs during import *)
 let test_import_rejects_user_id _switch () =
   let ws = make_temp_workspace "reject_user_id" in
@@ -540,6 +545,7 @@ let () =
   Lwt_main.run @@
   run "Miiify Storage Tests" [
     ("Import Workflow", [ 
+      test_case "schema validation accepts highlight" `Quick test_schema_validation_accepts_highlight;
       test_case "reject user-supplied id" `Quick test_import_rejects_user_id;
       test_case "compile rejects user-supplied id" `Quick test_compile_rejects_user_id;
       test_case "import annotations" `Quick test_import_annotations;
