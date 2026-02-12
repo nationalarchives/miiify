@@ -2,13 +2,13 @@
 
 **Web annotations versioned like code, served like a database.**
 
+Setup and deployment: start with [doc/installation.md](doc/installation.md).
+
 Traditional annotation servers require databases, complex configuration, and specialized deployment. They separate your annotations from your content workflows.
 
 Miiify solves this by treating annotations like source code: store them in Git, serve them from an optimized runtime.
 
-Your annotations evolve like a codebase. IIIF scholars and content specialists who already use Git for documentation can contribute annotations using the same workflow—commit, review, merge. No database setup, no config files, just JSON files and Git.
-
-Miiify uses the same storage technology that powers the Tezos blockchain (Irmin), giving your annotations blockchain-grade immutability and integrity. Deploy across multiple locations for digital preservation—each location independently compiles from Git to create verifiable identical copies.
+Your annotations evolve like a codebase. Anyone who already uses Git can contribute using the same workflow—commit, review, merge. No database setup, no config files, just JSON files and Git.
 
 ## Quick Start
 
@@ -71,7 +71,6 @@ miiify-serve --repository ./db-pack --port 10000
 ```bash
 # Get annotation (both formats work)
 curl http://localhost:10000/my-canvas/highlight-1
-curl http://localhost:10000/my-canvas/highlight-1.json
 
 # List all annotations
 curl http://localhost:10000/my-canvas/
@@ -86,7 +85,9 @@ miiify-serve --repository ./db-pack --port 10000
 
 ## ID Management
 
-Miiify automatically generates W3C-compliant annotation IDs at runtime—you never include IDs in your JSON files.
+Miiify injects stable, URL-based annotation `id` fields at serve time—you never include IDs in your JSON files.
+
+These IDs are plain HTTP URLs derived from `--base-url` and the request path (suitable for use as Web Annotation identifiers).
 
 **How it works:**
 - IDs are derived from your filesystem structure: `<base-url>/<container>/<slug>`
@@ -254,7 +255,7 @@ Annotations use a simple `/<container>/<slug>` URL pattern:
 GET /                          # Server status
 GET /version                   # Version info
 GET /:container                # Get container metadata (AnnotationContainer)
-GET /:container/               # Get collection with first page (AnnotationCollection)
+GET /:container/               # Get collection with first page embedded
 GET /:container/?page=N        # Get specific page (AnnotationPage)
 GET /:container/:slug          # Get specific annotation
 ```
@@ -275,6 +276,11 @@ curl http://localhost:10000/my-canvas/?page=1
 
 # Filter by target
 curl "http://localhost:10000/my-canvas/?page=0&target=https://example.com/iiif/canvas/1"
+
+# If your target contains characters like '#', URL-encode it:
+curl --get \
+  --data-urlencode "target=https://example.com/iiif/canvas/1#xywh=100,100,200,50" \
+  "http://localhost:10000/my-canvas/?page=0"
 ```
 
 ### Response Format
@@ -282,7 +288,6 @@ curl "http://localhost:10000/my-canvas/?page=0&target=https://example.com/iiif/c
 **Single Annotation:**
 ```json
 {
-  "@context": "http://www.w3.org/ns/anno.jsonld",
   "id": "http://localhost:10000/my-canvas/highlight-1",
   "type": "Annotation",
   "motivation": "highlighting",
@@ -291,33 +296,29 @@ curl "http://localhost:10000/my-canvas/?page=0&target=https://example.com/iiif/c
     "value": "Important passage",
     "purpose": "commenting"
   },
-  "target": "https://example.com/iiif/canvas/1#xywh=100,100,200,50",
-  "created": "2024-01-15T10:30:00Z"
+  "target": "https://example.com/iiif/canvas/1#xywh=100,100,200,50"
 }
 ```
 
 **Annotation Page:**
 ```json
 {
-  "@context": "http://iiif.io/api/presentation/3/context.json",
   "id": "http://localhost:10000/my-canvas/?page=0",
   "type": "AnnotationPage",
+  "startIndex": 0,
   "items": [
     {
-      "@context": "http://www.w3.org/ns/anno.jsonld",
       "id": "http://localhost:10000/my-canvas/highlight-1",
       "type": "Annotation",
       "body": { ... },
-      "target": "https://example.com/iiif/canvas/1#xywh=100,100,200,50",
-      "created": "2024-01-15T10:30:00Z"
+      "target": "https://example.com/iiif/canvas/1#xywh=100,100,200,50"
     }
   ],
   "partOf": {
     "id": "http://localhost:10000/my-canvas/",
-    "type": "AnnotationCollection",
-    "label": "My Annotations",
-    "total": 42,
-    "created": "2024-01-15T09:00:00Z"
-  }
+    "type": "AnnotationContainer",
+    "total": 42
+  },
+  "next": "http://localhost:10000/my-canvas/?page=1"
 }
 ```
