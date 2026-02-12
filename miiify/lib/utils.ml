@@ -51,9 +51,17 @@ end = struct
     ) name
 
   let is_valid_json_file filename =
-    (* Must end with .json and not be hidden *)
-    String.ends_with ~suffix:".json" filename &&
-    not (String.starts_with ~prefix:"." filename)
+    (* Annotation filenames may be either:
+       - explicit JSON files:   <slug>.json
+       - extensionless slugs:   <slug>
+       Hidden files are never considered annotations.
+
+       Note: this is used by development tools (import/compile) to decide which
+       on-disk files to treat as annotation documents.
+    *)
+    if String.starts_with ~prefix:"." filename then false
+    else if String.ends_with ~suffix:".json" filename then true
+    else not (String.contains filename '.')
 
   let validate_basic_json content =
     (* Check if content is at least parseable as JSON *)

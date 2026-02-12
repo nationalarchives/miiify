@@ -7,19 +7,25 @@ open Miiify
 let import_annotation git_store container_id path validate =
   let filename = Filename.basename path in
   
-  (* Validate it's a JSON file *)
+  (* Validate it's an annotation file (either *.json or extensionless) *)
   if not (Utils.Validation.is_valid_json_file filename) then
     let* () =
-      Lwt_io.eprintlf "✗ %s/%s - invalid file (must be *.json)" container_id
+      Lwt_io.eprintlf
+        "✗ %s/%s - invalid file (must be *.json or extensionless)" container_id
         filename
     in
     Lwt.fail (Failure "Invalid file")
   else
   
-  (* Strip .json extension to create slug *)
-  let slug = String.sub filename 0 (String.length filename - 5) in
+  (* Normalize filename -> slug (strip optional .json suffix) *)
+  let slug =
+    if String.ends_with ~suffix:".json" filename then
+      String.sub filename 0 (String.length filename - 5)
+    else
+      filename
+  in
   
-  (* Validate slug is not empty after stripping *)
+  (* Validate slug is not empty after normalization *)
   if String.length slug = 0 then
     let* () =
       Lwt_io.eprintlf "✗ %s/%s - invalid filename (cannot be just '.json')"
@@ -99,29 +105,58 @@ let run_import ~input_dir ~git_path ~validate =
   (* Find all container directories *)
   let all_items = Sys.readdir scan_dir |> Array.to_list in
 
-  (* Check for JSON files at root level (not allowed) *)
-  let root_files =
+  (* Check for annotation files at root level (not allowed).
+     - We always reject explicit *.json files.
+     - For extensionless files (no '.'), only reject if they parse as JSON.
+       This avoids breaking repos that have root docs like LICENSE.
+  *)
+  let root_candidates =
     all_items
     |> List.filter (fun f -> not (String.starts_with ~prefix:"." f))
     |> List.map (fun f -> (f, Filename.concat scan_dir f))
     |> List.filter (fun (_, path) -> not (Sys.is_directory path))
+  in
+
+  let root_json_files =
+    root_candidates
     |> List.filter (fun (name, _) -> String.ends_with ~suffix:".json" name)
   in
+
+  let root_extensionless =
+    root_candidates
+    |> List.filter (fun (name, _) -> not (String.contains name '.'))
+  in
+
+  let* root_extensionless_json_files =
+    Lwt_list.filter_s
+      (fun (_name, path) ->
+        Lwt.catch
+          (fun () ->
+            let* content_lines = Lwt_io.lines_of_file path |> Lwt_stream.to_list in
+            let content = String.concat "\n" content_lines in
+            match Utils.Validation.validate_basic_json content with
+            | Ok () -> Lwt.return true
+            | Error _ -> Lwt.return false)
+          (fun _exn -> Lwt.return false))
+      root_extensionless
+  in
+
   let* () =
-    if List.length root_files > 0 then (
+    if List.length root_json_files > 0 || List.length root_extensionless_json_files > 0 then (
+      let all_bad = root_json_files @ root_extensionless_json_files in
       let* () =
         Lwt_io.eprintlf
-          "Error: Found %d .json files at root level (must be inside container directories)"
-          (List.length root_files)
+          "Error: Found %d annotation files at root level (must be inside container directories)"
+          (List.length all_bad)
       in
       let* () =
         Lwt_list.iter_s
           (fun (name, _) -> Lwt_io.eprintlf "  - %s" name)
-          root_files
+          all_bad
       in
       Lwt.fail
         (Failure
-           "Invalid layout: annotations must be in <container>/<annotation>.json structure")
+           "Invalid layout: annotations must be in <container>/<annotation> or <container>/<annotation>.json structure")
     ) else Lwt.return_unit
   in
 
@@ -174,11 +209,11 @@ let run_import ~input_dir ~git_path ~validate =
             in
             Lwt.fail
               (Failure
-                 "Invalid layout: containers must only contain .json files, not subdirectories")
+                 "Invalid layout: containers must only contain annotation files (either *.json or extensionless), not subdirectories")
           ) else Lwt.return_unit
         in
 
-        (* Filter to only .json files (must be actual files) *)
+        (* Filter to only annotation files (must be actual files) *)
         let json_files =
           all_files
           |> List.filter Utils.Validation.is_valid_json_file
@@ -187,7 +222,7 @@ let run_import ~input_dir ~git_path ~validate =
           |> List.map snd
         in
 
-        (* Warn about non-JSON files *)
+        (* Warn about non-annotation files *)
         let non_json_files =
           all_files
           |> List.filter (fun f ->
@@ -198,7 +233,7 @@ let run_import ~input_dir ~git_path ~validate =
         in
         let* () =
           if List.length non_json_files > 0 then
-            Lwt_io.eprintlf "Warning: Skipping %d non-JSON files in %s/"
+            Lwt_io.eprintlf "Warning: Skipping %d non-annotation files in %s/"
               (List.length non_json_files) container_id
           else Lwt.return_unit
         in
@@ -206,7 +241,7 @@ let run_import ~input_dir ~git_path ~validate =
         (* Warn about empty containers *)
         let* () =
           if List.length json_files = 0 then
-            Lwt_io.eprintlf "Warning: No JSON files found in %s/" container_id
+            Lwt_io.eprintlf "Warning: No annotation files found in %s/" container_id
           else Lwt.return_unit
         in
 
@@ -224,7 +259,8 @@ let run_import ~input_dir ~git_path ~validate =
   let* () = Lwt_io.printl "" in
   let* () =
     if total = 0 then
-      Lwt_io.eprintl "Warning: No annotations imported (no valid .json files found)"
+      Lwt_io.eprintl
+        "Warning: No annotations imported (no valid annotation files found)"
     else
       Lwt_io.printlf "Imported %d annotations from %d containers" total
         (List.length containers)

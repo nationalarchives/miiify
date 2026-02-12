@@ -83,6 +83,11 @@ miiify-compile --git ./db-git --pack ./db-pack
 miiify-serve --repository ./db-pack --port 10000
 ```
 
+Example repo with ready-to-serve sample annotations:
+```bash
+miiify-clone https://github.com/jptmoore/miiify-sample-data.git --git ./db-git
+```
+
 ## ID Management
 
 Miiify injects stable, URL-based annotation `id` fields at serve time—you never include IDs in your JSON files.

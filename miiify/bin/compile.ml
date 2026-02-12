@@ -22,15 +22,45 @@ let rec copy_tree git_store pack_store path validate =
         (fun _ -> Lwt.return false)
     in
     
+    let is_annotation_filename filename =
+      Utils.Validation.is_valid_json_file filename
+    in
+
+    let normalize_slug filename =
+      if String.ends_with ~suffix:".json" filename then
+        String.sub filename 0 (String.length filename - 5)
+      else
+        filename
+    in
+
     if is_contents then
       let* data = Git_store.get git_store git_path in
+
+      (* Only treat valid annotation filenames as annotations; ignore everything else. *)
+      let leaf_name = step_name in
+      if not (is_annotation_filename leaf_name) then (
+        let* () =
+          Lwt_io.eprintlf "Warning: Skipping non-annotation file: %s"
+            (String.concat "/" git_path)
+        in
+        Lwt.return count
+      ) else
+      let slug_norm = normalize_slug leaf_name in
+      if String.length slug_norm = 0 then (
+        let* () =
+          Lwt_io.eprintlf
+            "✗ Invalid annotation filename (cannot be just '.json'): %s"
+            (String.concat "/" git_path)
+        in
+        Lwt.fail (Failure "Invalid annotation filename")
+      ) else
       
       (* Transform flat Git structure to hierarchical Pack structure:
          Git: [container; slug]
          Pack: [container; "collection"; slug] *)
       let pack_path_opt =
         match git_path with
-        | [ container; slug ] -> Some [ container; "collection"; slug ]
+        | [ container; _slug ] -> Some [ container; "collection"; slug_norm ]
         | _ -> None
       in
       let* pack_path =
@@ -116,7 +146,39 @@ let run_compile ~git_path ~pack_path ~validate =
 
   (* Get list of containers (top-level directories) *)
   let* root_tree = Git_store.get_tree git_store [] in
-  let* containers = Git_store.Tree.list root_tree [] in
+  let* root_entries = Git_store.Tree.list root_tree [] in
+
+  (* Keep only directory entries with valid container names; ignore root files (README, LICENSE, etc). *)
+  let* containers =
+    Lwt_list.filter_map_s
+      (fun (container_step, _tree) ->
+        let container =
+          Irmin.Type.to_string Git_store.Path.step_t container_step
+        in
+        let* is_contents =
+          Lwt.catch
+            (fun () ->
+              let* _ = Git_store.get git_store [ container ] in
+              Lwt.return true)
+            (fun _ -> Lwt.return false)
+        in
+        if is_contents then (
+          let* () =
+            Lwt_io.eprintlf "Warning: Skipping root file (not a container): %s"
+              container
+          in
+          Lwt.return_none
+        ) else if not (Utils.Validation.is_valid_container_name container) then (
+          let* () =
+            Lwt_io.eprintlf
+              "Warning: Skipping invalid container name '%s' (use only a-z, A-Z, 0-9, -, _)"
+              container
+          in
+          Lwt.return_none
+        ) else
+          Lwt.return_some (container_step, _tree))
+      root_entries
+  in
 
   (* For each container, create metadata and copy annotations *)
   let* total =
