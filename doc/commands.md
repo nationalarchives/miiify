@@ -16,12 +16,17 @@ Arguments:
 
 Options:
   --git <dir>           Git store directory (default: db)
+  --force               Allow cloning into an existing non-empty --git directory
 ```
 
 Example:
 ```bash
 miiify-clone https://github.com/jptmoore/miiify-sample-data.git --git ./db-git
 ```
+
+Notes:
+- By default, `miiify-clone` refuses to clone into an existing non-empty `--git` directory.
+- Use `--force` to reuse an existing store (this may move the store’s HEAD to the remote head).
 
 ## miiify-pull
 

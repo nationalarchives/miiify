@@ -6,11 +6,48 @@ open Cmdliner
 module Store = Irmin_git_unix.FS.KV(Irmin.Contents.String)
 module Sync = Irmin.Sync.Make(Store)
 
-let run_clone ~repo_url ~git_path =
+let dir_is_nonempty path =
+  match Sys.readdir path |> Array.to_list with
+  | [] -> false
+  | items ->
+      (* treat any entry (including hidden) as non-empty; this is a safety check *)
+      List.length items > 0
+
+let run_clone ~repo_url ~git_path ~force =
   let* () = Lwt_io.printl "Miiify Clone" in
   let* () = Lwt_io.printlf "Remote: %s" repo_url in
   let* () = Lwt_io.printlf "Local:  %s" git_path in
   let* () = Lwt_io.printl "" in
+
+  (* Safer default: refuse to clone into an existing non-empty directory unless forced. *)
+  let* () =
+    if Sys.file_exists git_path then (
+      if not (Sys.is_directory git_path) then (
+        let* () =
+          Lwt_io.eprintlf
+            "Error: --git path exists and is not a directory: %s"
+            git_path
+        in
+        Lwt.fail (Failure "Invalid --git path")
+      ) else if dir_is_nonempty git_path && not force then (
+        let* () =
+          Lwt_io.eprintlf
+            "Error: --git directory already exists and is not empty: %s"
+            git_path
+        in
+        let* () =
+          Lwt_io.eprintl
+            "Refusing to clone into an existing store. Use --force to reuse it."
+        in
+        Lwt.fail (Failure "Refusing to clone into non-empty directory")
+      ) else if dir_is_nonempty git_path && force then
+        Lwt_io.eprintl
+          "Warning: --force set; reusing existing --git directory (HEAD may change)"
+      else
+        Lwt.return_unit
+    ) else
+      Lwt.return_unit
+  in
 
   Lwt.catch
     (fun () ->
@@ -89,12 +126,12 @@ let run_clone ~repo_url ~git_path =
         Lwt.fail (Failure "Clone failed")
       ))
 
-let clone_repo repo_url git_path =
+let clone_repo repo_url git_path force =
   let result =
     Lwt_main.run
       (Lwt.catch
          (fun () ->
-           let* () = run_clone ~repo_url ~git_path in
+           let* () = run_clone ~repo_url ~git_path ~force in
            Lwt.return (Ok ()))
          (fun exn -> Lwt.return (Error exn)))
   in
@@ -115,18 +152,23 @@ let git_path =
   let doc = "Local Irmin Git store directory" in
   Arg.(value & opt string "db" & info ["git"; "g"] ~docv:"DIR" ~doc)
 
+let force_flag =
+  let doc = "Allow cloning into an existing non-empty --git directory (reuse store; may move HEAD)" in
+  Arg.(value & flag & info ["force"; "f"] ~doc)
+
 let cmd =
   let doc = "Clone remote Git repository into Irmin Git store" in
   let man = [
     `S Manpage.s_description;
     `P "Clones a remote Git repository into a local Irmin Git store.";
     `P "Fetches from remote using Irmin's native sync mechanism.";
+    `P "By default, refuses to clone into an existing non-empty --git directory.";
     `P "Example:";
     `Pre "  miiify-clone https://github.com/org/annotations.git";
     `Pre "  miiify-clone https://github.com/org/annotations.git --git ./my-db";
   ] in
   let info = Cmd.info "clone" ~version:"0.1.0" ~doc ~man in
-  Cmd.v info Term.(const clone_repo $ repo_url $ git_path)
+  Cmd.v info Term.(const clone_repo $ repo_url $ git_path $ force_flag)
 
 let () =
   (* Initialize RNG for git-paf/mirage-crypto *)
