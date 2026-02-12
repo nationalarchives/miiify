@@ -3,6 +3,14 @@
 open Cmdliner
 
 let serve repository_name port page_limit base_url =
+  if page_limit <= 0 then
+    invalid_arg "--page-limit must be a positive integer";
+
+  let base_url =
+    if String.length base_url > 0 && String.ends_with ~suffix:"/" base_url then
+      String.sub base_url 0 (String.length base_url - 1)
+    else base_url
+  in
   (* Initialize Pack store first *)
   let db = Lwt_main.run (
     Miiify.Model.create ~repository_name
@@ -17,10 +25,10 @@ let serve repository_name port page_limit base_url =
          Dream.get "/" Miiify.Api.get_status;
          Dream.get "/version" Miiify.Api.get_version;
          
-         (* Read-only annotation endpoints using /<container>/<slug> format *)
-         Dream.get "/:container_id" (Miiify.Api.get_container base_url db);
+         (* Read-only annotation endpoints - more specific routes first *)
          Dream.get "/:container_id/" (Miiify.Api.get_annotations base_url page_limit db);
          Dream.get "/:container_id/:annotation_id" (Miiify.Api.get_annotation base_url db);
+         Dream.get "/:container_id" (Miiify.Api.get_container base_url db);
        ]
 
 let repository_arg =

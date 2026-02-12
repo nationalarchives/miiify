@@ -27,7 +27,8 @@ module Math : sig
   val calculate_page : int -> int -> int
 end = struct
   let calculate_page total limit =
-    int_of_float (Float.ceil (float_of_int total /. float_of_int limit)) - 1
+    if limit <= 0 then 0
+    else int_of_float (Float.ceil (float_of_int total /. float_of_int limit)) - 1
 end
 
 module Validation : sig

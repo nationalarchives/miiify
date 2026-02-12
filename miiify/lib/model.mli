@@ -73,6 +73,9 @@ val get_collection_hash : db:Db.t -> container_id:string -> string option Lwt.t
 val get_container_hash : db:Db.t -> container_id:string -> string option Lwt.t
 val total : db:Db.t -> container_id:string -> int Lwt.t
 
+val total_filtered :
+  db:Db.t -> container_id:string -> target:string option -> int Lwt.t
+
 val get_manifest : db:Db.t -> manifest_id:string -> Yojson.Basic.t Lwt.t
 
 val add_manifest :

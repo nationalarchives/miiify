@@ -1,37 +1,11 @@
 open Lwt.Syntax
 open Alcotest_lwt
 
-(* Helper to create a fresh database *)
-let create_test_db test_name =
-  let repository_name = Printf.sprintf "test_pack_%s_%f" test_name (Unix.time ()) in
-  Miiify.Model.create ~repository_name
-
-(* Sample annotation data matching README examples *)
-let highlight_annotation = {|{
-  "type": "Annotation",
-  "motivation": "highlighting",
-  "body": {
-    "type": "TextualBody",
-    "value": "Important passage",
-    "purpose": "commenting"
-  },
-  "target": "https://example.com/iiif/canvas/1#xywh=100,100,200,50"
-}|}
-
-let comment_annotation = {|{
-  "type": "Annotation",
-  "motivation": "commenting",
-  "body": {
-    "type": "TextualBody",
-    "value": "This is a fascinating detail",
-    "purpose": "commenting"
-  },
-  "target": "https://example.com/iiif/canvas/1#xywh=300,150,100,75"
-}|}
+open Test_support
 
 (* Test: Import annotations like the README example *)
 let test_import_annotations _switch () =
-  let* db = create_test_db "import" in
+  let* db = create_test_db_pack "import" in
   let container_id = "my-canvas" in
   
   (* Import annotations (simulating miiify-import behavior) *)
@@ -58,7 +32,7 @@ let test_import_annotations _switch () =
 
 (* Test: Retrieve annotations like the HTTP API *)
 let test_retrieve_annotations _switch () =
-  let* db = create_test_db "retrieve" in
+  let* db = create_test_db_pack "retrieve" in
   let container_id = "my-canvas" in
   
   (* Setup: Import some annotations *)
@@ -76,7 +50,7 @@ let test_retrieve_annotations _switch () =
 
 (* Test: Pagination functionality *)
 let test_pagination _switch () =
-  let* db = create_test_db "pagination" in
+  let* db = create_test_db_pack "pagination" in
   let container_id = "canvas-42" in
   
   (* Import multiple annotations *)
@@ -115,7 +89,7 @@ let test_pagination _switch () =
 
 (* Test: Target filtering *)
 let test_target_filtering _switch () =
-  let* db = create_test_db "filtering" in
+  let* db = create_test_db_pack "filtering" in
   let container_id = "manifest-42" in
   
   (* Import annotations with different targets *)
@@ -162,7 +136,7 @@ let test_target_filtering _switch () =
 
 (* Test: Multiple containers are isolated *)
 let test_container_isolation _switch () =
-  let* db = create_test_db "isolation" in
+  let* db = create_test_db_pack "isolation" in
   
   (* Import annotations into different containers *)
   let* () = Miiify.Db.set ~db ~key:["canvas-1"; "collection"; "note-1"] ~data:highlight_annotation ~message:"Import to canvas-1" in
@@ -188,7 +162,7 @@ let test_container_isolation _switch () =
 
 (* Test: Empty containers and nonexistent annotations *)
 let test_empty_and_nonexistent _switch () =
-  let* db = create_test_db "empty" in
+  let* db = create_test_db_pack "empty" in
   let container_id = "empty-canvas" in
   
   (* Test empty container total (container doesn't exist) *)
@@ -218,7 +192,7 @@ let test_empty_and_nonexistent _switch () =
 
 (* Test: Annotation hash retrieval for caching *)
 let test_annotation_hashes _switch () =
-  let* db = create_test_db "hashes" in
+  let* db = create_test_db_pack "hashes" in
   let container_id = "test-canvas" in
   
   (* Import an annotation *)
@@ -246,7 +220,7 @@ let test_annotation_hashes _switch () =
 
 (* Test: Slug handling (simulating .json extension stripping) *)
 let test_slug_handling _switch () =
-  let* db = create_test_db "slugs" in
+  let* db = create_test_db_pack "slugs" in
   let container_id = "test-slugs" in
   
   (* Import with various slug patterns *)
@@ -270,7 +244,7 @@ let test_slug_handling _switch () =
 
 (* Test: Large batch import *)
 let test_large_batch _switch () =
-  let* db = create_test_db "large" in
+  let* db = create_test_db_pack "large" in
   let container_id = "large-canvas" in
   
   (* Import 100 annotations *)
@@ -330,7 +304,7 @@ let test_json_extension_stripping _switch () =
 
 (* Test: ETag support in API *)
 let test_etag_annotation _switch () =
-  let* db = create_test_db "etag-ann" in
+  let* db = create_test_db_pack "etag-ann" in
   let container_id = "test-canvas" in
   
   (* Import an annotation *)
@@ -350,7 +324,7 @@ let test_etag_annotation _switch () =
   | None -> Alcotest.fail "No ETag hash returned"
 
 let test_etag_collection _switch () =
-  let* db = create_test_db "etag-coll" in
+  let* db = create_test_db_pack "etag-coll" in
   let container_id = "test-canvas" in
   
   (* Import multiple annotations *)
@@ -378,7 +352,7 @@ let test_etag_collection _switch () =
   | None -> Alcotest.fail "No collection hash returned"
 
 let test_etag_container _switch () =
-  let* db = create_test_db "etag-cont" in
+  let* db = create_test_db_pack "etag-cont" in
   let container_id = "test-canvas" in
   
   (* Create a container *)
@@ -396,7 +370,7 @@ let test_etag_container _switch () =
 
 (* Test: ID injection into annotation *)
 let test_id_annotation _switch () =
-  let* db = create_test_db "id-annotation" in
+  let* db = create_test_db_pack "id-annotation" in
   let container_id = "my-canvas" in
   let annotation_id = "highlight-1" in
   let base_url = "http://localhost:10000" in
@@ -414,7 +388,7 @@ let test_id_annotation _switch () =
 
 (* Test: ID injection into container *)
 let test_id_container _switch () =
-  let* db = create_test_db "id-container" in
+  let* db = create_test_db_pack "id-container" in
   let container_id = "test-canvas" in
   let base_url = "http://localhost:10000" in
   
@@ -432,7 +406,7 @@ let test_id_container _switch () =
 
 (* Test: ID injection into collection and items *)
 let test_id_collection _switch () =
-  let* db = create_test_db "id-collection" in
+  let* db = create_test_db_pack "id-collection" in
   let container_id = "my-canvas" in
   let base_url = "https://example.org" in
   
@@ -464,7 +438,7 @@ let test_id_collection _switch () =
 
 (* Test: ID injection into standalone page *)
 let test_id_page _switch () =
-  let* db = create_test_db "id-page" in
+  let* db = create_test_db_pack "id-page" in
   let container_id = "my-canvas" in
   let base_url = "http://localhost:10000" in
   
@@ -492,7 +466,7 @@ let test_id_page _switch () =
 
 (* Test: Base URL variation changes IDs *)
 let test_id_base_url_variation _switch () =
-  let* db = create_test_db "id-baseurl" in
+  let* db = create_test_db_pack "id-baseurl" in
   let container_id = "test-canvas" in
   let annotation_id = "anno-1" in
   

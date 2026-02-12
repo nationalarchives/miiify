@@ -54,7 +54,7 @@ let annotation_exists ~db ~container_id ~annotation_id =
   Model.annotation_exists ~db ~container_id ~annotation_id
 
 let get_annotation_collection ~page_limit ~db ~id ~target ~base_url =
-  let* total = Model.total ~db ~container_id:id in
+  let* total = Model.total_filtered ~db ~container_id:id ~target in
   let* (container_json, items_with_slugs, _) =
     Model.get_annotations_with_ids ~db ~container_id:id ~offset:0 ~length:page_limit ~target
   in
@@ -72,7 +72,7 @@ let get_annotation_collection ~page_limit ~db ~id ~target ~base_url =
 let get_annotation_page ~page_limit ~db ~id ~page ~target ~base_url =
   let open Utils.Math in
   let limit = page_limit in
-  let* total = Model.total ~db ~container_id:id in
+  let* total = Model.total_filtered ~db ~container_id:id ~target in
   if page < 0 || page > calculate_page total limit then Lwt.return_none
   else
     let* (container_json, items_with_slugs, _) =

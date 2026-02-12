@@ -1,4 +1,8 @@
 (test
- (name miiify)
+ (name storage_test)
  (libraries miiify alcotest-lwt lwt yojson))
+
+(test
+ (name api_test)
+ (libraries miiify alcotest-lwt lwt yojson dream))
 
