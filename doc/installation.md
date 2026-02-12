@@ -69,6 +69,3 @@ After installation, the following binaries will be available:
 - Use `dune install --prefix ~/.local` to install to your home directory
 - Or use `sudo dune install` to install system-wide
 
-**SSH URLs not working:**
-- Use HTTPS URLs instead: `https://github.com/user/repo.git`
-- SSH URLs (git@github.com:...) are not currently supported for clone/pull/push
