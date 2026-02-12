@@ -1,10 +1,13 @@
 (** Serve miiify API from Pack store only *)
 
+open Lwt.Syntax
 open Cmdliner
 
 let serve repository_name port page_limit base_url =
-  if page_limit <= 0 then
-    invalid_arg "--page-limit must be a positive integer";
+  if page_limit <= 0 then (
+    Printf.eprintf "Error: --page-limit must be a positive integer\n";
+    exit 1
+  );
 
   let base_url =
     if String.length base_url > 0 && String.ends_with ~suffix:"/" base_url then
@@ -12,9 +15,21 @@ let serve repository_name port page_limit base_url =
     else base_url
   in
   (* Initialize Pack store first *)
-  let db = Lwt_main.run (
-    Miiify.Model.create ~repository_name
-  ) in
+  let db_result =
+    Lwt_main.run
+      (Lwt.catch
+         (fun () ->
+           let* db = Miiify.Model.create ~repository_name in
+           Lwt.return (Ok db))
+         (fun exn -> Lwt.return (Error exn)))
+  in
+  let db =
+    match db_result with
+    | Ok db -> db
+    | Error exn ->
+        Printf.eprintf "Error: %s\n" (Printexc.to_string exn);
+        exit 1
+  in
   
   (* Start Dream server (which takes over event loop) *)
   Dream.run ~interface:"0.0.0.0" ~port

@@ -57,6 +57,8 @@ After installation, the following binaries will be available:
 - `miiify-compile` - Compile Git store to optimized Pack format
 - `miiify-serve` - Start HTTP annotation server
 
+Note: `miiify-import --validate` / `miiify-compile --validate` enables strict schema validation and may reject JSON that is otherwise acceptable for serving. If you hit validation errors, retry without `--validate`.
+
 ## Troubleshooting
 
 **opam not found:**

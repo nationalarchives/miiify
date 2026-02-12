@@ -28,9 +28,20 @@ let rec copy_tree git_store pack_store path validate =
       (* Transform flat Git structure to hierarchical Pack structure:
          Git: [container; slug]
          Pack: [container; "collection"; slug] *)
-      let pack_path = match git_path with
-        | [container; slug] -> [container; "collection"; slug]
-        | _ -> failwith (Printf.sprintf "Unexpected path structure: %s" (String.concat "/" git_path))
+      let pack_path_opt =
+        match git_path with
+        | [ container; slug ] -> Some [ container; "collection"; slug ]
+        | _ -> None
+      in
+      let* pack_path =
+        match pack_path_opt with
+        | Some pack_path -> Lwt.return pack_path
+        | None ->
+            let* () =
+              Lwt_io.eprintlf "✗ Unexpected Git path structure: %s"
+                (String.concat "/" git_path)
+            in
+            Lwt.fail (Failure "Unexpected path structure")
       in
       
       (* Always validate basic JSON *)
@@ -64,7 +75,14 @@ let rec copy_tree git_store pack_store path validate =
           | Ok () -> 
               Lwt.return_unit
           | Error msg ->
-              let* () = Lwt_io.printlf "✗ Schema validation failed for %s: %s" (String.concat "/" git_path) msg in
+              let* () =
+                Lwt_io.eprintlf "✗ Schema validation failed for %s: %s"
+                  (String.concat "/" git_path) msg
+              in
+              let* () =
+                Lwt_io.eprintl
+                  "  Hint: try again without --validate if you want to compile arbitrary Web Annotation JSON."
+              in
               Lwt.fail (Failure ("Schema validation failed for " ^ String.concat "/" git_path))
         else
           Lwt.return_unit
@@ -80,51 +98,78 @@ let rec copy_tree git_store pack_store path validate =
       Lwt.return (count + subcount)
   ) 0 entries
 
+let run_compile ~git_path ~pack_path ~validate =
+  let* () = Lwt_io.printl "Miiify Compile" in
+  let* () = Lwt_io.printlf "Source: Git (%s)" git_path in
+  let* () = Lwt_io.printlf "Target: Pack (%s)" pack_path in
+  let* () = Lwt_io.printl "" in
+
+  (* Initialize Git store *)
+  let git_config = Irmin_git.config ~bare:true git_path in
+  let* git_repo = Git_store.Repo.v git_config in
+  let* git_store = Git_store.main git_repo in
+
+  (* Initialize fresh Pack store *)
+  let pack_config = Storage_pack.Repo_config.config ~fresh:true pack_path in
+  let* pack_repo = Pack_store.Repo.v pack_config in
+  let* pack_store = Pack_store.main pack_repo in
+
+  (* Get list of containers (top-level directories) *)
+  let* root_tree = Git_store.get_tree git_store [] in
+  let* containers = Git_store.Tree.list root_tree [] in
+
+  (* For each container, create metadata and copy annotations *)
+  let* total =
+    Lwt_list.fold_left_s
+      (fun count (container_step, _) ->
+        let container =
+          Irmin.Type.to_string Git_store.Path.step_t container_step
+        in
+
+        (* Create container metadata in Pack *)
+        let now = Ptime_clock.now () in
+        let timestamp = Ptime.to_rfc3339 now in
+        let container_json =
+          Printf.sprintf
+            {|{"type":"AnnotationContainer","label":"%s","created":"%s"}|}
+            container timestamp
+        in
+        let* () =
+          Pack_store.set_exn pack_store [ container; "metadata" ] container_json
+            ~info:
+              (Storage_pack.info (Printf.sprintf "Create container %s" container))
+        in
+
+        (* Copy annotations from Git to Pack with transformation *)
+        let* subcount = copy_tree git_store pack_store [ container ] validate in
+        Lwt.return (count + subcount + 1))
+      0 containers
+  in
+
+  (* Close repositories *)
+  let* () = Git_store.Repo.close git_repo in
+  let* () = Pack_store.Repo.close pack_repo in
+
+  let* () = Lwt_io.printl "" in
+  let* () = Lwt_io.printlf "Compiled %d items to Pack store" total in
+  Lwt.return_unit
+
 let compile_stores git_path pack_path validate =
-  Lwt_main.run (
-    let* () = Lwt_io.printl "Miiify Compile" in
-    let* () = Lwt_io.printlf "Source: Git (%s)" git_path in
-    let* () = Lwt_io.printlf "Target: Pack (%s)" pack_path in
-    let* () = Lwt_io.printl "" in
-    
-    (* Initialize Git store *)
-    let git_config = Irmin_git.config ~bare:true git_path in
-    let* git_repo = Git_store.Repo.v git_config in
-    let* git_store = Git_store.main git_repo in
-    
-    (* Initialize fresh Pack store *)
-    let pack_config = Storage_pack.Repo_config.config ~fresh:true pack_path in
-    let* pack_repo = Pack_store.Repo.v pack_config in
-    let* pack_store = Pack_store.main pack_repo in
-    
-    (* Get list of containers (top-level directories) *)
-    let* root_tree = Git_store.get_tree git_store [] in
-    let* containers = Git_store.Tree.list root_tree [] in
-    
-    (* For each container, create metadata and copy annotations *)
-    let* total = Lwt_list.fold_left_s (fun count (container_step, _) ->
-      let container = Irmin.Type.to_string Git_store.Path.step_t container_step in
-      
-      (* Create container metadata in Pack *)
-      let now = Ptime_clock.now () in
-      let timestamp = Ptime.to_rfc3339 now in
-      let container_json = Printf.sprintf {|{"type":"AnnotationContainer","label":"%s","created":"%s"}|} container timestamp in
-      let* () = Pack_store.set_exn pack_store [container; "metadata"] container_json
-        ~info:(Storage_pack.info (Printf.sprintf "Create container %s" container))
-      in
-      
-      (* Copy annotations from Git to Pack with transformation *)
-      let* subcount = copy_tree git_store pack_store [container] validate in
-      Lwt.return (count + subcount + 1)  (* +1 for main *)
-    ) 0 containers in
-    
-    (* Close repositories *)
-    let* () = Git_store.Repo.close git_repo in
-    let* () = Pack_store.Repo.close pack_repo in
-    
-    let* () = Lwt_io.printl "" in
-    Lwt_io.printlf "Compiled %d items to Pack store" total
-  )
+  let result =
+    Lwt_main.run
+      (Lwt.catch
+         (fun () ->
+           let* () = run_compile ~git_path ~pack_path ~validate in
+           Lwt.return (Ok ()))
+         (fun exn -> Lwt.return (Error exn)))
+  in
+  match result with
+  | Ok () -> ()
+  | Error exn ->
+      (match exn with
+      | Failure _ -> ()
+      | _ -> Printf.eprintf "Error: %s\n" (Printexc.to_string exn));
+      exit 1
 
 let git_path =
   let doc = "Source Git store directory" in

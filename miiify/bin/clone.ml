@@ -6,25 +6,25 @@ open Cmdliner
 module Store = Irmin_git_unix.FS.KV(Irmin.Contents.String)
 module Sync = Irmin.Sync.Make(Store)
 
-let clone_repo repo_url git_path =
-  Lwt_main.run (
-    let* () = Lwt_io.printl "Miiify Clone" in
-    let* () = Lwt_io.printlf "Remote: %s" repo_url in
-    let* () = Lwt_io.printlf "Local:  %s" git_path in
-    let* () = Lwt_io.printl "" in
-    
-    Lwt.catch (fun () ->
+let run_clone ~repo_url ~git_path =
+  let* () = Lwt_io.printl "Miiify Clone" in
+  let* () = Lwt_io.printlf "Remote: %s" repo_url in
+  let* () = Lwt_io.printlf "Local:  %s" git_path in
+  let* () = Lwt_io.printl "" in
+
+  Lwt.catch
+    (fun () ->
       let* () = Lwt_io.printl "Initializing Git store..." in
       let config = Irmin_git.config ~bare:true git_path in
       let* repo = Store.Repo.v config in
       let* store = Store.main repo in
-      
+
       let* () = Lwt_io.printl "Fetching from remote..." in
       let* remote = Store.remote repo_url in
-      
+
       (* Fetch from remote - this will pull all branches and refs *)
       let* result = Sync.fetch store remote in
-      
+
       match result with
       | Ok (`Head head_ref) ->
           (* Set HEAD to point to the fetched branch *)
@@ -33,49 +33,79 @@ let clone_repo repo_url git_path =
           let* () = Lwt_io.printlf "Git store ready at: %s" git_path in
           Lwt.return_unit
       | Ok `Empty ->
-          let* () = Lwt_io.printl "Warning: Remote repository is empty" in
+          let* () = Lwt_io.eprintl "Warning: Remote repository is empty" in
           Lwt.return_unit
       | Error (`Msg msg) ->
-          let* () = Lwt_io.printlf "Fetch failed: %s" msg in
-          Lwt.fail_with msg
-    ) (fun exn ->
+          let* () = Lwt_io.eprintlf "✗ Fetch failed: %s" msg in
+          Lwt.fail (Failure msg))
+    (fun exn ->
       let error_msg = Printexc.to_string exn in
-      
+
       (* Detect network/connectivity errors *)
-      let is_network_error = 
-        String.lowercase_ascii error_msg |> fun msg ->
-        List.exists (fun pattern -> 
-          try Str.search_forward (Str.regexp_case_fold pattern) msg 0 >= 0 
-          with Not_found -> false
-        ) ["handshake"; "not found"; "not reachable"; "connection"; "timeout"; "network"]
+      let is_network_error =
+        String.lowercase_ascii error_msg
+        |> fun msg ->
+        List.exists
+          (fun pattern ->
+            try Str.search_forward (Str.regexp_case_fold pattern) msg 0 >= 0
+            with Not_found -> false)
+          [ "handshake"; "not found"; "not reachable"; "connection"; "timeout"; "network" ]
       in
-      
-      if is_network_error then
-        (* Network/proxy issue *)
-        let* () = Lwt_io.printl "Network connection failed" in
-        let* () = Lwt_io.printl "" in
-        let* () = Lwt_io.printl "Unable to reach remote repository (likely network/proxy issue)." in
-        let* () = Lwt_io.printl "" in
-        let* () = Lwt_io.printl "Solutions:" in
-        let* () = Lwt_io.printl "1. Check network connectivity" in
-        let* () = Lwt_io.printl "2. Try from outside corporate network/proxy" in
-        let* () = Lwt_io.printl "3. Use HTTPS URLs (SSH not supported)" in
-        let* () = Lwt_io.printl "4. Use manual workflow:" in
-        let* () = Lwt_io.printlf "   git clone %s" repo_url in
-        let* () = Lwt_io.printlf "   miiify-import --input <cloned-dir> --git %s" git_path in
-        Lwt.return_unit
-      else
-        let* () = Lwt_io.printlf "Clone failed: %s" error_msg in
-        let* () = Lwt_io.printl "" in
-        let* () = Lwt_io.printl "Troubleshooting:" in
-        let* () = Lwt_io.printl "- Check repository URL is correct (use HTTPS)" in
-        let* () = Lwt_io.printl "- For private repos, use token: https://TOKEN@github.com/user/repo.git" in
-        let* () = Lwt_io.printl "- Check network connectivity" in
-        let* () = Lwt_io.printl "" in
-        let* () = Lwt_io.printl "Note: SSH URLs (git@github.com:...) are not currently supported." in
-        Lwt.return_unit
-    )
-  )
+
+      if is_network_error then (
+        let* () = Lwt_io.eprintl "Network connection failed" in
+        let* () = Lwt_io.eprintl "" in
+        let* () =
+          Lwt_io.eprintl
+            "Unable to reach remote repository (likely network/proxy issue)."
+        in
+        let* () = Lwt_io.eprintl "" in
+        let* () = Lwt_io.eprintl "Solutions:" in
+        let* () = Lwt_io.eprintl "1. Check network connectivity" in
+        let* () = Lwt_io.eprintl "2. Try from outside corporate network/proxy" in
+        let* () = Lwt_io.eprintl "3. Use HTTPS URLs (SSH not supported)" in
+        let* () = Lwt_io.eprintl "4. Use manual workflow:" in
+        let* () = Lwt_io.eprintlf "   git clone %s" repo_url in
+        let* () =
+          Lwt_io.eprintlf "   miiify-import --input <cloned-dir> --git %s"
+            git_path
+        in
+        Lwt.fail (Failure "Network connection failed")
+      ) else (
+        let* () = Lwt_io.eprintlf "Clone failed: %s" error_msg in
+        let* () = Lwt_io.eprintl "" in
+        let* () = Lwt_io.eprintl "Troubleshooting:" in
+        let* () = Lwt_io.eprintl "- Check repository URL is correct (use HTTPS)" in
+        let* () =
+          Lwt_io.eprintl
+            "- For private repos, use token: https://TOKEN@github.com/user/repo.git"
+        in
+        let* () = Lwt_io.eprintl "- Check network connectivity" in
+        let* () = Lwt_io.eprintl "" in
+        let* () =
+          Lwt_io.eprintl
+            "Note: SSH URLs (git@github.com:...) are not currently supported."
+        in
+        Lwt.fail (Failure "Clone failed")
+      ))
+
+let clone_repo repo_url git_path =
+  let result =
+    Lwt_main.run
+      (Lwt.catch
+         (fun () ->
+           let* () = run_clone ~repo_url ~git_path in
+           Lwt.return (Ok ()))
+         (fun exn -> Lwt.return (Error exn)))
+  in
+  match result with
+  | Ok () -> ()
+  | Error exn ->
+      (* Avoid Cmdliner backtraces: errors are already printed near the source. *)
+      (match exn with
+      | Failure _ -> ()
+      | _ -> Printf.eprintf "Error: %s\n" (Printexc.to_string exn));
+      exit 1
 
 let repo_url =
   let doc = "Remote Git repository URL" in
