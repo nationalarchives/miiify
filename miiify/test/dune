@@ -18,4 +18,8 @@
  (name api_test)
  (libraries miiify alcotest-lwt lwt yojson dream))
 
+(test
+ (name smoke_test)
+ (libraries miiify alcotest-lwt lwt yojson dream))
+
 
