@@ -72,7 +72,6 @@ victorian-annotations/             (repo → deployment)
 - Contributors share context and practices
 - Can deploy category-sized chunks independently
 - Natural boundaries (historical periods, departments)
-- Easy for outsiders to understand
 
 **Naming convention:**
 ```
