@@ -255,6 +255,63 @@ let test_zero_page_limit_does_not_crash _switch () =
 
   Lwt.return_unit
 
+(* Test: AnnotationPage with no pagination links when all items fit on one page *)
+let test_page_no_navigation_when_all_fit _switch () =
+  let* db = create_test_db_from_files "page_no_nav" in
+  let container_id = "my-canvas" in
+  let app = create_app db "http://localhost:10000" 200 in
+
+  let response = Dream.test app (Dream.request ~target:(Printf.sprintf "/%s/?page=0" container_id) "") in
+  let* body = Dream.body response in
+  let json = Yojson.Basic.from_string body in
+
+  Alcotest.(check int) "status 200" 200 (Dream.status_to_int (Dream.status response));
+  assert_type json "AnnotationPage";
+
+  let items = Yojson.Basic.Util.member "items" json |> Yojson.Basic.Util.to_list in
+  Alcotest.(check int) "all items on page" 2 (List.length items);
+
+  (* When all items fit on one page, there should be no next/prev links *)
+  let next = Yojson.Basic.Util.member "next" json in
+  Alcotest.(check bool) "next is null when all fit" true (next = `Null);
+
+  let prev = Yojson.Basic.Util.member "prev" json in
+  Alcotest.(check bool) "prev is null on page 0" true (prev = `Null);
+
+  Lwt.return_unit
+
+(* Test: AnnotationCollection with no pagination links when all items fit *)
+let test_collection_no_navigation_when_all_fit _switch () =
+  let* db = create_test_db_from_files "collection_no_nav" in
+  let container_id = "my-canvas" in
+  let base_url = "http://localhost:10000" in
+  let app = create_app db base_url 200 in
+
+  let response = Dream.test app (Dream.request ~target:(Printf.sprintf "/%s/" container_id) "") in
+  let* body = Dream.body response in
+  let json = Yojson.Basic.from_string body in
+
+  Alcotest.(check int) "status 200" 200 (Dream.status_to_int (Dream.status response));
+  assert_type_any json ["AnnotationCollection"; "AnnotationContainer"];
+
+  let total = Yojson.Basic.Util.member "total" json |> Yojson.Basic.Util.to_int in
+  Alcotest.(check int) "total" 2 total;
+
+  let first = Yojson.Basic.Util.member "first" json in
+  assert_type first "AnnotationPage";
+  let first_items = Yojson.Basic.Util.member "items" first |> Yojson.Basic.Util.to_list in
+  Alcotest.(check int) "first page has all items" 2 (List.length first_items);
+
+  (* When all items fit, first.next should be null *)
+  let first_next = Yojson.Basic.Util.member "next" first in
+  Alcotest.(check bool) "first.next is null when all fit" true (first_next = `Null);
+
+  (* When all items fit, last should be null (only page 0 exists) *)
+  let last = Yojson.Basic.Util.member "last" json in
+  Alcotest.(check bool) "last is null when all fit" true (last = `Null);
+
+  Lwt.return_unit
+
 let test_target_filtering_over_http _switch () =
   let* db = create_test_db_from_files "target_filter_http" in
   let container_id = "my-canvas" in
@@ -504,6 +561,8 @@ let () =
       test_case "GET /:container" `Quick test_get_container;
       test_case "GET /:container/?page=1" `Quick test_get_page;
       test_case "404 for out-of-range page" `Quick test_get_page_out_of_range;
+      test_case "page has no nav when all items fit" `Quick test_page_no_navigation_when_all_fit;
+      test_case "collection has no nav when all items fit" `Quick test_collection_no_navigation_when_all_fit;
     ]);
     ("HTTP Features", [
       test_case "ETag support" `Quick test_etag;
