@@ -81,11 +81,14 @@ miiify-serve --repository ./db-pack --port 10000
 ### Access Annotations
 
 ```bash
-# Get annotation (both formats work)
+# Get annotation
 curl http://localhost:10000/my-canvas/highlight-1
 
-# List all annotations
+# List all annotations (AnnotationCollection)
 curl http://localhost:10000/my-canvas/
+
+# Get specific page (AnnotationPage)
+curl http://localhost:10000/my-canvas/?page=0
 ```
 
 ## ID Management
