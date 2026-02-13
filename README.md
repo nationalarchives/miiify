@@ -6,7 +6,7 @@ Setup and deployment: start with [doc/installation.md](doc/installation.md).
 
 Miiify treats annotations like source code: store them in Git, serve them from an optimized runtime.
 
-Your annotations evolve like a codebase. Anyone who already uses Git can contribute using the same workflow—commit, review, merge. No database setup, no config files, just JSON files and Git.
+Your annotations evolve like a codebase. Anyone who already uses Git can contribute using the same workflow: commit, review, merge. No database setup, no config files, just JSON files and Git.
 
 ## Quick Start
 
