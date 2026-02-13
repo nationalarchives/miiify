@@ -4,9 +4,7 @@
 
 Setup and deployment: start with [doc/installation.md](doc/installation.md).
 
-Traditional annotation servers require databases, complex configuration, and specialized deployment. They separate your annotations from your content workflows.
-
-Miiify solves this by treating annotations like source code: store them in Git, serve them from an optimized runtime.
+Miiify treats annotations like source code: store them in Git, serve them from an optimized runtime.
 
 Your annotations evolve like a codebase. Anyone who already uses Git can contribute using the same workflow—commit, review, merge. No database setup, no config files, just JSON files and Git.
 
