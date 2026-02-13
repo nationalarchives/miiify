@@ -141,9 +141,9 @@ let test_get_container _switch () =
   
   Alcotest.(check int) "status 200" 200 (Dream.status_to_int (Dream.status response));
   
-  (* Check it's an AnnotationContainer *)
+  (* Check it's an AnnotationCollection *)
   let type_ = Yojson.Basic.Util.member "type" json |> Yojson.Basic.Util.to_string in
-  Alcotest.(check string) "type is AnnotationContainer" "AnnotationContainer" type_;
+  Alcotest.(check string) "type is AnnotationCollection" "AnnotationCollection" type_;
   
   Lwt.return_unit
 
@@ -198,9 +198,8 @@ let test_get_collection_without_page _switch () =
   let json = Yojson.Basic.from_string body in
 
   Alcotest.(check int) "status 200" 200 (Dream.status_to_int (Dream.status response));
-    (* The compile pipeline currently creates container metadata with type=AnnotationContainer.
-      The collection endpoint augments that JSON with paging fields. *)
-    assert_type_any json ["AnnotationCollection"; "AnnotationContainer"];
+    (* The collection endpoint returns AnnotationCollection with paging fields *)
+    assert_type json "AnnotationCollection";
 
   let total = Yojson.Basic.Util.member "total" json |> Yojson.Basic.Util.to_int in
   Alcotest.(check int) "total" 2 total;
@@ -292,7 +291,7 @@ let test_collection_no_navigation_when_all_fit _switch () =
   let json = Yojson.Basic.from_string body in
 
   Alcotest.(check int) "status 200" 200 (Dream.status_to_int (Dream.status response));
-  assert_type_any json ["AnnotationCollection"; "AnnotationContainer"];
+  assert_type json "AnnotationCollection";
 
   let total = Yojson.Basic.Util.member "total" json |> Yojson.Basic.Util.to_int in
   Alcotest.(check int) "total" 2 total;

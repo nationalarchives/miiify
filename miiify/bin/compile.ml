@@ -193,7 +193,7 @@ let run_compile ~git_path ~pack_path ~validate =
         let timestamp = Ptime.to_rfc3339 now in
         let container_json =
           Printf.sprintf
-            {|{"type":"AnnotationContainer","label":"%s","created":"%s"}|}
+            {|{"type":"AnnotationCollection","label":"%s","created":"%s"}|}
             container timestamp
         in
         let* () =

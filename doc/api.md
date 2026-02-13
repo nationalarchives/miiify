@@ -76,7 +76,7 @@ Annotation page:
   ],
   "partOf": {
     "id": "http://localhost:10000/my-canvas/",
-    "type": "AnnotationContainer",
+    "type": "AnnotationCollection",
     "total": 42
   },
   "next": "http://localhost:10000/my-canvas/?page=1"

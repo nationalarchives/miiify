@@ -56,7 +56,7 @@ Pack uses a **hierarchical 3-level key structure** for optimized access:
 ### Example: Pack Structure
 
 ```
-["my-canvas"; "metadata"] → {"type":"AnnotationContainer","label":"my-canvas","created":"..."}
+["my-canvas"; "metadata"] → {"type":"AnnotationCollection","label":"my-canvas","created":"..."}
 ["my-canvas"; "collection"; "highlight-1"] → {"type":"Annotation",...}
 ["my-canvas"; "collection"; "highlight-2"] → {"type":"Annotation",...}
 ```
@@ -76,7 +76,7 @@ The `miiify-compile` command performs two operations:
 
 ```ocaml
 (* Generated for each container *)
-[container; "metadata"] → {"type":"AnnotationContainer","label":"container","created":"2026-02-11T23:00:00Z"}
+[container; "metadata"] → {"type":"AnnotationCollection","label":"container","created":"2026-02-11T23:00:00Z"}
 ```
 
 2. **Transforms Git's flat structure to Pack's hierarchical format**:
@@ -93,7 +93,7 @@ The `miiify-compile` command performs two operations:
 ```ocaml
 (* Create container metadata *)
 let container_json = Printf.sprintf 
-  {|{"type":"AnnotationContainer","label":"%s","created":"%s"}|} 
+  {|{"type":"AnnotationCollection","label":"%s","created":"%s"}|} 
   container timestamp
 
 (* Transform annotation keys *)
@@ -123,7 +123,7 @@ Container metadata is also JSON:
 
 ```json
 {
-  "type": "AnnotationContainer",
+  "type": "AnnotationCollection",
   "label": "my-canvas",
   "created": "2026-02-11T23:00:00Z"
 }

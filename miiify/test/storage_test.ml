@@ -233,7 +233,7 @@ let test_empty_and_nonexistent _switch () =
   Alcotest.(check bool) "nonexistent annotation" false exists;
   
   (* Create a container and test empty collection retrieval *)
-  let container_json = {|{"type":"AnnotationContainer","label":"Empty Container"}|} in
+  let container_json = {|{"type":"AnnotationCollection","label":"Empty Container"}|} in
   let* () = Miiify.Db.set ~db ~key:[container_id; "metadata"] ~data:container_json ~message:"Create empty container" in
   
   let* total_after = Miiify.Model.total ~db ~container_id in
@@ -407,7 +407,7 @@ let test_etag_container _switch () =
   let container_id = "test-canvas" in
   
   (* Create a container *)
-  let container_json = {|{"type":"AnnotationContainer","label":"Test Container"}|} in
+  let container_json = {|{"type":"AnnotationCollection","label":"Test Container"}|} in
   let* () = Miiify.Db.set ~db ~key:[container_id; "metadata"] ~data:container_json ~message:"Create container" in
   
   (* Get container hash *)
@@ -444,7 +444,7 @@ let test_id_container _switch () =
   let base_url = "http://localhost:10000" in
   
   (* Create container *)
-  let container_json = {|{"type":"AnnotationContainer","label":"Test Container"}|} in
+  let container_json = {|{"type":"AnnotationCollection","label":"Test Container"}|} in
   let* () = Miiify.Db.set ~db ~key:[container_id; "metadata"] ~data:container_json ~message:"Create container" in
   
   (* Get container with ID injection *)
@@ -462,7 +462,7 @@ let test_id_collection _switch () =
   let base_url = "https://example.org" in
   
   (* Create container and annotations *)
-  let container_json = {|{"type":"AnnotationContainer","label":"My Canvas"}|} in
+  let container_json = {|{"type":"AnnotationCollection","label":"My Canvas"}|} in
   let* () = Miiify.Db.set ~db ~key:[container_id; "metadata"] ~data:container_json ~message:"Create container" in
   let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "highlight-1"] ~data:highlight_annotation ~message:"Import annotation" in
   
@@ -494,7 +494,7 @@ let test_id_page _switch () =
   let base_url = "http://localhost:10000" in
   
   (* Create container and annotation *)
-  let container_json = {|{"type":"AnnotationContainer","label":"My Canvas"}|} in
+  let container_json = {|{"type":"AnnotationCollection","label":"My Canvas"}|} in
   let* () = Miiify.Db.set ~db ~key:[container_id; "metadata"] ~data:container_json ~message:"Create container" in
   let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "highlight-1"] ~data:highlight_annotation ~message:"Import annotation" in
   
