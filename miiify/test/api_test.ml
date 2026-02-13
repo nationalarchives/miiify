@@ -518,6 +518,77 @@ let test_page_boundary_two_full_pages _switch () =
 
   Lwt.return_unit
 
+let test_empty_container_page_zero_exists _switch () =
+  let* db = create_test_db_pack "empty_container_page_zero_exists" in
+  let container_id = "empty-canvas" in
+  let base_url = "http://localhost:10000" in
+  let page_limit = 2 in
+
+  let* () = seed_container ~db ~container_id ~count:0 in
+  let app = create_app db base_url page_limit in
+
+  let response =
+    Dream.test app
+      (Dream.request ~target:(Printf.sprintf "/%s/?page=0" container_id) "")
+  in
+  let* body = Dream.body response in
+  let json = Yojson.Basic.from_string body in
+
+  Alcotest.(check int) "status 200" 200 (Dream.status_to_int (Dream.status response));
+  assert_type json "AnnotationPage";
+
+  let items = Yojson.Basic.Util.member "items" json |> Yojson.Basic.Util.to_list in
+  Alcotest.(check int) "items empty" 0 (List.length items);
+
+  let next = Yojson.Basic.Util.member "next" json in
+  Alcotest.(check bool) "next is null" true (next = `Null);
+
+  let prev = Yojson.Basic.Util.member "prev" json in
+  Alcotest.(check bool) "prev is null" true (prev = `Null);
+
+  let part_of = Yojson.Basic.Util.member "partOf" json in
+  let total = Yojson.Basic.Util.member "total" part_of in
+  Alcotest.(check bool) "partOf.total omitted" true (total = `Null);
+
+  Lwt.return_unit
+
+let test_empty_container_collection_is_consistent _switch () =
+  let* db = create_test_db_pack "empty_container_collection_is_consistent" in
+  let container_id = "empty-canvas" in
+  let base_url = "http://localhost:10000" in
+  let page_limit = 2 in
+
+  let* () = seed_container ~db ~container_id ~count:0 in
+  let app = create_app db base_url page_limit in
+
+  let response =
+    Dream.test app (Dream.request ~target:(Printf.sprintf "/%s/" container_id) "")
+  in
+  let* body = Dream.body response in
+  let json = Yojson.Basic.from_string body in
+
+  Alcotest.(check int) "status 200" 200 (Dream.status_to_int (Dream.status response));
+  assert_type json "AnnotationCollection";
+
+  let total = Yojson.Basic.Util.member "total" json in
+  Alcotest.(check bool) "total omitted" true (total = `Null);
+
+  let last = Yojson.Basic.Util.member "last" json in
+  Alcotest.(check bool) "last is null" true (last = `Null);
+
+  let first = Yojson.Basic.Util.member "first" json in
+  assert_type first "AnnotationPage";
+  let first_id = Yojson.Basic.Util.member "id" first |> Yojson.Basic.Util.to_string in
+  Alcotest.(check string) "first.id" (base_url ^ "/" ^ container_id ^ "/?page=0") first_id;
+
+  let items = Yojson.Basic.Util.member "items" first |> Yojson.Basic.Util.to_list in
+  Alcotest.(check int) "first.items empty" 0 (List.length items);
+
+  let first_next = Yojson.Basic.Util.member "next" first in
+  Alcotest.(check bool) "first.next is null" true (first_next = `Null);
+
+  Lwt.return_unit
+
 let test_target_filtering_over_http _switch () =
   let* db = create_test_db_from_files "target_filter_http" in
   let container_id = "my-canvas" in
@@ -773,6 +844,8 @@ let () =
       test_case "boundary: exact page_limit" `Quick test_page_boundary_exact_limit;
       test_case "boundary: page_limit+1" `Quick test_page_boundary_limit_plus_one;
       test_case "boundary: two full pages" `Quick test_page_boundary_two_full_pages;
+      test_case "empty container: page=0 exists" `Quick test_empty_container_page_zero_exists;
+      test_case "empty container: collection consistent" `Quick test_empty_container_collection_is_consistent;
     ]);
     ("HTTP Features", [
       test_case "ETag support" `Quick test_etag;

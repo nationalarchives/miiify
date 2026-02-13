@@ -29,7 +29,9 @@ let get_annotations ~db ~container_id ~offset ~length ~target =
   let* main = Db.get ~db ~key:[ container_id; "metadata" ] in
   let container = from_string main in
   let* collection =
-    Db.get_tree ~db ~key:[ container_id; "collection" ] ~offset ~length
+    Lwt.catch
+      (fun () -> Db.get_tree ~db ~key:[ container_id; "collection" ] ~offset ~length)
+      (fun _exn -> Lwt.return [])
   in
   let items = List.map (fun x -> from_string x) collection in
   let filtered_items = filter_items target items in
@@ -40,7 +42,9 @@ let get_annotations_with_ids ~db ~container_id ~offset ~length ~target =
   let* main = Db.get ~db ~key:[ container_id; "metadata" ] in
   let container = from_string main in
   let* collection =
-    Db.get_tree_with_keys ~db ~key:[ container_id; "collection" ] ~offset ~length
+    Lwt.catch
+      (fun () -> Db.get_tree_with_keys ~db ~key:[ container_id; "collection" ] ~offset ~length)
+      (fun _exn -> Lwt.return [])
   in
   let items =
     List.map (fun (slug, json_str) -> (slug, from_string json_str)) collection
