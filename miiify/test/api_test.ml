@@ -3,6 +3,46 @@ open Alcotest_lwt
 
 open Test_support
 
+let seed_container ~db ~container_id ~count =
+  let container_json = {|{"type":"AnnotationCollection","label":"My Canvas"}|} in
+  let* () =
+    Miiify.Db.set ~db ~key:[ container_id; "metadata" ] ~data:container_json
+      ~message:"Create container"
+  in
+  let rec loop i =
+    if i >= count then Lwt.return_unit
+    else
+      let slug = Printf.sprintf "note-%02d" i in
+      let annotation =
+        Printf.sprintf
+          {|{"type":"Annotation","motivation":"commenting","body":{"type":"TextualBody","value":"Note %d"},"target":"https://example.com/iiif/canvas/1"}|}
+          i
+      in
+      let* () =
+        Miiify.Db.set ~db ~key:[ container_id; "collection"; slug ] ~data:annotation
+          ~message:("Import " ^ slug)
+      in
+      loop (i + 1)
+  in
+  loop 0
+
+let seed_container_with_slugs ~db ~container_id ~slugs =
+  let container_json = {|{"type":"AnnotationCollection","label":"My Canvas"}|} in
+  let* () =
+    Miiify.Db.set ~db ~key:[ container_id; "metadata" ] ~data:container_json
+      ~message:"Create container"
+  in
+  Lwt_list.iteri_s
+    (fun i slug ->
+      let annotation =
+        Printf.sprintf
+          {|{"type":"Annotation","motivation":"commenting","body":{"type":"TextualBody","value":"Note %d"},"target":"https://example.com/iiif/canvas/1"}|}
+          i
+      in
+      Miiify.Db.set ~db ~key:[ container_id; "collection"; slug ] ~data:annotation
+        ~message:("Import " ^ slug))
+    slugs
+
 (* Create app routes for testing *)
 let create_app db base_url page_limit =
   Dream.router [
@@ -311,6 +351,173 @@ let test_collection_no_navigation_when_all_fit _switch () =
 
   Lwt.return_unit
 
+let test_items_are_lexicographically_ordered_by_id _switch () =
+  let* db = create_test_db_pack "items_lex_order" in
+  let container_id = "my-canvas" in
+  let base_url = "http://localhost:10000" in
+  let page_limit = 50 in
+
+  (* Insert out of order; storage layer should return lexicographic by slug. *)
+  let* () =
+    seed_container_with_slugs ~db ~container_id ~slugs:[ "b"; "a"; "c" ]
+  in
+  let app = create_app db base_url page_limit in
+
+  let response =
+    Dream.test app
+      (Dream.request ~target:(Printf.sprintf "/%s/?page=0" container_id) "")
+  in
+  let* body = Dream.body response in
+  let json = Yojson.Basic.from_string body in
+
+  Alcotest.(check int) "status 200" 200 (Dream.status_to_int (Dream.status response));
+  assert_type json "AnnotationPage";
+
+  let items = Yojson.Basic.Util.member "items" json |> Yojson.Basic.Util.to_list in
+  Alcotest.(check int) "3 items" 3 (List.length items);
+
+  let ids =
+    List.map
+      (fun item -> Yojson.Basic.Util.member "id" item |> Yojson.Basic.Util.to_string)
+      items
+  in
+  Alcotest.(check (list string)) "ids are lexicographically ordered"
+    [ base_url ^ "/" ^ container_id ^ "/a";
+      base_url ^ "/" ^ container_id ^ "/b";
+      base_url ^ "/" ^ container_id ^ "/c" ]
+    ids;
+
+  Lwt.return_unit
+
+let test_page_boundary_exact_limit _switch () =
+  let* db = create_test_db_pack "page_boundary_exact_limit" in
+  let container_id = "my-canvas" in
+  let base_url = "http://localhost:10000" in
+  let page_limit = 2 in
+
+  let* () = seed_container ~db ~container_id ~count:2 in
+  let app = create_app db base_url page_limit in
+
+  let response =
+    Dream.test app
+      (Dream.request ~target:(Printf.sprintf "/%s/?page=0" container_id) "")
+  in
+  let* body = Dream.body response in
+  let json = Yojson.Basic.from_string body in
+
+  Alcotest.(check int) "status 200" 200 (Dream.status_to_int (Dream.status response));
+  assert_type json "AnnotationPage";
+
+  let items = Yojson.Basic.Util.member "items" json |> Yojson.Basic.Util.to_list in
+  Alcotest.(check int) "items = page_limit" 2 (List.length items);
+
+  let part_of = Yojson.Basic.Util.member "partOf" json in
+  let total = Yojson.Basic.Util.member "total" part_of |> Yojson.Basic.Util.to_int in
+  Alcotest.(check int) "partOf.total" 2 total;
+
+  let next = Yojson.Basic.Util.member "next" json in
+  Alcotest.(check bool) "next null when exactly full" true (next = `Null);
+
+  let prev = Yojson.Basic.Util.member "prev" json in
+  Alcotest.(check bool) "prev null on page 0" true (prev = `Null);
+
+  Lwt.return_unit
+
+let test_page_boundary_limit_plus_one _switch () =
+  let* db = create_test_db_pack "page_boundary_limit_plus_one" in
+  let container_id = "my-canvas" in
+  let base_url = "http://localhost:10000" in
+  let page_limit = 2 in
+
+  let* () = seed_container ~db ~container_id ~count:3 in
+  let app = create_app db base_url page_limit in
+
+  let response0 =
+    Dream.test app
+      (Dream.request ~target:(Printf.sprintf "/%s/?page=0" container_id) "")
+  in
+  let* body0 = Dream.body response0 in
+  let json0 = Yojson.Basic.from_string body0 in
+
+  Alcotest.(check int) "status 200" 200
+    (Dream.status_to_int (Dream.status response0));
+  assert_type json0 "AnnotationPage";
+  let items0 = Yojson.Basic.Util.member "items" json0 |> Yojson.Basic.Util.to_list in
+  Alcotest.(check int) "page 0 has 2 items" 2 (List.length items0);
+
+  let next0 = Yojson.Basic.Util.member "next" json0 in
+  (match next0 with
+  | `String s ->
+      Alcotest.(check bool) "next includes page=1" true
+        (String.ends_with ~suffix:"page=1" s)
+  | _ -> Alcotest.fail "expected next link on page 0");
+
+  let response1 =
+    Dream.test app
+      (Dream.request ~target:(Printf.sprintf "/%s/?page=1" container_id) "")
+  in
+  let* body1 = Dream.body response1 in
+  let json1 = Yojson.Basic.from_string body1 in
+
+  Alcotest.(check int) "status 200" 200
+    (Dream.status_to_int (Dream.status response1));
+  assert_type json1 "AnnotationPage";
+
+  let start_index =
+    Yojson.Basic.Util.member "startIndex" json1 |> Yojson.Basic.Util.to_int
+  in
+  Alcotest.(check int) "page 1 startIndex" 2 start_index;
+
+  let items1 = Yojson.Basic.Util.member "items" json1 |> Yojson.Basic.Util.to_list in
+  Alcotest.(check int) "page 1 has 1 item" 1 (List.length items1);
+
+  let prev1 = Yojson.Basic.Util.member "prev" json1 in
+  (match prev1 with
+  | `String s ->
+      Alcotest.(check bool) "prev includes page=0" true
+        (String.ends_with ~suffix:"page=0" s)
+  | _ -> Alcotest.fail "expected prev link on page 1");
+
+  let next1 = Yojson.Basic.Util.member "next" json1 in
+  Alcotest.(check bool) "next null on last page" true (next1 = `Null);
+
+  Lwt.return_unit
+
+let test_page_boundary_two_full_pages _switch () =
+  let* db = create_test_db_pack "page_boundary_two_full_pages" in
+  let container_id = "my-canvas" in
+  let base_url = "http://localhost:10000" in
+  let page_limit = 2 in
+
+  let* () = seed_container ~db ~container_id ~count:4 in
+  let app = create_app db base_url page_limit in
+
+  let response1 =
+    Dream.test app
+      (Dream.request ~target:(Printf.sprintf "/%s/?page=1" container_id) "")
+  in
+  let* body1 = Dream.body response1 in
+  let json1 = Yojson.Basic.from_string body1 in
+
+  Alcotest.(check int) "status 200" 200
+    (Dream.status_to_int (Dream.status response1));
+  assert_type json1 "AnnotationPage";
+
+  let items1 = Yojson.Basic.Util.member "items" json1 |> Yojson.Basic.Util.to_list in
+  Alcotest.(check int) "page 1 has 2 items" 2 (List.length items1);
+
+  let prev1 = Yojson.Basic.Util.member "prev" json1 in
+  (match prev1 with
+  | `String s ->
+      Alcotest.(check bool) "prev includes page=0" true
+        (String.ends_with ~suffix:"page=0" s)
+  | _ -> Alcotest.fail "expected prev link on page 1");
+
+  let next1 = Yojson.Basic.Util.member "next" json1 in
+  Alcotest.(check bool) "next null on last page" true (next1 = `Null);
+
+  Lwt.return_unit
+
 let test_target_filtering_over_http _switch () =
   let* db = create_test_db_from_files "target_filter_http" in
   let container_id = "my-canvas" in
@@ -562,6 +769,10 @@ let () =
       test_case "404 for out-of-range page" `Quick test_get_page_out_of_range;
       test_case "page has no nav when all items fit" `Quick test_page_no_navigation_when_all_fit;
       test_case "collection has no nav when all items fit" `Quick test_collection_no_navigation_when_all_fit;
+      test_case "items ordered lexicographically" `Quick test_items_are_lexicographically_ordered_by_id;
+      test_case "boundary: exact page_limit" `Quick test_page_boundary_exact_limit;
+      test_case "boundary: page_limit+1" `Quick test_page_boundary_limit_plus_one;
+      test_case "boundary: two full pages" `Quick test_page_boundary_two_full_pages;
     ]);
     ("HTTP Features", [
       test_case "ETag support" `Quick test_etag;
