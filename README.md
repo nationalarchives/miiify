@@ -14,7 +14,14 @@ Your annotations evolve like a codebase. Anyone who already uses Git can contrib
 
 Create annotations as JSON files and serve them via HTTP API.
 
-### 1. Create Annotation Files
+### Create Annotation Files
+
+**Using an existing Git repository?** Use `miiify-clone` to get started with [sample annotation data](https://github.com/jptmoore/miiify-sample-data):
+```bash
+miiify-clone https://github.com/jptmoore/miiify-sample-data.git --git ./db-git
+```
+
+**Or create annotations manually:**
 
 ```bash
 # Create directory structure
@@ -49,24 +56,31 @@ cat > annotations/my-canvas/comment-1.json << 'EOF'
 EOF
 ```
 
-### 2. Import and Compile
+### Import
+
+If you created annotations manually, import them into Git storage:
 
 ```bash
-# Import JSON files into Git storage
 miiify-import --input ./annotations --git ./db-git
+```
 
-# Compile to Pack storage for serving
+
+### Compile
+
+Compile Git storage to Pack storage for serving:
+
+```bash
 miiify-compile --git ./db-git --pack ./db-pack
 ```
 
-### 3. Run Server
+### Run Server
 
 ```bash
 # Start the HTTP API server
 miiify-serve --repository ./db-pack --port 10000
 ```
 
-### 4. Access Annotations
+### Access Annotations
 
 ```bash
 # Get annotation (both formats work)
@@ -74,13 +88,6 @@ curl http://localhost:10000/my-canvas/highlight-1
 
 # List all annotations
 curl http://localhost:10000/my-canvas/
-```
-
-**Using an existing Git repository?** Use `miiify-clone` instead of creating files manually:
-```bash
-miiify-clone https://github.com/jptmoore/miiify-sample-data.git --git ./db-git
-miiify-compile --git ./db-git --pack ./db-pack
-miiify-serve --repository ./db-pack --port 10000
 ```
 
 ## ID Management
