@@ -6,48 +6,6 @@ let get_container ~db ~container_id ~base_url =
   let json_with_id = Container.inject_id json ~container_id ~base_url in
   Container.container json_with_id
 
-let post_container ~db ~id ~base_url ~message data =
-  Container.create ~id ~base_url ~data |> function
-  | Ok json ->
-      let result = Model.add_container ~db ~container_id:id ~json ~message in
-      Lwt.return_ok result
-  | Error m -> Lwt.return_error m
-
-let put_container ~db ~id ~base_url ~message data =
-  Container.update ~id ~base_url ~data |> function
-  | Ok json ->
-      let result = Model.update_container ~db ~container_id:id ~json ~message in
-      Lwt.return_ok result
-  | Error m -> Lwt.return_error m
-
-let delete_container ~db ~id ~message =
-  Model.delete_container ~db ~container_id:id ~message
-
-let post_annotation ~db ~container_id ~annotation_id ~base_url ~message ~validate data =
-  Specification.validate ~data ~enabled:validate |> function
-  | Ok () -> (
-      Annotation.create ~container_id ~annotation_id ~base_url ~data |> function
-      | Ok json ->
-          let result =
-            Model.add_annotation ~db ~container_id ~annotation_id ~json ~message
-          in
-          Lwt.return_ok result
-      | Error m -> Lwt.return_error m)
-  | Error m -> Lwt.return_error m
-
-let put_annotation ~db ~container_id ~annotation_id ~base_url ~message ~validate data =
-  Specification.validate ~data ~enabled:validate |> function
-  | Ok () -> (
-    Annotation.update ~container_id ~annotation_id ~base_url ~data |> function
-    | Ok json ->
-        let result =
-          Model.update_annotation ~db ~container_id ~annotation_id ~json ~message
-        in
-        Lwt.return_ok result
-    | Error m -> Lwt.return_error m)
-  | Error m -> Lwt.return_error m
-
-
 let container_exists ~db ~id = Model.container_exists ~db ~container_id:id
 
 let annotation_exists ~db ~container_id ~annotation_id =
@@ -56,7 +14,7 @@ let annotation_exists ~db ~container_id ~annotation_id =
 let get_annotation_collection ~page_limit ~db ~id ~target ~base_url =
   let* total = Model.total_filtered ~db ~container_id:id ~target in
   let* (container_json, items_with_slugs, _) =
-    Model.get_annotations_with_ids ~db ~container_id:id ~offset:0 ~length:page_limit ~target
+    Model.get_annotations ~db ~container_id:id ~offset:0 ~length:page_limit ~target
   in
   (* Inject ID into container *)
   let container_with_id = Container.inject_id container_json ~container_id:id ~base_url in
@@ -76,7 +34,7 @@ let get_annotation_page ~page_limit ~db ~id ~page ~target ~base_url =
   if page < 0 || page > calculate_page total limit then Lwt.return_none
   else
     let* (container_json, items_with_slugs, _) =
-      Model.get_annotations_with_ids ~db ~container_id:id ~offset:(page * limit)
+      Model.get_annotations ~db ~container_id:id ~offset:(page * limit)
         ~length:limit ~target
     in
     (* Inject ID into container *)
@@ -100,7 +58,3 @@ let get_annotation ~db ~container_id ~annotation_id ~base_url =
   let* json = Model.get_annotation ~db ~container_id ~annotation_id in
   let json_with_id = Annotation.inject_id json ~container_id ~annotation_id ~base_url in
   json_with_id |> Annotation.annotation |> Lwt.return
-
-let delete_annotation ~db ~container_id ~annotation_id ~message =
-  Model.delete_annotation ~db ~container_id ~annotation_id ~message
-

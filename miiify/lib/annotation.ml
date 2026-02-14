@@ -1,53 +1,5 @@
 open Yojson.Basic
 
-let is_annotation json =
-  match json |> Util.member "type" with
-  | `String "Annotation" -> true
-  | _ -> false
-
-let create_worker json container_id annotation_id base_url =
-  let open Util in
-  if json |> member "id" = `Null && json |> member "created" = `Null then
-    let iri = base_url ^ "/" ^ container_id ^ "/" ^ annotation_id in
-    let timestamp = Utils.Time.get_timestamp () in
-    let id = `String iri in
-    let created = `String timestamp in
-    let annotation =
-      combine (`Assoc [ ("id", id); ("created", created) ]) json
-    in
-    Result.ok annotation
-  else Result.error "an id or created timestamp can not be supplied"
-
-let create ~data ~container_id ~annotation_id ~base_url =
-  match from_string data with
-  | exception Yojson.Json_error m -> Result.error m
-  | json ->
-      if is_annotation json then
-        create_worker json container_id annotation_id base_url
-      else Result.error "annotation type not found"
-
-let update_worker json container_id annotation_id base_url =
-  let open Util in
-  let iri = base_url ^ "/" ^ container_id ^ "/" ^ annotation_id in
-  let id = `String iri in
-  let id' = json |> member "id" in
-  if id = id' then
-    if json |> member "modified" = `Null then
-      let timestamp = Utils.Time.get_timestamp () in
-      let modified = `String timestamp in
-      let annotation = combine (`Assoc [ ("modified", modified) ]) json in
-      Result.ok annotation
-    else Result.error "a modified timestamp can not be supplied"
-  else Result.error "the id supplied was not valid"
-
-let update ~data ~container_id ~annotation_id ~base_url =
-  match from_string data with
-  | exception Yojson.Json_error m -> Result.error m
-  | json ->
-      if is_annotation json then
-        update_worker json container_id annotation_id base_url
-      else Result.error "annotation type not found"
-
 let next json page target total limit =
   let open Utils in
   let id = json |> Util.member "id" in

@@ -1,43 +1,4 @@
 val get_container : db:Db.t -> container_id:string -> base_url:string -> string Lwt.t
-
-val post_container :
-  db:Db.t ->
-  id:string ->
-  base_url:string ->
-  message:string ->
-  string ->
-  (string Lwt.t, string) result Lwt.t
-
-val put_container :
-  db:Db.t ->
-  id:string ->
-  base_url:string ->
-  message:string ->
-  string ->
-  (string Lwt.t, string) result Lwt.t
-
-val delete_container : db:Db.t -> id:string -> message:string -> unit Lwt.t
-
-val post_annotation :
-  db:Db.t ->
-  container_id:string ->
-  annotation_id:string ->
-  base_url:string ->
-  message:string ->
-  validate:bool ->
-  string ->
-  (string Lwt.t, string) result Lwt.t
-
-val put_annotation :
-  db:Db.t ->
-  container_id:string ->
-  annotation_id:string ->
-  base_url:string ->
-  message:string ->
-  validate:bool ->
-  string ->
-  (string Lwt.t, string) result Lwt.t
-
 val container_exists : db:Db.t -> id:string -> bool Lwt.t
 
 val annotation_exists :
@@ -45,13 +6,6 @@ val annotation_exists :
 
 val get_annotation :
   db:Db.t -> container_id:string -> annotation_id:string -> base_url:string -> string Lwt.t
-
-val delete_annotation :
-  db:Db.t ->
-  container_id:string ->
-  annotation_id:string ->
-  message:string ->
-  unit Lwt.t
 
 val get_collection_hash : db:Db.t -> id:string -> string option Lwt.t
 val get_container_hash : db:Db.t -> id:string -> string option Lwt.t

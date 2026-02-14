@@ -1,17 +1,3 @@
-val create :
-  data:string ->
-  container_id:string ->
-  annotation_id:string ->
-  base_url:string ->
-  (Yojson.Basic.t, string) result
-
-val update :
-  data:string ->
-  container_id:string ->
-  annotation_id:string ->
-  base_url:string ->
-  (Yojson.Basic.t, string) result
-
 val page :
   Yojson.Basic.t ->
   page:int ->
