@@ -1,28 +1,15 @@
 (* from https://github.com/ocaml-community/yojson/issues/54 *)
 module Json : sig
-  val id_helper : int -> string option -> string
+  val id_helper : int -> string
   val filter_null : Yojson.Basic.t -> Yojson.Basic.t
 end = struct
-  let id_helper page target =
-    let open Printf in
-    match target with
-    | Some target -> sprintf "?page=%d&target=%s" page target
-    | None -> sprintf "?page=%d" page
+  let id_helper page =
+    Printf.sprintf "?page=%d" page
 
   let filter_null json =
     let open Yojson.Basic in
     Util.to_assoc json |> List.filter (fun (_, v) -> v != `Null) |> fun v ->
     `Assoc v
-end
-
-module File : sig
-  val read_file : string -> string
-end = struct
-  let read_file filename =
-    let ch = open_in filename in
-    let s = really_input_string ch (in_channel_length ch) in
-    close_in ch;
-    s
 end
 
 module Time : sig
@@ -33,77 +20,76 @@ end = struct
     Ptime.to_rfc3339 t ~tz_offset_s:0
 end
 
-module Cmd : sig
-  val parse : unit -> Config_t.config
-end = struct
-  module EnvOverride = struct
-    let string name default =
-      match Sys.getenv_opt name with
-      | Some v -> v
-      | None -> default
-      
-    let int name default =
-      match Sys.getenv_opt name with
-      | Some v -> (try int_of_string v with _ -> default)
-      | None -> default
-      
-    let bool name default =
-      match Sys.getenv_opt name with
-      | Some v -> (
-          match String.lowercase_ascii v with
-          | "true" | "1" | "yes" -> true
-          | "false" | "0" | "no" -> false
-          | _ -> default
-        )
-      | None -> default
-  end
-
-  let config_file = ref "config.json"
-
-  let parse_worker () =
-    let usage = "usage: " ^ Sys.argv.(0) in
-    let speclist =
-      [
-        ( "--config",
-          Arg.Set_string config_file,
-          ": to specify the configuration file to use" );
-      ]
-    in
-    Arg.parse speclist (fun x -> raise (Arg.Bad ("Bad argument : " ^ x))) usage
-
-  let parse () =
-    let () = parse_worker () in
-    let data = File.read_file !config_file in
-    match Config.parse ~data with
-    | Error message -> failwith message
-    | Ok config -> 
-        { config with
-          backend = EnvOverride.string "MIIIFY_BACKEND" config.backend;
-          port = EnvOverride.int "MIIIFY_PORT" config.port;
-          interface = EnvOverride.string "MIIIFY_INTERFACE" config.interface;
-          tls = EnvOverride.bool "MIIIFY_TLS" config.tls;
-          id_proto = EnvOverride.string "MIIIFY_ID_PROTO" config.id_proto;
-          certificate_file = EnvOverride.string "MIIIFY_CERTIFICATE_FILE" config.certificate_file;
-          key_file = EnvOverride.string "MIIIFY_KEY_FILE" config.key_file;
-          repository_name = EnvOverride.string "MIIIFY_REPOSITORY_NAME" config.repository_name;
-          container_page_limit = EnvOverride.int "MIIIFY_CONTAINER_PAGE_LIMIT" config.container_page_limit;
-          access_control_allow_origin = EnvOverride.string "MIIIFY_ACCESS_CONTROL_ALLOW_ORIGIN" config.access_control_allow_origin;
-          validate_annotation = EnvOverride.bool "MIIIFY_VALIDATE_ANNOTATION" config.validate_annotation;
-        }
-end
-
 module Math : sig
   val calculate_page : int -> int -> int
 end = struct
   let calculate_page total limit =
-    int_of_float (Float.ceil (float_of_int total /. float_of_int limit)) - 1
+    if limit <= 0 then 0
+    else Int.max 0 (int_of_float (Float.ceil (float_of_int total /. float_of_int limit)) - 1)
 end
 
-module Info : sig
-  val message : Dream.request -> string
+module Validation : sig
+  val is_valid_container_name : string -> bool
+  val is_valid_json_file : string -> bool
+  val validate_basic_json : string -> (unit, string) result
+  val validate_annotation : string -> (unit, string) result
+  val validate_path : string list -> (unit, string) result
 end = struct
-  let message request =
-    let client = Dream.client request in
-    let method_ = Dream.method_ request in
-    Printf.sprintf "%s %s" (Dream.method_to_string method_) client
+  let is_valid_container_name name =
+    (* Container names must be URL-safe: alphanumeric, hyphens, underscores *)
+    let length = String.length name in
+    length > 0 && length <= 255 &&
+    String.for_all (fun c ->
+      (c >= 'a' && c <= 'z') ||
+      (c >= 'A' && c <= 'Z') ||
+      (c >= '0' && c <= '9') ||
+      c = '-' || c = '_'
+    ) name
+
+  let is_valid_json_file filename =
+    (* Annotation filenames may be either:
+       - explicit JSON files:   <slug>.json
+       - extensionless slugs:   <slug>
+       Hidden files are never considered annotations.
+
+       Note: this is used by development tools (import/compile) to decide which
+       on-disk files to treat as annotation documents.
+    *)
+    if String.starts_with ~prefix:"." filename then false
+    else if String.ends_with ~suffix:".json" filename then true
+    else not (String.contains filename '.')
+
+  let validate_basic_json content =
+    (* Check if content is at least parseable as JSON *)
+    try
+      let _ = Yojson.Basic.from_string content in
+      Ok ()
+    with
+    | Yojson.Json_error msg -> Error ("Invalid JSON: " ^ msg)
+    | e -> Error ("Parse error: " ^ Printexc.to_string e)
+
+  let validate_annotation content =
+    try
+      let _ = Specification_j.specification_of_string content in
+      Ok ()
+    with
+    | Yojson.Json_error msg -> Error ("JSON parse error: " ^ msg)
+    | Atdgen_runtime.Oj_run.Error msg -> Error ("Schema validation error: " ^ msg)
+    | e -> Error ("Validation error: " ^ Printexc.to_string e)
+
+  let validate_path path =
+    (* Validate structure: must be <container>/main or <container>/collection/<slug> *)
+    match path with
+    | [] -> Error "Empty path"
+    | [container; "main"] ->
+        if is_valid_container_name container then Ok ()
+        else Error (Printf.sprintf "Invalid container name '%s' (use only a-z, A-Z, 0-9, -, _)" container)
+    | [container; "collection"; slug] ->
+        if not (is_valid_container_name container) then
+          Error (Printf.sprintf "Invalid container name '%s' (use only a-z, A-Z, 0-9, -, _)" container)
+        else if String.length slug = 0 then
+          Error "Empty annotation slug"
+        else
+          Ok ()
+    | _ -> Error (Printf.sprintf "Invalid path structure: %s (must be <container>/main or <container>/collection/<slug>)" (String.concat "/" path))
 end

@@ -1,232 +1,139 @@
-### Introduction
+# Miiify
 
-Miiify is a light-weight web annotation server using an embedded database. Its primary use case is to support [IIIF](https://iiif.io/) applications where it separates the annotation content away from the manifest. This has the advantage of simplifying the manifest and providing persistent access to each annotation through its own unique identifier. Miiify follows the Web Annotation Model and Protocol which means annotations are structured into [containers](https://www.w3.org/TR/annotation-protocol/#annotation-containers). The following [video tutorial](https://miiifystore.s3.eu-west-2.amazonaws.com/presentations/simple-external-annotation.mp4) helps illustrates this and how the server can interact with a IIIF viewer.
+**Web annotations versioned like code, served like a database.**
 
-There is a choice of two storage backends depending on requirements:
+Setup and deployment: start with [doc/installation.md](doc/installation.md).
 
-#### git
+Miiify treats annotations like source code: store them in Git, serve them from an optimized runtime.
 
-Designed to be compatible with the Git protocol. This means annotations can be added or edited using standard git flow mechanisms such as a pull request and all new content can go through a review process before going public. 
+Your annotations evolve like a codebase. Anyone who already uses Git can contribute using the same workflow: commit, review, merge. No database setup, no config files, just JSON files and Git.
 
-#### pack
+## Quick Start
 
-Designed to be highly-scalable and disk efficient. This backend uses technology that is part of the distributed ledger used within the [Tezos blockchain](https://tezos.com/).
+Create annotations as JSON files and serve them via HTTP API.
 
-### Configuration
+### Create Annotation Files
 
-Miiify can be configured using environment variables or a configuration file (`miiify/config.json`). Environment variables take precedence over the configuration file, making it easy to deploy the same Docker image with different settings.
-
-#### Environment Variables
-
-Configuration options can be overridden using environment variables with the `MIIIFY_` prefix:
-
-**Storage & Database:**
-- `MIIIFY_BACKEND` - Storage backend: `pack` (default) or `git`
-- `MIIIFY_REPOSITORY_NAME` - Database directory name (default: `db`)
-
-**Server Settings:**
-- `MIIIFY_PORT` - Server port (default: `10000`)
-- `MIIIFY_INTERFACE` - Network interface to bind to (default: `0.0.0.0`)
-
-**TLS/HTTPS:**
-- `MIIIFY_TLS` - Enable TLS: `true` (default) or `false`
-- `MIIIFY_ID_PROTO` - Protocol for generated URLs: `https` (default) or `http`
-- `MIIIFY_CERTIFICATE_FILE` - TLS certificate path (default: `server.crt`)
-- `MIIIFY_KEY_FILE` - TLS private key path (default: `server.key`)
-
-**Features:**
-- `MIIIFY_CONTAINER_PAGE_LIMIT` - Maximum items per page (default: `200`)
-- `MIIIFY_ACCESS_CONTROL_ALLOW_ORIGIN` - CORS origin (default: `*`)
-- `MIIIFY_VALIDATE_ANNOTATION` - Enable annotation validation: `true` or `false` (default: `false`)
-
-**Examples:**
-
+**Using an existing Git repository?** Use `miiify-clone` to get started with [sample annotation data](https://github.com/jptmoore/miiify-sample-data):
 ```bash
-# Use git backend with HTTP on port 8080
-MIIIFY_BACKEND=git MIIIFY_TLS=false MIIIFY_ID_PROTO=http MIIIFY_PORT=8080 docker compose up
-
-# Production deployment with custom page limit
-MIIIFY_BACKEND=pack MIIIFY_CONTAINER_PAGE_LIMIT=100 docker compose up
+miiify-clone https://github.com/jptmoore/miiify-sample-data.git --git ./db-git
 ```
 
-#### Configuration File
-
-Alternatively, settings can be specified in `miiify/config.json`. See the file for the complete structure and available options.
-
-### Getting started
-
-Miiify can be run with Docker using either the git or pack backend. The backend is configured using environment variables at runtime.
-
-#### Starting server with pack backend (default)
+**Or create annotations manually:**
 
 ```bash
-docker compose up -d
-```
+# Create directory structure
+mkdir -p annotations/my-canvas
 
-#### Starting server with git backend
-
-```bash
-MIIIFY_BACKEND=git docker compose up -d
-```
-
-#### Check the server is running
-
-```bash
-http :10000
-```
-
-#### Stopping server
-```bash
-docker compose down
-```
-
-### Basic concepts
-
-Annotations are organised into containers and can be retrieved in pages to display within IIIF viewers such as [Mirador](https://projectmirador.org/). To filter the annotation page to a specific IIIF canvas an additional target parameter can be supplied. The examples below use [httpie](https://httpie.io/) with a live demo server which spins down when inactive.
-
-**Note**: Annotations are returned in lexicographic (alphabetical) order by their annotation ID, ensuring consistent ordering across different storage backends (pack and git).
-
-Create an annotation container called my-container:
-```bash
-https miiify.onrender.com/annotations/ < miiify/test/container1.json Slug:my-container
-```
-
-Add an annotation called foobar to my-container:
-```bash
-https miiify.onrender.com/annotations/my-container/ < miiify/test/annotation1.json Slug:foobar
-```
-
-Add another annotation but use a system generated id:
-```bash
-https miiify.onrender.com/annotations/my-container/ < miiify/test/annotation1.json
-```
-
-Retrieve the first annotation page from my-container:
-```bash
-https miiify.onrender.com/annotations/my-container/\?page\=0
-```
-produces:
-```json
+# Create an annotation
+cat > annotations/my-canvas/highlight-1.json << 'EOF'
 {
-    "@context": "http://iiif.io/api/presentation/3/context.json",
-    "id": "https://miiify.onrender.com/annotations/my-container/?page=0",
-    "items": [
-        {
-            "@context": "http://www.w3.org/ns/anno.jsonld",
-            "body": "http://example.org/post1",
-            "created": "2023-12-07T17:13:18Z",
-            "id": "https://miiify.onrender.com/annotations/my-container/4acb2493-96b2-4efb-a5aa-044cde1408f0",
-            "target": "http://example.com/page1",
-            "type": "Annotation"
-        },
-        {
-            "@context": "http://www.w3.org/ns/anno.jsonld",
-            "body": "http://example.org/post1",
-            "created": "2023-12-07T17:11:44Z",
-            "id": "https://miiify.onrender.com/annotations/my-container/foobar",
-            "target": "http://example.com/page1",
-            "type": "Annotation"
-        }
-    ],
-    "partOf": {
-        "created": "2023-12-07T17:10:20Z",
-        "id": "https://miiify.onrender.com/annotations/my-container/",
-        "label": "A Container for Web Annotations",
-        "total": 2,
-        "type": "AnnotationCollection"
-    },
-    "startIndex": 0,
-    "type": "AnnotationPage"
+  "type": "Annotation",
+  "motivation": "highlighting",
+  "body": {
+    "type": "TextualBody",
+    "value": "Important passage",
+    "purpose": "commenting"
+  },
+  "target": "https://example.com/iiif/canvas/1#xywh=100,100,200,50"
 }
-```
+EOF
 
-Retrieve the first annotation page from my-container but filter annotations based on their target:
-```bash
-https miiify.onrender.com/annotations/my-container/ < miiify/test/annotation3.json
-https miiify.onrender.com/annotations/my-container/\?page\=0\&target\=http://example.com/page3
-```
-produces:
-```json
+# Create another annotation
+cat > annotations/my-canvas/comment-1.json << 'EOF'
 {
-    "@context": "http://iiif.io/api/presentation/3/context.json",
-    "id": "https://miiify.onrender.com/annotations/my-container/?page=0&target=http://example.com/page3",
-    "items": [
-        {
-            "@context": "http://www.w3.org/ns/anno.jsonld",
-            "body": "http://example.org/post3",
-            "created": "2023-12-07T17:15:47Z",
-            "id": "https://miiify.onrender.com/annotations/my-container/20375636-3af4-44e4-b005-b5c5e625ec85",
-            "target": "http://example.com/page3",
-            "type": "Annotation"
-        }
-    ],
-    "partOf": {
-        "created": "2023-12-07T17:10:20Z",
-        "id": "https://miiify.onrender.com/annotations/my-container/",
-        "label": "A Container for Web Annotations",
-        "total": 3,
-        "type": "AnnotationCollection"
-    },
-    "startIndex": 0,
-    "type": "AnnotationPage"
+  "type": "Annotation",
+  "motivation": "commenting",
+  "body": {
+    "type": "TextualBody",
+    "value": "This is a fascinating detail",
+    "purpose": "commenting"
+  },
+  "target": "https://example.com/iiif/canvas/1#xywh=300,150,100,75"
 }
+EOF
 ```
 
-Retrieve a single annotation:
+### Import
+
+If you created annotations manually, import them into Git storage:
+
 ```bash
-https miiify.onrender.com/annotations/my-container/foobar
-```
-produces
-```json
-{
-    "@context": "http://www.w3.org/ns/anno.jsonld",
-    "body": "http://example.org/post1",
-    "created": "2023-12-07T17:11:44Z",
-    "id": "https://miiify.onrender.com/annotations/my-container/foobar",
-    "target": "http://example.com/page1",
-    "type": "Annotation"
-}
+miiify-import --input ./annotations --git ./db-git
 ```
 
-### Tutorial
 
-Simple [video tutorial](https://miiifystore.s3.eu-west-2.amazonaws.com/presentations/simple-external-annotation.mp4) to show how to create annotations and display them in the Mirador IIIF viewer.
+### Compile
 
-### Other key features
+Compile Git storage to Pack storage for serving:
 
-* Support for validating annotations using [ATD](https://atd.readthedocs.io/en/latest/atd-language.html#introduction) with a detailed example available [here](https://raw.githubusercontent.com/jptmoore/maniiifest/main/src/specification.atd)
-* Easy to use with Docker and Kubernetes
-* Support for ETag caching and collision avoidance
-* Simple key/value interface for working with IIIF manifests
-
-### Building from source
-
-To build your own Docker image:
 ```bash
-docker compose build
+miiify-compile --git ./db-git --pack ./db-pack
 ```
 
-To test with different backends:
+### Run Server
+
 ```bash
-cd miiify/test
-
-# Test pack backend
-./test.sh pack
-
-# Test git backend  
-./test.sh git
-
-# Test both backends
-./test.sh both
+# Start the HTTP API server
+miiify-serve --repository ./db-pack --port 10000
 ```
 
-### Documentation
+### Access Annotations
 
-[API specification](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/nationalarchives/miiify/main/doc/swagger.yml)
+```bash
+# Get annotation
+curl http://localhost:10000/my-canvas/highlight-1
+
+# List all annotations (AnnotationCollection)
+curl http://localhost:10000/my-canvas/
+
+# Get specific page (AnnotationPage)
+curl http://localhost:10000/my-canvas/?page=0
+```
+
+## ID Management
+
+Miiify injects stable, URL-based annotation `id` fields at serve time—you never include IDs in your JSON files.
+
+These IDs are plain HTTP URLs derived from `--base-url` and the request path (suitable for use as Web Annotation identifiers).
 
 
+**How it works:**
+- IDs are derived from your filesystem structure: `<base-url>/<container>/<slug>`
+- Container = directory name (e.g., `my-canvas`)
+- Slug = filename without `.json` extension (e.g., `highlight-1`)
+- Base URL is configurable via `--base-url` flag
 
+**Ordering:**
+- When listing annotations (collection/pages), items are returned sorted lexicographically by slug/ID.
+- If you care about a specific order within a canvas/container, choose slugs accordingly (for example, zero-pad: `note-0001`, `note-0010` so `note-0010` doesn’t sort before `note-0002`).
 
+**Example:**
+```bash
+# Your file: annotations/my-canvas/highlight-1.json
+# Served as: http://localhost:10000/my-canvas/highlight-1
+# With ID: "id": "http://localhost:10000/my-canvas/highlight-1"
+```
 
+**Deployment flexibility:**
+```bash
+# Development
+miiify-serve --base-url http://localhost:10000
 
+# Production
+miiify-serve --base-url https://annotations.example.org
+```
 
+Same JSON files, different IDs based on deployment. No database updates, no file edits—just change the flag.
+
+## Commands
+
+See [doc/commands.md](doc/commands.md) for the full command reference.
+
+## HTTP API
+
+See [doc/api.md](doc/api.md) for the full HTTP API reference.
+
+## Scaling
+
+See [doc/scaling.md](doc/scaling.md) for horizontal scaling strategies from single projects to institution-wide deployments serving millions of annotations.

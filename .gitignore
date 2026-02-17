@@ -41,3 +41,8 @@ packtest/.ocamlformat
 # certs
 *.crt
 *.key
+
+# test files
+miiify/annotations/
+miiify/db-git/
+miiify/db-pack/

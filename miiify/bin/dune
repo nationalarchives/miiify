@@ -1,4 +1,34 @@
 (executable
  (public_name miiify)
  (name main)
- (libraries miiify))
+ (libraries cmdliner))
+
+(executable
+ (name clone)
+ (public_name miiify-clone)
+ (libraries miiify cmdliner irmin-git.unix irmin.unix lwt lwt.unix str))
+
+(executable
+ (name pull)
+ (public_name miiify-pull)
+ (libraries miiify cmdliner irmin-git.unix irmin.unix lwt lwt.unix str))
+
+(executable
+ (name push)
+ (public_name miiify-push)
+ (libraries miiify cmdliner irmin-git.unix irmin.unix lwt lwt.unix str))
+
+(executable
+ (name import)
+ (public_name miiify-import)
+ (libraries miiify cmdliner))
+
+(executable
+ (name compile)
+ (public_name miiify-compile)
+ (libraries miiify cmdliner))
+
+(executable
+ (name serve)
+ (public_name miiify-serve)
+ (libraries miiify cmdliner))

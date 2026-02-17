@@ -18,6 +18,19 @@ let set ~db ~key ~data ~message =
   let* store = db in
   Store.set_exn store key data ~info:(info message)
 
+let set_batch ~db ~items ~message =
+  let* store = db in
+  Store.with_tree_exn store [] ~info:(info message) (fun tree_opt ->
+    let tree = match tree_opt with
+      | Some t -> t
+      | None -> Store.Tree.empty ()
+    in
+    let* tree' = Lwt_list.fold_left_s (fun tree (key, data) ->
+      Store.Tree.add tree key data
+    ) tree items in
+    Lwt.return (Some tree')
+  )
+
 let get ~db ~key =
   let* store = db in
   Store.get store key
@@ -28,6 +41,16 @@ let get_tree ~db ~key ~offset ~length =
   let* items = Store.Tree.list tree [] ~offset ~length in
   let sorted_items = List.sort (fun (k1, _) (k2, _) -> String.compare k1 k2) items in
   Lwt_list.map_s (fun (k, _) -> get ~db ~key:(List.append key [ k ])) sorted_items
+
+let get_tree_with_keys ~db ~key ~offset ~length =
+  let* store = db in
+  let* tree = Store.get_tree store key in
+  let* items = Store.Tree.list tree [] ~offset ~length in
+  let sorted_items = List.sort (fun (k1, _) (k2, _) -> String.compare k1 k2) items in
+  Lwt_list.map_s (fun (k, _) -> 
+    let* value = get ~db ~key:(List.append key [ k ]) in
+    Lwt.return (k, value)
+  ) sorted_items
 
 let delete ~db ~key ~message =
   let* store = db in

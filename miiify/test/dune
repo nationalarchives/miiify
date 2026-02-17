@@ -1,4 +1,29 @@
 (test
- (name miiify)
+ (name storage_test)
  (libraries miiify alcotest-lwt lwt yojson))
+
+(test
+ (name response_test)
+ (libraries miiify alcotest-lwt lwt yojson))
+
+(test
+ (name db_contract_test)
+ (libraries miiify alcotest-lwt lwt yojson))
+
+(alias
+ (name runtest)
+ (deps ../bin/import.exe ../bin/compile.exe))
+
+(test
+ (name api_test)
+ (libraries miiify alcotest-lwt lwt yojson dream))
+
+(test
+ (name smoke_test)
+ (libraries miiify alcotest-lwt lwt yojson dream))
+
+(test
+ (name adapter_test)
+ (libraries miiify alcotest yojson))
+
 
