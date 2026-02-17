@@ -136,3 +136,29 @@ deployments:
 
 **Result:** Linear scaling - add deployments as needed, each handling ~500k-1M annotations independently.
 
+## Testing at Scale
+
+To validate your scaling strategy and performance, you can generate large test datasets using the [generate_annotations.py](../scripts/generate_annotations.py) utility.
+
+**Generate 10,000 annotations across 10 containers:**
+```bash
+python scripts/generate_annotations.py \
+  --total 10000 \
+  --containers 10 \
+  --prefix my-canvas \
+  --out ./test-annotations
+```
+
+**Then import, compile, and test:**
+```bash
+miiify-import --input ./test-annotations --git ./test-db-git
+miiify-compile --git ./test-db-git --pack ./test-db-pack
+miiify-serve --repository ./test-db-pack --port 10000
+```
+
+This allows you to:
+- Benchmark compile times with realistic datasets
+- Test API response times under load
+- Validate your deployment strategy before production
+- Experiment with different repository organization patterns
+
