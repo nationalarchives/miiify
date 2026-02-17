@@ -34,42 +34,77 @@ curl http://localhost:10000/my-canvas/?page=0
 curl http://localhost:10000/my-canvas/?page=1
 ```
 
-## Response format
+## Efficient caching with ETags
 
-Single annotation:
-```json
-{
-  "id": "http://localhost:10000/my-canvas/highlight-1",
-  "type": "Annotation",
-  "motivation": "highlighting",
-  "body": {
-    "type": "TextualBody",
-    "value": "Important passage",
-    "purpose": "commenting"
-  },
-  "target": "https://example.com/iiif/canvas/1#xywh=100,100,200,50"
-}
+Miiify implements **content-based ETags** for all resources, enabling highly efficient caching and bandwidth optimization.
+
+### How it works
+
+Every response includes an `ETag` header containing a hash of the content:
+
+```bash
+$ curl -i http://localhost:10000/my-canvas/highlight-1
+HTTP/1.1 200 OK
+ETag: "a3f5b8c9d2e1"
+Content-Type: application/json
+
+{"id":"http://localhost:10000/my-canvas/highlight-1"...}
 ```
 
-Annotation page:
-```json
-{
-  "id": "http://localhost:10000/my-canvas/?page=0",
-  "type": "AnnotationPage",
-  "startIndex": 0,
-  "items": [
-    {
-      "id": "http://localhost:10000/my-canvas/highlight-1",
-      "type": "Annotation",
-      "body": { "...": "..." },
-      "target": "https://example.com/iiif/canvas/1#xywh=100,100,200,50"
-    }
-  ],
-  "partOf": {
-    "id": "http://localhost:10000/my-canvas/",
-    "type": "AnnotationCollection",
-    "total": 42
-  },
-  "next": "http://localhost:10000/my-canvas/?page=1"
-}
+Clients can use `If-None-Match` to avoid re-downloading unchanged content:
+
+```bash
+$ curl -i -H 'If-None-Match: "a3f5b8c9d2e1"' http://localhost:10000/my-canvas/highlight-1
+HTTP/1.1 304 Not Modified
+ETag: "a3f5b8c9d2e1"
 ```
+
+No response body is sent - saving bandwidth and processing time.
+
+### Performance benefits
+
+- **Zero-copy reads**: ETags derived from stored content hashes (no re-computation)
+- **Instant validation**: Hash comparison happens before deserialization
+- **CDN-friendly**: Standard HTTP caching works out of the box
+- **Bandwidth savings**: 304 responses are typically <200 bytes vs. full JSON
+
+**Why it's fast:** Miiify uses Irmin, a content-addressed storage system where every piece of data is already identified by its hash. ETags are derived directly from these internal content hashes - meaning:
+
+- No additional hash computation needed
+- No separate ETag generation or storage
+- Hashes are immutable and cached in memory
+- ETag lookup is a single hash table access
+
+This architecture makes conditional requests effectively **free** - the "cost" is a memory lookup, not content processing.
+
+### ETag coverage
+
+ETags are provided for all resources:
+
+| Resource | ETag includes |
+|----------|---------------|
+| Annotation | Content hash |
+| Collection | Content hash + limit parameter |
+| Page | Content hash + limit + page number |
+
+### Example workflow
+
+```bash
+# First request - full response (e.g., 2KB)
+curl -i http://localhost:10000/my-canvas/ > collection.json
+
+# Extract ETag
+ETAG=$(grep -i 'etag:' collection.json | cut -d'"' -f2)
+
+# Subsequent requests - 304 if unchanged (~150 bytes)
+curl -i -H "If-None-Match: \"$ETAG\"" http://localhost:10000/my-canvas/
+```
+
+### CDN/Proxy deployment
+
+ETags make miiify ideal for deployment behind CDNs or reverse proxies:
+
+- Cloudflare, Fastly, nginx automatically cache based on ETags
+- No application-layer cache invalidation needed
+- Content changes reflected immediately via new ETags
+- Reduces load on origin server
