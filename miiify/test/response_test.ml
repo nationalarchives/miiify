@@ -99,7 +99,7 @@ let test_id_collection _switch () =
   (* Get collection with ID injection *)
   let* result =
     Miiify.Controller.get_annotation_collection ~page_limit:20 ~db ~id:container_id
-      ~target:None ~base_url
+      ~base_url
   in
   let json = Yojson.Basic.from_string result in
 
@@ -147,7 +147,7 @@ let test_id_page _switch () =
   (* Get page 0 *)
   let* result_opt =
     Miiify.Controller.get_annotation_page ~page_limit:20 ~db ~id:container_id
-      ~page:0 ~target:None ~base_url
+      ~page:0 ~base_url
   in
 
   match result_opt with

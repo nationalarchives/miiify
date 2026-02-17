@@ -1,5 +1,5 @@
 val collection :
-  Yojson.Basic.t -> total:int -> limit:int -> target:string option -> string
+  Yojson.Basic.t -> total:int -> limit:int -> string
 
 val container : Yojson.Basic.t -> string
 

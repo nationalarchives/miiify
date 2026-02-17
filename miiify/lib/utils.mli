@@ -1,6 +1,6 @@
 
 module Json : sig
-  val id_helper : int -> string option -> string
+  val id_helper : int -> string
   val filter_null : Yojson.Basic.t -> Yojson.Basic.t
 end
 

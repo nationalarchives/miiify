@@ -17,7 +17,6 @@ val get_annotation_collection :
   page_limit:int ->
   db:Db.t ->
   id:string ->
-  target:string option ->
   base_url:string ->
   string Lwt.t
 
@@ -26,7 +25,6 @@ val get_annotation_page :
   db:Db.t ->
   id:string ->
   page:int ->
-  target:string option ->
   base_url:string ->
   string option Lwt.t
 

@@ -174,53 +174,6 @@ let test_get_tree_with_keys_sorted_and_paged _switch () =
 
   Lwt.return_unit
 
-(* Test: Target filtering *)
-let test_target_filtering _switch () =
-  let* db = create_test_db_pack "filtering" in
-  let container_id = "manifest-42" in
-  
-  (* Import annotations with different targets *)
-  let canvas1_ann1 = {|{
-    "type": "Annotation",
-    "motivation": "commenting",
-    "body": {"type": "TextualBody", "value": "Note on canvas 1"},
-    "target": "https://example.com/iiif/canvas/1"
-  }|} in
-  
-  let canvas1_ann2 = {|{
-    "type": "Annotation",
-    "motivation": "highlighting",
-    "body": {"type": "TextualBody", "value": "Highlight on canvas 1"},
-    "target": "https://example.com/iiif/canvas/1"
-  }|} in
-  
-  let canvas2_ann = {|{
-    "type": "Annotation",
-    "motivation": "commenting",
-    "body": {"type": "TextualBody", "value": "Note on canvas 2"},
-    "target": "https://example.com/iiif/canvas/2"
-  }|} in
-  
-  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "canvas1-note"] ~data:canvas1_ann1 ~message:"Import canvas1-note.json" in
-  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "canvas1-highlight"] ~data:canvas1_ann2 ~message:"Import canvas1-highlight.json" in
-  let* () = Miiify.Db.set ~db ~key:[container_id; "collection"; "canvas2-note"] ~data:canvas2_ann ~message:"Import canvas2-note.json" in
-  
-  (* Get all three annotations *)
-  let* all = Miiify.Db.get_tree ~db ~key:[container_id; "collection"] ~offset:0 ~length:10 in
-  Alcotest.(check int) "all annotations" 3 (List.length all);
-  
-  (* Manually verify filtering by parsing and checking targets *)
-  let annotations = List.map Yojson.Basic.from_string all in
-  let canvas1_count = List.filter (fun ann ->
-    match Yojson.Basic.Util.member "target" ann with
-    | `String t -> t = "https://example.com/iiif/canvas/1"
-    | _ -> false
-  ) annotations |> List.length in
-  
-  Alcotest.(check int) "canvas 1 annotations" 2 canvas1_count;
-  
-  Lwt.return_unit
-
 (* Test: Multiple containers are isolated *)
 let test_container_isolation _switch () =
   let* db = create_test_db_pack "isolation" in
@@ -450,7 +403,7 @@ let () =
       test_case "pagination" `Quick test_pagination;
       test_case "tree ordering" `Quick test_get_tree_with_keys_sorted_and_paged;
     ]);
-    ("Filtering", [ test_case "target filtering" `Quick test_target_filtering ]);
+    (* Removed target filtering test - feature removed *)
     ("Container Isolation", [ test_case "multiple containers" `Quick test_container_isolation ]);
     ("Edge Cases", [ 
       test_case "empty and nonexistent" `Quick test_empty_and_nonexistent;

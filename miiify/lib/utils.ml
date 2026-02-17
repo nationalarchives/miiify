@@ -1,13 +1,10 @@
 (* from https://github.com/ocaml-community/yojson/issues/54 *)
 module Json : sig
-  val id_helper : int -> string option -> string
+  val id_helper : int -> string
   val filter_null : Yojson.Basic.t -> Yojson.Basic.t
 end = struct
-  let id_helper page target =
-    let open Printf in
-    match target with
-    | Some target -> sprintf "?page=%d&target=%s" page target
-    | None -> sprintf "?page=%d" page
+  let id_helper page =
+    Printf.sprintf "?page=%d" page
 
   let filter_null json =
     let open Yojson.Basic in

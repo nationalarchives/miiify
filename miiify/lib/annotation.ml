@@ -1,26 +1,26 @@
 open Yojson.Basic
 
-let next json page target total limit =
+let next json page total limit =
   let open Utils in
   let id = json |> Util.member "id" in
   let last_page = Math.calculate_page total limit in
   if page < last_page then
-    let next = Json.id_helper (page + 1) target in
+    let next = Json.id_helper (page + 1) in
     id |> function `String x -> `String (x ^ next) | _ -> `Null
   else `Null
 
-let prev json page target =
+let prev json page =
   let open Utils in
   let id = json |> Util.member "id" in
   if page > 0 then
-    let next = Json.id_helper (page - 1) target in
+    let next = Json.id_helper (page - 1) in
     id |> function `String x -> `String (x ^ next) | _ -> `Null
   else `Null
 
-let annotation_page_id json page target =
+let annotation_page_id json page =
   let open Utils in
   let id = json |> Util.member "id" in
-  let params = Json.id_helper page target in
+  let params = Json.id_helper page in
   id |> function `String x -> `String (x ^ params) | _ -> `Null
 
 let part_of json total =
@@ -42,15 +42,15 @@ let part_of json total =
     ]
   |> Utils.Json.filter_null
 
-let page_worker json page total limit target =
+let page_worker json page total limit =
   let open Util in
-  let id = annotation_page_id json page target in
+  let id = annotation_page_id json page in
   let context = json |> member "@context" in
   let part_of = part_of json total in
   let start_index = `Int (page * limit) in
   let items = json |> member "items" in
-  let next = next json page target total limit in
-  let prev = prev json page target in
+  let next = next json page total limit in
+  let prev = prev json page in
   `Assoc
     [
       ("@context", context);
@@ -64,8 +64,8 @@ let page_worker json page total limit target =
     ]
   |> Utils.Json.filter_null
 
-let page json ~page ~total ~limit ~target =
-  Some (page_worker json page total limit target |> to_string)
+let page json ~page ~total ~limit =
+  Some (page_worker json page total limit |> to_string)
 
 let annotation json = json |> to_string
 

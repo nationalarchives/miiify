@@ -1,34 +1,34 @@
 open Yojson.Basic
 
-let annotation_page_id json target =
+let annotation_page_id json =
   let open Utils in
   let id = json |> Util.member "id" in
-  let params = Json.id_helper 0 target in
+  let params = Json.id_helper 0 in
   id |> function `String x -> `String (x ^ params) | _ -> `Null
 
-let last json target total limit =
+let last json total limit =
   let open Utils in
   let last_page = Math.calculate_page total limit in
   if last_page > 0 then
     let id = json |> Util.member "id" in
-    let params = Json.id_helper last_page target in
+    let params = Json.id_helper last_page in
     id |> function `String x -> `String (x ^ params) | _ -> `Null
   else `Null
 
-let next json page target total limit =
+let next json page total limit =
   let open Utils in
   let id = json |> Util.member "id" in
   let last_page = Math.calculate_page total limit in
   if page < last_page then
-    let next = Json.id_helper (page + 1) target in
+    let next = Json.id_helper (page + 1) in
     id |> function `String x -> `String (x ^ next) | _ -> `Null
   else `Null
 
-let first json page target total limit =
+let first json page total limit =
   let open Util in
-  let id = annotation_page_id json target in
+  let id = annotation_page_id json in
   let items = json |> member "items" in
-  let next = next json page target total limit in
+  let next = next json page total limit in
   `Assoc
     [
       ("id", id);
@@ -38,12 +38,12 @@ let first json page target total limit =
     ]
   |> Utils.Json.filter_null
 
-let collection_worker json page target total limit =
+let collection_worker json page total limit =
   let open Util in
-  let id = json |> Util.member "id" in
+  let id = json |> member "id" in
   let type_ = json |> member "type" in
-  let first = first json page target total limit in
-  let last = last json target total limit in
+  let first = first json page total limit in
+  let last = last json total limit in
   let total = total |> function 0 -> `Null | _ -> `Int total in
   let context = json |> member "@context" in
   let label = json |> member "label" in
@@ -63,8 +63,8 @@ let collection_worker json page target total limit =
     ]
   |> Utils.Json.filter_null
 
-let collection json ~total ~limit ~target =
-  collection_worker json 0 target total limit |> to_string
+let collection json ~total ~limit =
+  collection_worker json 0 total limit |> to_string
 
 let container json = json |> to_string
 

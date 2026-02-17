@@ -13,10 +13,6 @@ let make_etag hash parts =
   in
   "\"" ^ hash ^ suffix ^ "\""
 
-let percent_opt = function
-  | None -> None
-  | Some v -> Some (Dream.to_percent_encoded v)
-
 (* Helper to strip .json extension from slug *)
 let strip_json_ext slug =
   if String.length slug > 5 && String.sub slug (String.length slug - 5) 5 = ".json" then
@@ -36,7 +32,6 @@ let get_version _request =
 (* Get AnnotationCollection with embedded first page *)
 let get_annotation_collection base_url page_limit db request =
   let container_id = Dream.param request "container_id" in
-  let target = Dream.query request "target" in
   
   let* exists = Model.container_exists ~db ~container_id in
   if not exists then
@@ -48,8 +43,7 @@ let get_annotation_collection base_url page_limit db request =
     Option.map
       (fun h ->
         make_etag h
-          [ ("limit", Some (string_of_int page_limit));
-            ("target", percent_opt target) ])
+          [ ("limit", Some (string_of_int page_limit)) ])
       hash_opt
   in
   
@@ -60,7 +54,7 @@ let get_annotation_collection base_url page_limit db request =
   | _ ->
       Lwt.catch
         (fun () ->
-          let* data = Controller.get_annotation_collection ~page_limit ~db ~id:container_id ~target ~base_url in
+          let* data = Controller.get_annotation_collection ~page_limit ~db ~id:container_id ~base_url in
           let* response = Dream.json data in
           (match etag with
           | Some tag -> Dream.add_header response "ETag" tag
@@ -71,7 +65,6 @@ let get_annotation_collection base_url page_limit db request =
 (* Get AnnotationPage with items *)
 let get_annotation_page base_url page_limit db request =
   let container_id = Dream.param request "container_id" in
-  let target = Dream.query request "target" in
   let page_str = Dream.query request "page" |> Option.value ~default:"0" in
   let page = try int_of_string page_str with _ -> 0 in
   
@@ -86,8 +79,7 @@ let get_annotation_page base_url page_limit db request =
       (fun h ->
         make_etag h
           [ ("limit", Some (string_of_int page_limit));
-            ("page", Some (string_of_int page));
-            ("target", percent_opt target) ])
+            ("page", Some (string_of_int page)) ])
       hash_opt
   in
   
@@ -98,7 +90,7 @@ let get_annotation_page base_url page_limit db request =
   | _ ->
       Lwt.catch
         (fun () ->
-          let* data = Controller.get_annotation_page ~page_limit ~db ~id:container_id ~page ~target ~base_url in
+          let* data = Controller.get_annotation_page ~page_limit ~db ~id:container_id ~page ~base_url in
           match data with
           | Some json -> 
               let* response = Dream.json json in

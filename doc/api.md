@@ -32,14 +32,6 @@ curl http://localhost:10000/my-canvas/
 # Get specific page
 curl http://localhost:10000/my-canvas/?page=0
 curl http://localhost:10000/my-canvas/?page=1
-
-# Filter by target
-curl "http://localhost:10000/my-canvas/?page=0&target=https://example.com/iiif/canvas/1"
-
-# If your target contains characters like '#', URL-encode it:
-curl --get \
-  --data-urlencode "target=https://example.com/iiif/canvas/1#xywh=100,100,200,50" \
-  "http://localhost:10000/my-canvas/?page=0"
 ```
 
 ## Response format

@@ -3,7 +3,6 @@ val page :
   page:int ->
   total:int ->
   limit:int ->
-  target:string option ->
   string option
 
 val annotation : Yojson.Basic.t -> string

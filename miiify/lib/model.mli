@@ -7,7 +7,6 @@ val get_annotations :
   container_id:string ->
   offset:int ->
   length:int ->
-  target:string option ->
   (Yojson.Basic.t * (string * Yojson.Basic.t) list * Yojson.Basic.t) Lwt.t
 
 val get_annotation :
@@ -24,6 +23,3 @@ val annotation_exists :
 val get_collection_hash : db:Db.t -> container_id:string -> string option Lwt.t
 val get_container_hash : db:Db.t -> container_id:string -> string option Lwt.t
 val total : db:Db.t -> container_id:string -> int Lwt.t
-
-val total_filtered :
-  db:Db.t -> container_id:string -> target:string option -> int Lwt.t

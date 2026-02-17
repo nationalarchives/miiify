@@ -570,35 +570,6 @@ let test_empty_container_collection_is_consistent _switch () =
 
   Lwt.return_unit
 
-let test_target_filtering_over_http _switch () =
-  let* db = create_test_db_from_files "target_filter_http" in
-  let container_id = "my-canvas" in
-  let base_url = "http://localhost:10000" in
-  let app = create_app db base_url 200 in
-
-  let target = Dream.to_percent_encoded highlight_target in
-  let response =
-    Dream.test app
-      (Dream.request
-         ~target:(Printf.sprintf "/%s/?page=0&target=%s" container_id target)
-         "")
-  in
-  let* body = Dream.body response in
-  let json = Yojson.Basic.from_string body in
-
-  Alcotest.(check int) "status 200" 200 (Dream.status_to_int (Dream.status response));
-  assert_type json "AnnotationPage";
-
-  let items = Yojson.Basic.Util.member "items" json |> Yojson.Basic.Util.to_list in
-  Alcotest.(check int) "one matching item" 1 (List.length items);
-  let id = Yojson.Basic.Util.member "id" (List.hd items) |> Yojson.Basic.Util.to_string in
-  Alcotest.(check string)
-    "returns highlight-1"
-    (base_url ^ "/" ^ container_id ^ "/highlight-1")
-    id;
-
-  Lwt.return_unit
-
 let test_paging_returns_distinct_expected_items _switch () =
   let* db = create_test_db_from_files "paging_distinct_items" in
   let container_id = "my-canvas" in
@@ -710,49 +681,6 @@ let test_etag_does_not_cross_pages _switch () =
 
   Lwt.return_unit
 
-let test_etag_does_not_cross_targets _switch () =
-  let* db = create_test_db_from_files "etag_cross_targets" in
-  let container_id = "my-canvas" in
-  let app = create_app db "http://localhost:10000" 200 in
-
-  let target = Dream.to_percent_encoded highlight_target in
-  let response_filtered =
-    Dream.test app
-      (Dream.request
-         ~target:(Printf.sprintf "/%s/?page=0&target=%s" container_id target)
-         "")
-  in
-  let etag_filtered = Dream.header response_filtered "ETag" in
-  Alcotest.(check bool) "filtered response has ETag" true (Option.is_some etag_filtered);
-
-  let request_unfiltered =
-    Dream.request ~target:(Printf.sprintf "/%s/?page=0" container_id) ""
-  in
-  Dream.set_header request_unfiltered "If-None-Match" (Option.get etag_filtered);
-  let response_unfiltered = Dream.test app request_unfiltered in
-
-  Alcotest.(check int)
-    "unfiltered should not be 304 from filtered etag"
-    200 (Dream.status_to_int (Dream.status response_unfiltered));
-
-  Lwt.return_unit
-
-let test_invalid_page_param_defaults_to_0 _switch () =
-  let* db = create_test_db_from_files "invalid_page_param" in
-  let container_id = "my-canvas" in
-  let app = create_app db "http://localhost:10000" 1 in
-
-  let response = Dream.test app (Dream.request ~target:(Printf.sprintf "/%s/?page=abc" container_id) "") in
-  let* body = Dream.body response in
-  let json = Yojson.Basic.from_string body in
-
-  Alcotest.(check int) "status 200" 200 (Dream.status_to_int (Dream.status response));
-  assert_type json "AnnotationPage";
-  let start_index = Yojson.Basic.Util.member "startIndex" json |> Yojson.Basic.Util.to_int in
-  Alcotest.(check int) "startIndex is 0" 0 start_index;
-
-  Lwt.return_unit
-
 let test_negative_page_returns_404 _switch () =
   let* db = create_test_db_from_files "negative_page" in
   let container_id = "my-canvas" in
@@ -828,110 +756,6 @@ let test_malformed_page_huge_number _switch () =
 
   Lwt.return_unit
 
-let test_malformed_target_unencoded _switch () =
-  let* db = create_test_db_from_files "malformed_target_unencoded" in
-  let container_id = "my-canvas" in
-  let app = create_app db "http://localhost:10000" 200 in
-
-  (* Unencoded target URL (with special chars) should not crash *)
-  let response = Dream.test app (Dream.request ~target:(Printf.sprintf "/%s/?page=0&target=https://example.com/canvas#fragment" container_id) "") in
-  let* _body = Dream.body response in
-  
-  (* Should succeed (200) even if target doesn't match anything *)
-  Alcotest.(check int) "status 200" 200 (Dream.status_to_int (Dream.status response));
-
-  Lwt.return_unit
-
-let test_target_filtering_pagination_links _switch () =
-  let* db = create_test_db_pack "target_filter_paging_links" in
-  let container_id = "mixed-canvas" in
-  let base_url = "http://localhost:10000" in
-  let page_limit = 2 in
-
-  (* Create container *)
-  let container_json = {|{"type":"AnnotationCollection","label":"Mixed Canvas"}|} in
-  let* () =
-    Miiify.Db.set ~db ~key:[ container_id; "metadata" ] ~data:container_json
-      ~message:"Create container"
-  in
-
-  (* Add 3 annotations for canvas-1, 2 for canvas-2 *)
-  let mk_anno target value =
-    Printf.sprintf
-      {|{"type":"Annotation","motivation":"commenting","body":{"type":"TextualBody","value":"%s"},"target":"%s"}|}
-      value target
-  in
-  let* () = Miiify.Db.set ~db ~key:[ container_id; "collection"; "a" ]
-    ~data:(mk_anno "https://example.com/canvas-1" "A") ~message:"seed a" in
-  let* () = Miiify.Db.set ~db ~key:[ container_id; "collection"; "b" ]
-    ~data:(mk_anno "https://example.com/canvas-1" "B") ~message:"seed b" in
-  let* () = Miiify.Db.set ~db ~key:[ container_id; "collection"; "c" ]
-    ~data:(mk_anno "https://example.com/canvas-1" "C") ~message:"seed c" in
-  let* () = Miiify.Db.set ~db ~key:[ container_id; "collection"; "d" ]
-    ~data:(mk_anno "https://example.com/canvas-2" "D") ~message:"seed d" in
-  let* () = Miiify.Db.set ~db ~key:[ container_id; "collection"; "e" ]
-    ~data:(mk_anno "https://example.com/canvas-2" "E") ~message:"seed e" in
-
-  let app = create_app db base_url page_limit in
-  let target = Dream.to_percent_encoded "https://example.com/canvas-1" in
-
-  (* Get collection with target filter *)
-  let response_coll =
-    Dream.test app
-      (Dream.request ~target:(Printf.sprintf "/%s/?target=%s" container_id target) "")
-  in
-  let* body_coll = Dream.body response_coll in
-  let json_coll = Yojson.Basic.from_string body_coll in
-
-  Alcotest.(check int) "status 200" 200 (Dream.status_to_int (Dream.status response_coll));
-  assert_type json_coll "AnnotationCollection";
-
-  (* Total should be 3 (filtered) *)
-  let total = Yojson.Basic.Util.member "total" json_coll |> Yojson.Basic.Util.to_int in
-  Alcotest.(check int) "filtered total" 3 total;
-
-  (* Last page: ceil(3/2)-1 = 1 *)
-  let last = Yojson.Basic.Util.member "last" json_coll in
-  (match last with
-  | `String s ->
-      Alcotest.(check bool) "last includes page=1" true (string_contains s "page=1");
-      Alcotest.(check bool) "last includes target" true (String.contains s '&')
-  | _ -> Alcotest.fail "expected last link");
-
-  (* First page should have 2 items *)
-  let first = Yojson.Basic.Util.member "first" json_coll in
-  let first_items = Yojson.Basic.Util.member "items" first |> Yojson.Basic.Util.to_list in
-  Alcotest.(check int) "first page 2 items" 2 (List.length first_items);
-
-  (* First.next should point to page=1 *)
-  let first_next = Yojson.Basic.Util.member "next" first in
-  (match first_next with
-  | `String s ->
-      Alcotest.(check bool) "first.next includes page=1" true (string_contains s "page=1");
-      Alcotest.(check bool) "first.next includes target" true (String.contains s '&')
-  | _ -> Alcotest.fail "expected next link on filtered first page");
-
-  (* Get page 1 with target filter *)
-  let response_page1 =
-    Dream.test app
-      (Dream.request ~target:(Printf.sprintf "/%s/?page=1&target=%s" container_id target) "")
-  in
-  let* body_page1 = Dream.body response_page1 in
-  let json_page1 = Yojson.Basic.from_string body_page1 in
-
-  Alcotest.(check int) "page 1 status 200" 200 (Dream.status_to_int (Dream.status response_page1));
-  assert_type json_page1 "AnnotationPage";
-
-  (* Page 1 should have 1 item (3rd filtered item) *)
-  let page1_items = Yojson.Basic.Util.member "items" json_page1 |> Yojson.Basic.Util.to_list in
-  Alcotest.(check int) "page 1 has 1 item" 1 (List.length page1_items);
-
-  (* Page 1 next should be null (last page) *)
-  let page1_next = Yojson.Basic.Util.member "next" json_page1 in
-  Alcotest.(check bool) "page 1 next null" true (page1_next = `Null);
-
-  Lwt.return_unit
-
 (* Main test suite *)
 let () =
   Lwt_main.run @@
@@ -963,22 +787,15 @@ let () =
       test_case "ETag support" `Quick test_etag;
       test_case "ETag 304 for collection" `Quick test_etag_collection;
       test_case "ETag does not cross pages" `Quick test_etag_does_not_cross_pages;
-      test_case "ETag does not cross targets" `Quick test_etag_does_not_cross_targets;
-      test_case "invalid page defaults to 0" `Quick test_invalid_page_param_defaults_to_0;
       test_case "negative page returns 404" `Quick test_negative_page_returns_404;
       test_case "missing container returns 404" `Quick test_missing_container_returns_404;
       test_case "unknown route returns 404" `Quick test_unknown_route_404;
       test_case "container without trailing slash returns 404" `Quick test_container_without_trailing_slash_404;
       test_case "page_limit=0 does not crash" `Quick test_zero_page_limit_does_not_crash;
-      test_case "target filtering" `Quick test_target_filtering_over_http;
       test_case "paging yields distinct expected" `Quick test_paging_returns_distinct_expected_items;
     ]);
     ("Malformed Input", [
       test_case "page=non-numeric defaults to 0" `Quick test_malformed_page_non_numeric;
       test_case "page=huge number returns 404" `Quick test_malformed_page_huge_number;
-      test_case "unencoded target doesn't crash" `Quick test_malformed_target_unencoded;
-    ]);
-    ("Target Filtering + Pagination", [
-      test_case "filtered pagination links correct" `Quick test_target_filtering_pagination_links;
     ]);
   ]
