@@ -4,7 +4,7 @@ open Lwt.Syntax
 open Cmdliner
 open Miiify
 
-let import_annotation git_store container_id path validate =
+let import_annotation container_id path validate =
   let filename = Filename.basename path in
   
   (* Validate it's an annotation file (either *.json or extensionless) *)
@@ -73,24 +73,20 @@ let import_annotation git_store container_id path validate =
       match Yojson.Basic.Util.member "id" json with
       | `Null -> Lwt.return_unit
       | `String supplied_id ->
-          Lwt_io.printlf "  ℹ %s/%s - Ignoring supplied ID (%s)"
+          Lwt_io.printlf "ℹ %s/%s - Ignoring supplied ID (%s)"
             container_id filename supplied_id
       | _ -> Lwt.return_unit
     with _ -> Lwt.return_unit
   in
   
-  (* Store in flat structure: container/slug *)
+  (* Return key and data for batch commit *)
   let key = [container_id; slug] in
-  let message = Printf.sprintf "Import %s/%s" container_id filename in
-  
-  let* () = Storage_git.set ~db:git_store ~key ~data:content ~message in
-  Lwt_io.printlf "  %s/%s" container_id slug
+  Lwt.return (key, content)
 
 let run_import ~input_dir ~git_path ~validate =
   let* () = Lwt_io.printl "Miiify Import" in
   let* () = Lwt_io.printlf "Input: %s" input_dir in
   let* () = Lwt_io.printlf "Git:   %s" git_path in
-  let* () = Lwt_io.printl "" in
 
   let git_store = Storage_git.create ~fname:git_path in
 
@@ -245,11 +241,20 @@ let run_import ~input_dir ~git_path ~validate =
           else Lwt.return_unit
         in
 
-        (* Import annotation files *)
-        let* () =
-          Lwt_list.iter_s
-            (fun path -> import_annotation git_store container_id path validate)
+        (* Collect all annotations for batch commit *)
+        let* items =
+          Lwt_list.map_s
+            (fun path -> import_annotation container_id path validate)
             json_files
+        in
+
+        (* Commit all annotations in one batch *)
+        let* () =
+          if List.length items > 0 then
+            let message = Printf.sprintf "Import %s (%d annotations)" container_id (List.length items) in
+            Storage_git.set_batch ~db:git_store ~items ~message
+          else
+            Lwt.return_unit
         in
 
         Lwt.return (count + List.length json_files))

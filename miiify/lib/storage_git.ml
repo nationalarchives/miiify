@@ -18,6 +18,19 @@ let set ~db ~key ~data ~message =
   let* store = db in
   Store.set_exn store key data ~info:(info message)
 
+let set_batch ~db ~items ~message =
+  let* store = db in
+  Store.with_tree_exn store [] ~info:(info message) (fun tree_opt ->
+    let tree = match tree_opt with
+      | Some t -> t
+      | None -> Store.Tree.empty ()
+    in
+    let* tree' = Lwt_list.fold_left_s (fun tree (key, data) ->
+      Store.Tree.add tree key data
+    ) tree items in
+    Lwt.return (Some tree')
+  )
+
 let get ~db ~key =
   let* store = db in
   Store.get store key

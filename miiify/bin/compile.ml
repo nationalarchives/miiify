@@ -7,11 +7,104 @@ open Miiify
 module Git_store = Storage_git.Store
 module Pack_store = Storage_pack.Store
 
-let rec copy_tree git_store pack_store path validate =
+let is_annotation_filename filename =
+  Utils.Validation.is_valid_json_file filename
+
+let normalize_slug filename =
+  if String.ends_with ~suffix:".json" filename then
+    String.sub filename 0 (String.length filename - 5)
+  else
+    filename
+
+let process_annotation git_path data validate =
+  let leaf_name = List.nth git_path (List.length git_path - 1) in
+  
+  (* Only treat valid annotation filenames as annotations; ignore everything else. *)
+  if not (is_annotation_filename leaf_name) then (
+    let* () =
+      Lwt_io.eprintlf "Warning: Skipping non-annotation file: %s"
+        (String.concat "/" git_path)
+    in
+    Lwt.return_none
+  ) else
+  let slug_norm = normalize_slug leaf_name in
+  if String.length slug_norm = 0 then (
+    let* () =
+      Lwt_io.eprintlf
+        "✗ Invalid annotation filename (cannot be just '.json'): %s"
+        (String.concat "/" git_path)
+    in
+    Lwt.fail (Failure "Invalid annotation filename")
+  ) else
+  
+  (* Transform flat Git structure to hierarchical Pack structure:
+     Git: [container; slug]
+     Pack: [container; "collection"; slug] *)
+  let pack_path_opt =
+    match git_path with
+    | [ container; _slug ] -> Some [ container; "collection"; slug_norm ]
+    | _ -> None
+  in
+  let* pack_path =
+    match pack_path_opt with
+    | Some pack_path -> Lwt.return pack_path
+    | None ->
+        let* () =
+          Lwt_io.eprintlf "✗ Unexpected Git path structure: %s"
+            (String.concat "/" git_path)
+        in
+        Lwt.fail (Failure "Unexpected path structure")
+  in
+  
+  (* Always validate basic JSON *)
+  let* () = 
+    match Utils.Validation.validate_basic_json data with
+    | Ok () -> Lwt.return_unit
+    | Error msg ->
+        let* () = Lwt_io.printlf "✗ %s: %s" (String.concat "/" git_path) msg in
+        Lwt.fail (Failure ("JSON validation failed for " ^ String.concat "/" git_path))
+  in
+
+  (* Check if user supplied an ID - warn that it will be ignored *)
+  let* () =
+    try
+      let json = Yojson.Basic.from_string data in
+      match Yojson.Basic.Util.member "id" json with
+      | `Null -> Lwt.return_unit
+      | `String supplied_id ->
+          Lwt_io.printlf "ℹ %s - Ignoring supplied ID (%s)"
+            (String.concat "/" git_path) supplied_id
+      | _ -> Lwt.return_unit
+    with _ -> Lwt.return_unit
+  in
+  
+  (* Validate against schema if flag is set *)
+  let* () = 
+    if validate then
+      match Utils.Validation.validate_annotation data with
+      | Ok () -> 
+          Lwt.return_unit
+      | Error msg ->
+          let* () =
+            Lwt_io.eprintlf "✗ Schema validation failed for %s: %s"
+              (String.concat "/" git_path) msg
+          in
+          let* () =
+            Lwt_io.eprintl
+              "  Hint: try again without --validate if you want to compile arbitrary Web Annotation JSON."
+          in
+          Lwt.fail (Failure ("Schema validation failed for " ^ String.concat "/" git_path))
+    else
+      Lwt.return_unit
+  in
+  
+  Lwt.return_some (pack_path, data)
+
+let rec collect_annotations git_store path validate =
   let* git_tree = Git_store.get_tree git_store path in
   let* entries = Git_store.Tree.list git_tree [] in
   
-  Lwt_list.fold_left_s (fun count (name, _tree) ->
+  Lwt_list.fold_left_s (fun acc (name, _tree) ->
     let step_name = Irmin.Type.to_string Git_store.Path.step_t name in
     let git_path = path @ [step_name] in
     
@@ -22,116 +115,21 @@ let rec copy_tree git_store pack_store path validate =
         (fun _ -> Lwt.return false)
     in
     
-    let is_annotation_filename filename =
-      Utils.Validation.is_valid_json_file filename
-    in
-
-    let normalize_slug filename =
-      if String.ends_with ~suffix:".json" filename then
-        String.sub filename 0 (String.length filename - 5)
-      else
-        filename
-    in
-
     if is_contents then
       let* data = Git_store.get git_store git_path in
-
-      (* Only treat valid annotation filenames as annotations; ignore everything else. *)
-      let leaf_name = step_name in
-      if not (is_annotation_filename leaf_name) then (
-        let* () =
-          Lwt_io.eprintlf "Warning: Skipping non-annotation file: %s"
-            (String.concat "/" git_path)
-        in
-        Lwt.return count
-      ) else
-      let slug_norm = normalize_slug leaf_name in
-      if String.length slug_norm = 0 then (
-        let* () =
-          Lwt_io.eprintlf
-            "✗ Invalid annotation filename (cannot be just '.json'): %s"
-            (String.concat "/" git_path)
-        in
-        Lwt.fail (Failure "Invalid annotation filename")
-      ) else
-      
-      (* Transform flat Git structure to hierarchical Pack structure:
-         Git: [container; slug]
-         Pack: [container; "collection"; slug] *)
-      let pack_path_opt =
-        match git_path with
-        | [ container; _slug ] -> Some [ container; "collection"; slug_norm ]
-        | _ -> None
-      in
-      let* pack_path =
-        match pack_path_opt with
-        | Some pack_path -> Lwt.return pack_path
-        | None ->
-            let* () =
-              Lwt_io.eprintlf "✗ Unexpected Git path structure: %s"
-                (String.concat "/" git_path)
-            in
-            Lwt.fail (Failure "Unexpected path structure")
-      in
-      
-      (* Always validate basic JSON *)
-      let* () = 
-        match Utils.Validation.validate_basic_json data with
-        | Ok () -> Lwt.return_unit
-        | Error msg ->
-            let* () = Lwt_io.printlf "✗ %s: %s" (String.concat "/" git_path) msg in
-            Lwt.fail (Failure ("JSON validation failed for " ^ String.concat "/" git_path))
-      in
-
-      (* Check if user supplied an ID - warn that it will be ignored *)
-      let* () =
-        try
-          let json = Yojson.Basic.from_string data in
-          match Yojson.Basic.Util.member "id" json with
-          | `Null -> Lwt.return_unit
-          | `String supplied_id ->
-              Lwt_io.printlf "  ℹ %s - Ignoring supplied ID (%s)"
-                (String.concat "/" git_path) supplied_id
-          | _ -> Lwt.return_unit
-        with _ -> Lwt.return_unit
-      in
-      
-      (* Validate against schema if flag is set *)
-      let* () = 
-        if validate then
-          match Utils.Validation.validate_annotation data with
-          | Ok () -> 
-              Lwt.return_unit
-          | Error msg ->
-              let* () =
-                Lwt_io.eprintlf "✗ Schema validation failed for %s: %s"
-                  (String.concat "/" git_path) msg
-              in
-              let* () =
-                Lwt_io.eprintl
-                  "  Hint: try again without --validate if you want to compile arbitrary Web Annotation JSON."
-              in
-              Lwt.fail (Failure ("Schema validation failed for " ^ String.concat "/" git_path))
-        else
-          Lwt.return_unit
-      in
-      
-      let message = Printf.sprintf "Compile: %s" (String.concat "/" pack_path) in
-      let* () = Pack_store.set_exn pack_store pack_path data 
-        ~info:(Storage_pack.info message)
-      in
-      let* () = Lwt_io.printlf "  %s" (String.concat "/" git_path) in
-      Lwt.return (count + 1)
+      let* result = process_annotation git_path data validate in
+      match result with
+      | Some item -> Lwt.return (item :: acc)
+      | None -> Lwt.return acc
     else
-      let* subcount = copy_tree git_store pack_store git_path validate in
-      Lwt.return (count + subcount)
-  ) 0 entries
+      let* subitems = collect_annotations git_store git_path validate in
+      Lwt.return (subitems @ acc)
+  ) [] entries
 
 let run_compile ~git_path ~pack_path ~validate =
   let* () = Lwt_io.printl "Miiify Compile" in
   let* () = Lwt_io.printlf "Source: Git (%s)" git_path in
   let* () = Lwt_io.printlf "Target: Pack (%s)" pack_path in
-  let* () = Lwt_io.printl "" in
 
   (* Initialize Git store *)
   let git_config = Irmin_git.config ~bare:true git_path in
@@ -187,7 +185,10 @@ let run_compile ~git_path ~pack_path ~validate =
           Irmin.Type.to_string Git_store.Path.step_t container_step
         in
 
-        (* Create container metadata in Pack *)
+        (* Collect all annotations from Git for this container *)
+        let* items = collect_annotations git_store [ container ] validate in
+
+        (* Create container metadata *)
         let now = Ptime_clock.now () in
         let timestamp = Ptime.to_rfc3339 now in
         let container_json =
@@ -195,15 +196,19 @@ let run_compile ~git_path ~pack_path ~validate =
             {|{"type":"AnnotationCollection","label":"%s","created":"%s"}|}
             container timestamp
         in
+        let metadata_item = ([ container; "metadata" ], container_json) in
+
+        (* Batch commit: metadata + all annotations in one transaction *)
+        let all_items = metadata_item :: items in
         let* () =
-          Pack_store.set_exn pack_store [ container; "metadata" ] container_json
-            ~info:
-              (Storage_pack.info (Printf.sprintf "Create container %s" container))
+          if List.length all_items > 0 then
+            let message = Printf.sprintf "Compile %s (%d annotations)" container (List.length items) in
+            Storage_pack.set_batch ~db:(Lwt.return pack_store) ~items:all_items ~message
+          else
+            Lwt.return_unit
         in
 
-        (* Copy annotations from Git to Pack with transformation *)
-        let* subcount = copy_tree git_store pack_store [ container ] validate in
-        Lwt.return (count + subcount + 1))
+        Lwt.return (count + List.length items + 1))
       0 containers
   in
 
