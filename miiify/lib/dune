@@ -1,4 +1,11 @@
 (rule
+ (target version.ml)
+ (action
+  (with-stdout-to
+   %{target}
+   (echo "let version = \"%{version:miiify}\"\nlet name = \"miiify\"\n"))))
+
+(rule
  (targets specification_j.ml specification_j.mli)
  (deps specification.atd)
  (action
@@ -19,6 +26,7 @@
 (library
  (name miiify)
  (modules
+  version
   db
   storage_pack
   storage_git

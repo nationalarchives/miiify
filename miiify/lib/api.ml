@@ -30,7 +30,8 @@ let get_status _request =
 
 (* Version endpoint *)
 let get_version _request =
-  Dream.json {|{"version":"2.0.0","name":"miiify"}|}
+  let json = Printf.sprintf {|{"version":"%s","name":"%s"}|} Version.version Version.name in
+  Dream.json json
 
 (* Get a container (annotation collection) *)
 let get_container base_url db request =
