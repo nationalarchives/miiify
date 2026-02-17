@@ -182,6 +182,7 @@ let run_import ~input_dir ~git_path ~validate =
   let* total =
     Lwt_list.fold_left_s
       (fun count (container_id, container_path) ->
+        let* () = Lwt_io.printlf "Processing %s..." container_id in
         let all_files = Sys.readdir container_path |> Array.to_list in
 
         (* Check for subdirectories (not allowed) *)
@@ -261,7 +262,6 @@ let run_import ~input_dir ~git_path ~validate =
       0 containers
   in
 
-  let* () = Lwt_io.printl "" in
   let* () =
     if total = 0 then
       Lwt_io.eprintl

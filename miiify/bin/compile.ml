@@ -184,6 +184,7 @@ let run_compile ~git_path ~pack_path ~validate =
         let container =
           Irmin.Type.to_string Git_store.Path.step_t container_step
         in
+        let* () = Lwt_io.printlf "Processing %s..." container in
 
         (* Collect all annotations from Git for this container *)
         let* items = collect_annotations git_store [ container ] validate in
@@ -216,7 +217,6 @@ let run_compile ~git_path ~pack_path ~validate =
   let* () = Git_store.Repo.close git_repo in
   let* () = Pack_store.Repo.close pack_repo in
 
-  let* () = Lwt_io.printl "" in
   let num_containers = List.length containers in
   let num_annotations = total - num_containers in
   let container_word = if num_containers = 1 then "container" else "containers" in
