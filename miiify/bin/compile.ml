@@ -122,6 +122,7 @@ let rec copy_tree git_store pack_store path validate =
       let* () = Pack_store.set_exn pack_store pack_path data 
         ~info:(Storage_pack.info message)
       in
+      let* () = Lwt_io.printlf "  %s" (String.concat "/" git_path) in
       Lwt.return (count + 1)
     else
       let* subcount = copy_tree git_store pack_store git_path validate in
@@ -213,7 +214,10 @@ let run_compile ~git_path ~pack_path ~validate =
   let* () = Pack_store.Repo.close pack_repo in
 
   let* () = Lwt_io.printl "" in
-  let* () = Lwt_io.printlf "Compiled %d items to Pack store" total in
+  let num_containers = List.length containers in
+  let num_annotations = total - num_containers in
+  let container_word = if num_containers = 1 then "container" else "containers" in
+  let* () = Lwt_io.printlf "Compiled %d annotations from %d %s" num_annotations num_containers container_word in
   Lwt.return_unit
 
 let compile_stores git_path pack_path validate =

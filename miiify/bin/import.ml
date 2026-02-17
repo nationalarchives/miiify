@@ -84,7 +84,7 @@ let import_annotation git_store container_id path validate =
   let message = Printf.sprintf "Import %s/%s" container_id filename in
   
   let* () = Storage_git.set ~db:git_store ~key ~data:content ~message in
-  Lwt_io.printlf "  %s/%s" container_id filename
+  Lwt_io.printlf "  %s/%s" container_id slug
 
 let run_import ~input_dir ~git_path ~validate =
   let* () = Lwt_io.printl "Miiify Import" in
@@ -262,8 +262,9 @@ let run_import ~input_dir ~git_path ~validate =
       Lwt_io.eprintl
         "Warning: No annotations imported (no valid annotation files found)"
     else
-      Lwt_io.printlf "Imported %d annotations from %d containers" total
-        (List.length containers)
+      let container_word = if List.length containers = 1 then "container" else "containers" in
+      Lwt_io.printlf "Imported %d annotations from %d %s" total
+        (List.length containers) container_word
   in
   Lwt.return_unit
 
