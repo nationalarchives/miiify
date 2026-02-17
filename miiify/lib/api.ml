@@ -58,78 +58,87 @@ let get_container base_url db request =
           Lwt.return response)
         (fun _exn -> Dream.respond ~status:`Internal_Server_Error "Internal server error")
 
-(* Get all annotations in a container with pagination *)
-let get_annotations base_url page_limit db request =
+(* Get AnnotationCollection with embedded first page *)
+let get_annotation_collection base_url page_limit db request =
   let container_id = Dream.param request "container_id" in
   let target = Dream.query request "target" in
   
-  (* Check if container exists first *)
   let* exists = Model.container_exists ~db ~container_id in
   if not exists then
     Dream.respond ~status:`Not_Found "Container not found"
   else
   
-  (* Check if page query parameter is present *)
-  match Dream.query request "page" with
-  | None ->
-      (* No page param - return AnnotationCollection with embedded first page *)
-      let* hash_opt = Model.get_collection_hash ~db ~container_id in
-      let etag =
-        Option.map
-          (fun h ->
-            make_etag h
-              [ ("limit", Some (string_of_int page_limit));
-                ("target", percent_opt target) ])
-          hash_opt
-      in
-      
-      let if_none_match = Dream.header request "If-None-Match" in
-      (match (etag, if_none_match) with
-      | (Some tag, Some client_tag) when tag = client_tag ->
-          Dream.respond ~status:`Not_Modified ""
-      | _ ->
-          Lwt.catch
-            (fun () ->
-              let* data = Controller.get_annotation_collection ~page_limit ~db ~id:container_id ~target ~base_url in
-              let* response = Dream.json data in
+  let* hash_opt = Model.get_collection_hash ~db ~container_id in
+  let etag =
+    Option.map
+      (fun h ->
+        make_etag h
+          [ ("limit", Some (string_of_int page_limit));
+            ("target", percent_opt target) ])
+      hash_opt
+  in
+  
+  let if_none_match = Dream.header request "If-None-Match" in
+  (match (etag, if_none_match) with
+  | (Some tag, Some client_tag) when tag = client_tag ->
+      Dream.respond ~status:`Not_Modified ""
+  | _ ->
+      Lwt.catch
+        (fun () ->
+          let* data = Controller.get_annotation_collection ~page_limit ~db ~id:container_id ~target ~base_url in
+          let* response = Dream.json data in
+          (match etag with
+          | Some tag -> Dream.add_header response "ETag" tag
+          | None -> ());
+          Lwt.return response)
+        (fun _exn -> Dream.respond ~status:`Internal_Server_Error "Internal server error"))
+
+(* Get AnnotationPage with items *)
+let get_annotation_page base_url page_limit db request =
+  let container_id = Dream.param request "container_id" in
+  let target = Dream.query request "target" in
+  let page_str = Dream.query request "page" |> Option.value ~default:"0" in
+  let page = try int_of_string page_str with _ -> 0 in
+  
+  let* exists = Model.container_exists ~db ~container_id in
+  if not exists then
+    Dream.respond ~status:`Not_Found "Container not found"
+  else
+  
+  let* hash_opt = Model.get_collection_hash ~db ~container_id in
+  let etag =
+    Option.map
+      (fun h ->
+        make_etag h
+          [ ("limit", Some (string_of_int page_limit));
+            ("page", Some (string_of_int page));
+            ("target", percent_opt target) ])
+      hash_opt
+  in
+  
+  let if_none_match = Dream.header request "If-None-Match" in
+  (match (etag, if_none_match) with
+  | (Some tag, Some client_tag) when tag = client_tag ->
+      Dream.respond ~status:`Not_Modified ""
+  | _ ->
+      Lwt.catch
+        (fun () ->
+          let* data = Controller.get_annotation_page ~page_limit ~db ~id:container_id ~page ~target ~base_url in
+          match data with
+          | Some json -> 
+              let* response = Dream.json json in
               (match etag with
               | Some tag -> Dream.add_header response "ETag" tag
               | None -> ());
-              Lwt.return response)
-            (fun _exn -> Dream.respond ~status:`Internal_Server_Error "Internal server error"))
-  
-  | Some page_str ->
-      (* Page param present - return AnnotationPage with items *)
-      let page = try int_of_string page_str with _ -> 0 in
-      
-      let* hash_opt = Model.get_collection_hash ~db ~container_id in
-      let etag =
-        Option.map
-          (fun h ->
-            make_etag h
-              [ ("limit", Some (string_of_int page_limit));
-                ("page", Some (string_of_int page));
-                ("target", percent_opt target) ])
-          hash_opt
-      in
-      
-      let if_none_match = Dream.header request "If-None-Match" in
-      (match (etag, if_none_match) with
-      | (Some tag, Some client_tag) when tag = client_tag ->
-          Dream.respond ~status:`Not_Modified ""
-      | _ ->
-          Lwt.catch
-            (fun () ->
-              let* data = Controller.get_annotation_page ~page_limit ~db ~id:container_id ~page ~target ~base_url in
-              match data with
-              | Some json -> 
-                  let* response = Dream.json json in
-                  (match etag with
-                  | Some tag -> Dream.add_header response "ETag" tag
-                  | None -> ());
-                  Lwt.return response
-              | None -> Dream.respond ~status:`Not_Found "Page not found")
-            (fun _exn -> Dream.respond ~status:`Internal_Server_Error "Internal server error"))
+              Lwt.return response
+          | None -> Dream.respond ~status:`Not_Found "Page not found")
+        (fun _exn -> Dream.respond ~status:`Internal_Server_Error "Internal server error"))
+
+(* Dispatcher: route to collection or page based on query parameter *)
+let get_annotations base_url page_limit db request =
+  match Dream.query request "page" with
+  | None -> get_annotation_collection base_url page_limit db request
+  | Some _ -> get_annotation_page base_url page_limit db request
 
 (* Get a single annotation *)
 let get_annotation base_url db request =
