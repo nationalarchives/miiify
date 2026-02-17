@@ -4,7 +4,7 @@ type specification = annotation_t
 
 type annotation_t = {
   ?context <json name="@context"> : context_t option;
-  ?id : id_t option;
+  ?id : id_t option <ocaml valid="Specification_util.validate_id">;
   _type <json name="type"> : type_t;
   ?motivation : motivation_t option;
   ?created : created_t option;

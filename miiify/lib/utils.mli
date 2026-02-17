@@ -16,6 +16,5 @@ module Validation : sig
   val is_valid_json_file : string -> bool
   val validate_basic_json : string -> (unit, string) result
   val validate_annotation : string -> (unit, string) result
-  val reject_top_level_id : string -> (unit, string) result
   val validate_path : string list -> (unit, string) result
 end

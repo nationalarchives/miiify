@@ -66,17 +66,17 @@ let import_annotation git_store container_id path validate =
       Lwt.return_unit
   in
 
-  (* Enforce ID management rule: user-supplied IDs are not allowed. *)
+  (* Check if user supplied an ID - warn that it will be ignored *)
   let* () =
-    match Utils.Validation.reject_top_level_id content with
-    | Ok () -> Lwt.return_unit
-    | Error _ ->
-        let* () =
-          Lwt_io.eprintlf
-            "✗ %s/%s supplies an 'id' field. Remove it; Miiify derives 'id' from --base-url and the file path."
-            container_id filename
-        in
-        Lwt.fail (Failure ("Invalid annotation: " ^ path))
+    try
+      let json = Yojson.Basic.from_string content in
+      match Yojson.Basic.Util.member "id" json with
+      | `Null -> Lwt.return_unit
+      | `String supplied_id ->
+          Lwt_io.printlf "  ℹ %s/%s - Ignoring supplied ID (%s)"
+            container_id filename supplied_id
+      | _ -> Lwt.return_unit
+    with _ -> Lwt.return_unit
   in
   
   (* Store in flat structure: container/slug *)

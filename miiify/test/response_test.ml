@@ -55,6 +55,43 @@ let test_id_annotation _switch () =
     "http://localhost:10000/my-canvas/highlight-1" id;
   Lwt.return_unit
 
+(* Test: ID replacement when annotation stored with user-supplied ID *)
+let test_id_replacement _switch () =
+  let* db = create_test_db_pack "id-replacement" in
+  let container_id = "my-canvas" in
+  let annotation_id = "highlight-1" in
+  let base_url = "http://localhost:10000" in
+
+  (* Import annotation WITH a user-supplied ID *)
+  let annotation_with_wrong_id =
+    {|{
+  "id": "http://wrong-server.com/wrong-container/wrong-id",
+  "type": "Annotation",
+  "motivation": "highlighting",
+  "body": {
+    "type": "TextualBody",
+    "value": "Important passage",
+    "purpose": "commenting"
+  },
+  "target": "https://example.com/iiif/canvas/1#xywh=100,100,200,50"
+}|}
+  in
+  let* () =
+    Miiify.Db.set ~db ~key:[ container_id; "collection"; annotation_id ]
+      ~data:annotation_with_wrong_id ~message:"Import annotation with wrong id"
+  in
+
+  (* Get annotation - should have SERVER id, not the supplied one *)
+  let* result =
+    Miiify.Controller.get_annotation ~db ~container_id ~annotation_id ~base_url
+  in
+  let json = Yojson.Basic.from_string result in
+  let id = Yojson.Basic.Util.member "id" json |> Yojson.Basic.Util.to_string in
+
+  Alcotest.(check string) "annotation has server-generated ID (not supplied ID)"
+    "http://localhost:10000/my-canvas/highlight-1" id;
+  Lwt.return_unit
+
 (* Test: ID injection into container *)
 let test_id_container _switch () =
   let* db = create_test_db_pack "id-container" in
@@ -216,6 +253,7 @@ let () =
       ( "ID Injection",
         [
           test_case "annotation id" `Quick test_id_annotation;
+          test_case "id replacement" `Quick test_id_replacement;
           test_case "container id" `Quick test_id_container;
           test_case "collection ids" `Quick test_id_collection;
           test_case "page id" `Quick test_id_page;

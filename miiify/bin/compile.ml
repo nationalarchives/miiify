@@ -83,19 +83,17 @@ let rec copy_tree git_store pack_store path validate =
             Lwt.fail (Failure ("JSON validation failed for " ^ String.concat "/" git_path))
       in
 
-      (* Enforce ID management rule: user-supplied IDs are not allowed. *)
+      (* Check if user supplied an ID - warn that it will be ignored *)
       let* () =
-        match Utils.Validation.reject_top_level_id data with
-        | Ok () -> Lwt.return_unit
-        | Error _ ->
-            let* () =
-              Lwt_io.printlf
-                "✗ %s supplies an 'id' field. Remove it; Miiify derives 'id' from --base-url and the file path."
-                (String.concat "/" git_path)
-            in
-            Lwt.fail
-              (Failure
-                 ("ID validation failed for " ^ String.concat "/" git_path))
+        try
+          let json = Yojson.Basic.from_string data in
+          match Yojson.Basic.Util.member "id" json with
+          | `Null -> Lwt.return_unit
+          | `String supplied_id ->
+              Lwt_io.printlf "  ℹ %s - Ignoring supplied ID (%s)"
+                (String.concat "/" git_path) supplied_id
+          | _ -> Lwt.return_unit
+        with _ -> Lwt.return_unit
       in
       
       (* Validate against schema if flag is set *)

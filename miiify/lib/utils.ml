@@ -33,7 +33,6 @@ module Validation : sig
   val is_valid_json_file : string -> bool
   val validate_basic_json : string -> (unit, string) result
   val validate_annotation : string -> (unit, string) result
-  val reject_top_level_id : string -> (unit, string) result
   val validate_path : string list -> (unit, string) result
 end = struct
   let is_valid_container_name name =
@@ -77,16 +76,6 @@ end = struct
     | Yojson.Json_error msg -> Error ("JSON parse error: " ^ msg)
     | Atdgen_runtime.Oj_run.Error msg -> Error ("Schema validation error: " ^ msg)
     | e -> Error ("Validation error: " ^ Printexc.to_string e)
-
-  let reject_top_level_id content =
-    (* IDs are derived from --base-url and the file path; they must not be stored. *)
-    try
-      let json = Yojson.Basic.from_string content in
-      match Yojson.Basic.Util.member "id" json with
-      | `Null -> Ok ()
-      | _ -> Error "an 'id' field can not be supplied"
-    with
-    | _ -> Ok ()
 
   let validate_path path =
     (* Validate structure: must be <container>/main or <container>/collection/<slug> *)

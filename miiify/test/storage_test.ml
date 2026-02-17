@@ -8,12 +8,12 @@ let test_schema_validation_accepts_highlight _switch () =
   | Ok () -> Lwt.return_unit
   | Error msg -> Alcotest.fail msg
 
-(* Test: Reject user-supplied IDs during import *)
-let test_import_rejects_user_id _switch () =
-  let ws = make_temp_workspace "reject_user_id" in
-  let bad_annotation =
+(* Test: Import accepts annotations with user-supplied IDs (they get replaced in responses) *)
+let test_import_accepts_user_id _switch () =
+  let ws = make_temp_workspace "accept_user_id" in
+  let annotation_with_id =
     {|{
-  "id": "http://example.invalid/should-not-be-here",
+  "id": "http://example.invalid/should-be-ignored",
   "type": "Annotation",
   "motivation": "commenting",
   "body": {"type": "TextualBody", "value": "Has an id"},
@@ -22,20 +22,20 @@ let test_import_rejects_user_id _switch () =
   in
   let _ =
     write_annotation_file ~annotations_dir:ws.annotations_dir
-      ~container_id:"my-canvas" ~slug:"bad-1" ~contents:bad_annotation
+      ~container_id:"my-canvas" ~slug:"with-id" ~contents:annotation_with_id
   in
   let exit_code =
     run_miiify_import ~annotations_dir:ws.annotations_dir ~git_repo:ws.git_repo
   in
-  Alcotest.(check bool) "import fails when id present" true (exit_code <> 0);
+  Alcotest.(check bool) "import succeeds even with id present" true (exit_code = 0);
   Lwt.return_unit
 
-(* Test: Reject user-supplied IDs during compile (data may come from clone/pull) *)
-let test_compile_rejects_user_id _switch () =
-  let ws = make_temp_workspace "compile_reject_user_id" in
-  let bad_annotation =
+(* Test: Compile accepts annotations with user-supplied IDs (they get replaced in responses) *)
+let test_compile_accepts_user_id _switch () =
+  let ws = make_temp_workspace "compile_accept_user_id" in
+  let annotation_with_id =
     {|{
-  "id": "http://example.invalid/should-not-be-here",
+  "id": "http://example.invalid/should-be-ignored",
   "type": "Annotation",
   "motivation": "commenting",
   "body": {"type": "TextualBody", "value": "Has an id"},
@@ -46,12 +46,12 @@ let test_compile_rejects_user_id _switch () =
   (* Simulate a cloned Git store: flat keys [container; slug] *)
   let git_db = Miiify.Storage_git.create ~fname:ws.git_repo in
   let* () =
-    Miiify.Storage_git.set ~db:git_db ~key:[ "my-canvas"; "bad-1" ]
-      ~data:bad_annotation ~message:"seed bad annotation"
+    Miiify.Storage_git.set ~db:git_db ~key:[ "my-canvas"; "with-id" ]
+      ~data:annotation_with_id ~message:"seed annotation with id"
   in
 
   let exit_code = run_miiify_compile ~git_repo:ws.git_repo ~pack_repo:ws.pack_repo in
-  Alcotest.(check bool) "compile fails when id present" true (exit_code <> 0);
+  Alcotest.(check bool) "compile succeeds even with id present" true (exit_code = 0);
   Lwt.return_unit
 
 (* Test: Import annotations like the README example *)
@@ -394,8 +394,8 @@ let () =
   run "Miiify Storage Tests" [
     ("Import Workflow", [ 
       test_case "schema validation accepts highlight" `Quick test_schema_validation_accepts_highlight;
-      test_case "reject user-supplied id" `Quick test_import_rejects_user_id;
-      test_case "compile rejects user-supplied id" `Quick test_compile_rejects_user_id;
+      test_case "import accepts user-supplied id" `Quick test_import_accepts_user_id;
+      test_case "compile accepts user-supplied id" `Quick test_compile_accepts_user_id;
       test_case "import annotations" `Quick test_import_annotations;
       test_case "retrieve annotations" `Quick test_retrieve_annotations;
     ]);

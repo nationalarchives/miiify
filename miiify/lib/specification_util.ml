@@ -17,7 +17,7 @@ let validate_id x =
   match x with
   | Some x -> validate_uri x
   | None -> true
-  
+
 let validate_target = validate_uri
 
 let validate_value x = String.is_valid_utf_8 x
