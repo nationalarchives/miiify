@@ -22,4 +22,8 @@
  (name smoke_test)
  (libraries miiify alcotest-lwt lwt yojson dream))
 
+(test
+ (name adapter_test)
+ (libraries miiify alcotest yojson))
+
 
