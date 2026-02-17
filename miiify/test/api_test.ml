@@ -51,7 +51,6 @@ let create_app db base_url page_limit =
     Dream.get "/version" Miiify.Api.get_version;
     Dream.get "/:container_id/" (Miiify.Api.get_annotations base_url page_limit db);
     Dream.get "/:container_id/:annotation_id" (Miiify.Api.get_annotation base_url db);
-    Dream.get "/:container_id" (Miiify.Api.get_container base_url db);
   ]
 
 (* Test: GET / (status endpoint) *)
@@ -166,24 +165,6 @@ let test_get_collection _switch () =
 
   let prev = Yojson.Basic.Util.member "prev" json in
   Alcotest.(check bool) "prev is null on page=0" true (prev = `Null);
-  
-  Lwt.return_unit
-
-(* Test: GET /:container (container metadata) *)
-let test_get_container _switch () =
-  let* db = create_test_db_from_files "get_container" in
-  let container_id = "my-canvas" in
-  let app = create_app db "http://localhost:10000" 200 in
-  
-  let response = Dream.test app (Dream.request ~target:(Printf.sprintf "/%s" container_id) "") in
-  let* body = Dream.body response in
-  let json = Yojson.Basic.from_string body in
-  
-  Alcotest.(check int) "status 200" 200 (Dream.status_to_int (Dream.status response));
-  
-  (* Check it's an AnnotationCollection *)
-  let type_ = Yojson.Basic.Util.member "type" json |> Yojson.Basic.Util.to_string in
-  Alcotest.(check string) "type is AnnotationCollection" "AnnotationCollection" type_;
   
   Lwt.return_unit
 
@@ -690,22 +671,6 @@ let test_etag _switch () =
   
   Lwt.return_unit
 
-let test_etag_container _switch () =
-  let* db = create_test_db_from_files "etag_container" in
-  let container_id = "my-canvas" in
-  let app = create_app db "http://localhost:10000" 200 in
-
-  let response1 = Dream.test app (Dream.request ~target:(Printf.sprintf "/%s" container_id) "") in
-  let etag = Dream.header response1 "ETag" in
-  Alcotest.(check bool) "has ETag" true (Option.is_some etag);
-
-  let request2 = Dream.request ~target:(Printf.sprintf "/%s" container_id) "" in
-  Dream.set_header request2 "If-None-Match" (Option.get etag);
-  let response2 = Dream.test app request2 in
-  Alcotest.(check int) "status 304" 304 (Dream.status_to_int (Dream.status response2));
-
-  Lwt.return_unit
-
 let test_etag_collection _switch () =
   let* db = create_test_db_from_files "etag_collection" in
   let container_id = "my-canvas" in
@@ -816,6 +781,21 @@ let test_unknown_route_404 _switch () =
 
   let response = Dream.test app (Dream.request ~target:"/no/such/route" "") in
   Alcotest.(check int) "status 404" 404 (Dream.status_to_int (Dream.status response));
+
+  Lwt.return_unit
+
+let test_container_without_trailing_slash_404 _switch () =
+  let* db = create_test_db_from_files "no_trailing_slash" in
+  let container_id = "my-canvas" in
+  let app = create_app db "http://localhost:10000" 200 in
+
+  (* Verify container exists with trailing slash *)
+  let response_with_slash = Dream.test app (Dream.request ~target:(Printf.sprintf "/%s/" container_id) "") in
+  Alcotest.(check int) "GET /:container/ returns 200" 200 (Dream.status_to_int (Dream.status response_with_slash));
+
+  (* Verify without trailing slash returns 404 *)
+  let response_without_slash = Dream.test app (Dream.request ~target:(Printf.sprintf "/%s" container_id) "") in
+  Alcotest.(check int) "GET /:container returns 404" 404 (Dream.status_to_int (Dream.status response_without_slash));
 
   Lwt.return_unit
 
@@ -968,7 +948,6 @@ let () =
     ("Collection Endpoints", [ 
       test_case "GET /:container/" `Quick test_get_collection_without_page;
       test_case "GET /:container/?page=0" `Quick test_get_collection;
-      test_case "GET /:container" `Quick test_get_container;
       test_case "GET /:container/?page=1" `Quick test_get_page;
       test_case "404 for out-of-range page" `Quick test_get_page_out_of_range;
       test_case "page has no nav when all items fit" `Quick test_page_no_navigation_when_all_fit;
@@ -982,7 +961,6 @@ let () =
     ]);
     ("HTTP Features", [
       test_case "ETag support" `Quick test_etag;
-      test_case "ETag 304 for container" `Quick test_etag_container;
       test_case "ETag 304 for collection" `Quick test_etag_collection;
       test_case "ETag does not cross pages" `Quick test_etag_does_not_cross_pages;
       test_case "ETag does not cross targets" `Quick test_etag_does_not_cross_targets;
@@ -990,6 +968,7 @@ let () =
       test_case "negative page returns 404" `Quick test_negative_page_returns_404;
       test_case "missing container returns 404" `Quick test_missing_container_returns_404;
       test_case "unknown route returns 404" `Quick test_unknown_route_404;
+      test_case "container without trailing slash returns 404" `Quick test_container_without_trailing_slash_404;
       test_case "page_limit=0 does not crash" `Quick test_zero_page_limit_does_not_crash;
       test_case "target filtering" `Quick test_target_filtering_over_http;
       test_case "paging yields distinct expected" `Quick test_paging_returns_distinct_expected_items;

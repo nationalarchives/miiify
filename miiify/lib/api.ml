@@ -33,31 +33,6 @@ let get_version _request =
   let json = Printf.sprintf {|{"version":"%s","name":"%s"}|} Version.version Version.name in
   Dream.json json
 
-(* Get a container (annotation collection) *)
-let get_container base_url db request =
-  let container_id = Dream.param request "container_id" in
-  let* exists = Model.container_exists ~db ~container_id in
-  if not exists then Dream.respond ~status:`Not_Found "Container not found"
-  else
-  let* hash_opt = Model.get_container_hash ~db ~container_id in
-  let etag = Option.map (fun h -> "\"" ^ h ^ "\"") hash_opt in
-  
-  (* Check If-None-Match *)
-  let if_none_match = Dream.header request "If-None-Match" in
-  match (etag, if_none_match) with
-  | (Some tag, Some client_tag) when tag = client_tag ->
-      Dream.respond ~status:`Not_Modified ""
-  | _ ->
-      Lwt.catch
-        (fun () ->
-          let* data = Controller.get_container ~db ~container_id ~base_url in
-          let* response = Dream.json data in
-          (match etag with
-          | Some tag -> Dream.add_header response "ETag" tag
-          | None -> ());
-          Lwt.return response)
-        (fun _exn -> Dream.respond ~status:`Internal_Server_Error "Internal server error")
-
 (* Get AnnotationCollection with embedded first page *)
 let get_annotation_collection base_url page_limit db request =
   let container_id = Dream.param request "container_id" in

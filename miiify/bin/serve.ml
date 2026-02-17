@@ -40,10 +40,9 @@ let serve repository_name port page_limit base_url =
          Dream.get "/" Miiify.Api.get_status;
          Dream.get "/version" Miiify.Api.get_version;
          
-         (* Read-only annotation endpoints - more specific routes first *)
+         (* Read-only annotation endpoints *)
          Dream.get "/:container_id/" (Miiify.Api.get_annotations base_url page_limit db);
          Dream.get "/:container_id/:annotation_id" (Miiify.Api.get_annotation base_url db);
-         Dream.get "/:container_id" (Miiify.Api.get_container base_url db);
        ]
 
 let repository_arg =

@@ -14,7 +14,6 @@ Annotations use a simple `/<container>/<slug>` URL pattern:
 ```
 GET /                          # Server status
 GET /version                   # Version info
-GET /:container                # Get container metadata (AnnotationCollection)
 GET /:container/               # Get collection with first page embedded (AnnotationCollection)
 GET /:container/?page=N        # Get specific page (AnnotationPage)
 GET /:container/:slug          # Get specific annotation

@@ -11,7 +11,6 @@ let create_app db base_url page_limit =
       Dream.get "/:container_id/" (Miiify.Api.get_annotations base_url page_limit db);
       Dream.get "/:container_id/:annotation_id"
         (Miiify.Api.get_annotation base_url db);
-      Dream.get "/:container_id" (Miiify.Api.get_container base_url db);
     ]
 
 let test_import_compile_then_http _switch () =
@@ -43,12 +42,12 @@ let test_import_compile_then_http _switch () =
   Alcotest.(check int) "GET / status" 200
     (Dream.status_to_int (Dream.status status_resp));
 
-  (* Container metadata *)
+  (* Collection with first page *)
   let container_resp =
-    Dream.test app (Dream.request ~target:"/my-canvas" "")
+    Dream.test app (Dream.request ~target:"/my-canvas/" "")
   in
   let* container_body = Dream.body container_resp in
-  Alcotest.(check int) "GET /my-canvas status" 200
+  Alcotest.(check int) "GET /my-canvas/ status" 200
     (Dream.status_to_int (Dream.status container_resp));
   let container_json = Yojson.Basic.from_string container_body in
   assert_type container_json "AnnotationCollection";
