@@ -6,104 +6,68 @@ This document explains how to scale Miiify from a single project to institution-
 
 ## Horizontal Scaling
 
-**Miiify scales to millions of annotations** through simple horizontal partitioning - run multiple independent instances and route container requests to the appropriate deployment.
+Miiify's read-only architecture enables simple horizontal scaling to millions of annotations - run multiple independent instances and route container requests to the appropriate deployment.
 
-Miiify's read-only architecture enables simple horizontal scaling.
-
-### Why Read-Only Scales Easily
-
-**No write coordination:**
-- No distributed locks
-- No transaction coordination
-- No eventual consistency problems
-- No cache invalidation complexity
-
-**Updates are offline:**
-- Git PR → merge → compile → deploy
-- Each deployment updates independently
-- Atomic swap of Pack store
-- Zero downtime deployments
+**Resource efficiency:** Miiify is very lightweight. The Pack store is highly compressed and optimized for read performance, with minimal CPU and memory requirements at runtime. This makes it practical to run many instances or dedicate machines to individual large projects.
 
 ## Repository Organization
 
-### Strategy: Category-Based Repos
+### Strategy: Hybrid Deployment
 
-Organize repositories by intellectual/organizational category, with projects as containers within each repo.
+Use a hybrid approach based on project size and update frequency:
 
-**Structure:**
+- **Large projects** (e.g., Domesday Book with 400+ canvases): One repository per project, deployed to its own machine
+- **Small/medium projects**: Group by category into shared repositories on shared machines
+
+**Why this works:**
+- Large projects benefit from isolated resources, independent updates, and faster compile times
+- Grouping small projects is cost-efficient and reduces operational overhead
+- Miiify's lightweight footprint makes dedicated machines practical for major projects
+
+**Example structure:**
 ```
-medieval-annotations/              (repo → deployment)
-├── domesday-book/                 (container/project)
-│   ├── folio-001-recto.json
-│   ├── folio-001-verso.json
-│   └── folio-002-recto.json
-├── magna-carta/                   (container/project)
-│   ├── clause-1.json
-│   └── clause-39.json
-├── bayeux-tapestry/               (container/project)
-│   ├── scene-001.json
-│   └── scene-002.json
-└── lindisfarne-gospels/           (container/project)
-    ├── page-001.json
-    └── page-002.json
+# Large project - dedicated machine
+domesday-book/                             (repo → dedicated machine)
+├── domesday-book-folio-001-recto/        (container = canvas)
+│   ├── annotation-1.json
+│   ├── annotation-2.json
+│   └── annotation-3.json
+├── domesday-book-folio-001-verso/        (container = canvas)
+│   ├── annotation-1.json
+│   └── annotation-2.json
+└── domesday-book-folio-002-recto/        (container = canvas)
+    └── annotation-1.json
 
-modern-annotations/                (repo → deployment)
-├── wwi-letters/                   (container/project)
-│   ├── letter-001.json
-│   └── letter-002.json
-├── wwii-photos/                   (container/project)
-│   ├── photo-001.json
-│   └── photo-002.json
-└── cold-war-documents/            (container/project)
-    ├── doc-001.json
-    └── doc-002.json
+# Grouped small/medium projects - shared machine
+medieval-annotations/                      (repo → shared machine)
+├── magna-carta-clause-1/                 (container = canvas)
+│   ├── annotation-1.json
+│   └── annotation-2.json
+├── magna-carta-clause-39/                (container = canvas)
+│   └── annotation-1.json
+└── bayeux-tapestry-scene-001/            (container = canvas)
+    ├── annotation-1.json
+    └── annotation-2.json
 
-victorian-annotations/             (repo → deployment)
-├── industrial-revolution-docs/    (container/project)
-│   └── report-1851.json
-├── royal-correspondence/          (container/project)
-│   └── letter-victoria-001.json
-└── census-records/                (container/project)
-    └── household-1891-001.json
-```
-
-**Why categories work:**
-- Logical grouping aligns with institution structure
-- Contributors share context and practices
-- Can deploy category-sized chunks independently
-- Natural boundaries (historical periods, departments)
-
-**Naming convention:**
-```
-{institution}-{category}-annotations
-
-Examples:
-- institution-medieval-annotations
-- institution-modern-annotations
-- museum-ancient-annotations
+# Grouped small/medium projects - shared machine  
+modern-annotations/                        (repo → shared machine)
+├── wwi-letters-letter-001/               (container = canvas)
+│   ├── annotation-1.json
+│   └── annotation-2.json
+├── wwi-letters-letter-002/               (container = canvas)
+│   └── annotation-1.json
+└── wwii-photos-photo-001/                (container = canvas)
+    ├── annotation-1.json
+    └── annotation-2.json
 ```
 
-### How to Organize
-
-**Start simple:**
-- One repo with all your annotations
-- One deployment serving everything
-- Works great up to ~500k annotations
-
-**Grow by category when needed:**
-- Split into category repos (medieval, modern, etc.)
-- One deployment per category
-- Each handles ~500k-1M annotations
-
-**Pool small projects:**
-- Group tiny projects together in one repo
-- Saves resources, simplifies management
+**Key principle:** Each container corresponds to one canvas/page, since most viewers don't filter annotations by target. This ensures viewers only load annotations for the specific canvas being displayed, not the entire project.
 
 ## Container Routing
 
 When running multiple deployments, you need a container → deployment index.
 
-### Simple Index (Recommended Start)
+### Simple Index
 
 A static YAML file maps each container to its deployment. A simple router (nginx, Traefik, or custom service) reads this file and forwards requests to the correct backend.
 
@@ -111,22 +75,26 @@ A static YAML file maps each container to its deployment. A simple router (nginx
 ```yaml
 # container-index.yaml
 deployments:
-  miiify-medieval:
+  miiify-domesday:                    # Dedicated machine for large project
+    url: http://miiify-domesday.internal:10000
+    containers:
+      - domesday-book-*               # All Domesday folios
+
+  miiify-medieval:                    # Shared machine for grouped projects
     url: http://miiify-medieval.internal:10000
     containers:
-      - domesday-book
-      - magna-carta
-      - bayeux-tapestry
-      - lindisfarne-gospels
+      - magna-carta-*
+      - bayeux-tapestry-*
+      - lindisfarne-gospels-*
   
-  miiify-modern:
+  miiify-modern:                      # Shared machine for grouped projects
     url: http://miiify-modern.internal:10000
     containers:
-      - wwi-letters
-      - wwii-photos
-      - cold-war-documents
+      - wwi-letters-*
+      - wwii-photos-*
+      - cold-war-documents-*
       
-  miiify-small:
+  miiify-small:                       # Shared machine for grouped projects
     url: http://miiify-small.internal:10000
     containers:
       - exhibition-2024-*
@@ -134,7 +102,7 @@ deployments:
       - workshop-*
 ```
 
-**Result:** Linear scaling - add deployments as needed, each handling ~500k-1M annotations independently.
+**Result:** Using prefix patterns like `domesday-book-*` avoids listing hundreds of individual canvases - it matches all 400+ Domesday folios and routes them to the machine running Miiify on the `medieval-annotations` repository. A router (nginx, Traefik, or custom service) extracts the container name from the URL path and forwards the request to the appropriate deployment.
 
 ## Testing at Scale
 
