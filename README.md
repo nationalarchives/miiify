@@ -4,13 +4,13 @@
 
 Setup and deployment: start with [doc/installation.md](doc/installation.md).
 
-Store annotations in Git, serve them from an optimized Pack store. Familiar version control workflow, no database required.
+Store annotations in Git, serve them from an optimized read-only store. Familiar version control workflow, no database required.
 
 ## Key Features
 
 - **Git-based workflow**: Familiar version control for annotations
 - **No database required**: Just files and Git
-- **Optimized serving**: Pack store for fast, efficient HTTP API
+- **Optimized serving**: Read-optimized store for fast, efficient HTTP API
 - **Stable IDs**: Generated at serve-time from filesystem structure
 - **Horizontal scaling**: Serve millions of annotations across multiple instances
 - **Separation of concerns**: Storage/serving decoupled from search
@@ -70,7 +70,7 @@ miiify-import --input ./annotations --git ./db-git
 
 ### Compile
 
-Compile Git storage to Pack storage for serving:
+Compile Git storage to optimized storage for serving:
 
 ```bash
 miiify-compile --git ./db-git --pack ./db-pack
