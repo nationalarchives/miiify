@@ -4,7 +4,7 @@
 
 Setup and deployment: start with [doc/installation.md](doc/installation.md).
 
-Store annotations in Git, serve them from an optimized read-only store. Familiar version control workflow, no database required.
+Store annotations in Git, serve them from an optimized read-only store. Use familiar version control workflows without any database setup.
 
 ## Key Features
 
