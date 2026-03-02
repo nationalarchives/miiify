@@ -308,7 +308,7 @@ let input_dir =
 
 let git_path =
   let doc = "Irmin Git store directory" in
-  Arg.(value & opt string "db" & info ["git"; "g"] ~docv:"DIR" ~doc)
+  Arg.(value & opt string "git_store" & info ["git"; "g"] ~docv:"DIR" ~doc)
 
 let validate_flag =
   let doc = "Validate JSON against specification.atd schema before importing" in
@@ -321,8 +321,8 @@ let cmd =
     `P "Imports JSON annotation files into Irmin Git store for development/testing.";
     `P "In production, use 'miiify clone' to clone a remote repository instead.";
     `P "Example:";
-    `Pre "  miiify-import --input ./annotations --git ./db";
-    `Pre "  miiify-import --input ./annotations --git ./db --validate";
+    `Pre "  miiify-import --input ./annotations --git ./git_store";
+    `Pre "  miiify-import --input ./annotations --git ./git_store --validate";
   ] in
   let info = Cmd.info "import" ~version:"0.1.0" ~doc ~man in
   Cmd.v info Term.(const import_directory $ input_dir $ git_path $ validate_flag)

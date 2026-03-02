@@ -150,7 +150,7 @@ let repo_url =
 
 let git_path =
   let doc = "Local Irmin Git store directory" in
-  Arg.(value & opt string "db" & info ["git"; "g"] ~docv:"DIR" ~doc)
+  Arg.(value & opt string "git_store" & info ["git"; "g"] ~docv:"DIR" ~doc)
 
 let force_flag =
   let doc = "Allow cloning into an existing non-empty --git directory (reuse store; may move HEAD)" in

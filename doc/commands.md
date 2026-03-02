@@ -15,13 +15,13 @@ Arguments:
   <repo-url>            Remote Git repository URL
 
 Options:
-  --git <dir>           Git store directory (default: db)
+  --git <dir>           Git store directory (default: git_store)
   --force               Allow cloning into an existing non-empty --git directory
 ```
 
 Example:
 ```bash
-miiify-clone https://github.com/jptmoore/miiify-sample-data.git --git ./db-git
+miiify-clone https://github.com/jptmoore/miiify-sample-data.git --git ./git_store
 ```
 
 Notes:
@@ -39,13 +39,13 @@ Arguments:
   <repo-url>            Remote Git repository URL
 
 Options:
-  --git <dir>           Git store directory (default: db)
+  --git <dir>           Git store directory (default: git_store)
   --branch <name>       Branch name (default: main)
 ```
 
 Example:
 ```bash
-miiify-pull https://github.com/jptmoore/miiify-sample-data.git --git ./db-git
+miiify-pull https://github.com/jptmoore/miiify-sample-data.git --git ./git_store
 ```
 
 Note: Use HTTPS URLs. SSH URLs (`git@github.com:...`) are not currently supported.
@@ -61,17 +61,17 @@ Arguments:
   <repo-url>            Remote Git repository URL
 
 Options:
-  --git <dir>           Git store directory (default: db)
+  --git <dir>           Git store directory (default: git_store)
   --branch <name>       Branch name (default: main)
 ```
 
 Example:
 ```bash
 # For public repos with GitHub token
-miiify-push https://TOKEN@github.com/org/annotations.git --git ./db-git
+miiify-push https://TOKEN@github.com/org/annotations.git --git ./git_store
 
 # Or use manual git push
-cd ./db-git
+cd ./git_store
 git remote add origin https://github.com/org/annotations.git
 git push origin main
 ```
@@ -91,13 +91,13 @@ miiify-import [OPTIONS]
 
 Options:
   --input <dir>         Input directory containing container directories (default: ./annotations)
-  --git <dir>           Git store directory (default: db)
+  --git <dir>           Git store directory (default: git_store)
   --validate            Validate JSON against specification.atd schema before importing
 ```
 
 Example:
 ```bash
-miiify-import --input ./annotations --git ./db-git --validate
+miiify-import --input ./annotations --git ./git_store --validate
 ```
 
 ## miiify-compile
@@ -108,14 +108,14 @@ Compile a Git store into an optimized Pack store for serving.
 miiify-compile [OPTIONS]
 
 Options:
-  --git <dir>           Source Git store directory (default: db)
-  --pack <dir>          Destination Pack store directory (default: db-pack)
+  --git <dir>           Source Git store directory (default: git_store)
+  --pack <dir>          Destination Pack store directory (default: pack_store)
   --validate            Enable strict schema validation against specification.atd
 ```
 
 Example:
 ```bash
-miiify-compile --git ./db-git --pack ./db-pack --validate
+miiify-compile --git ./git_store --pack ./pack_store --validate
 ```
 
 ## miiify-serve
@@ -126,7 +126,7 @@ Run the HTTP API server from a Pack store.
 miiify-serve [OPTIONS]
 
 Options:
-  --repository <dir>    Pack store directory (default: db-pack)
+  --repository <dir>    Pack store directory (default: pack_store)
   --port <number>       Server port (default: 10000)
   --page-limit <number> Maximum items per page (default: 200)
   --base-url <url>      Base URL for annotation IDs (default: http://localhost:10000)
@@ -134,5 +134,5 @@ Options:
 
 Example:
 ```bash
-miiify-serve --repository ./db-pack --port 8080 --base-url https://example.com
+miiify-serve --repository ./pack_store --port 8080 --base-url https://example.com
 ```

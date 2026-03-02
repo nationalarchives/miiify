@@ -105,7 +105,7 @@ let pull_updates git_path remote_url branch =
 
 let git_path =
   let doc = "Local Irmin Git store directory" in
-  Arg.(value & opt string "db" & info ["git"; "g"] ~docv:"DIR" ~doc)
+  Arg.(value & opt string "git_store" & info ["git"; "g"] ~docv:"DIR" ~doc)
 
 let remote_url =
   let doc = "Remote repository URL (e.g., https://github.com/user/repo.git)" in
@@ -123,7 +123,7 @@ let cmd =
     `P "Handles conflict resolution using Irmin's merge capabilities.";
     `P "Example:";
     `Pre "  miiify-pull https://github.com/user/annotations.git";
-    `Pre "  miiify-pull https://github.com/user/repo.git --git ./db-git --branch main";
+    `Pre "  miiify-pull https://github.com/user/repo.git --git ./git_store --branch main";
   ] in
   let info = Cmd.info "pull" ~version:"0.1.0" ~doc ~man in
   Cmd.v info Term.(const pull_updates $ git_path $ remote_url $ branch)

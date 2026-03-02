@@ -47,7 +47,7 @@ let serve repository_name port page_limit base_url =
 
 let repository_arg =
   let doc = "Repository directory path" in
-  Arg.(value & opt string "db-pack" & info ["repository"; "r"] ~docv:"DIR" ~doc)
+  Arg.(value & opt string "pack_store" & info ["repository"; "r"] ~docv:"DIR" ~doc)
 
 let port_arg =
   let doc = "Server port" in
@@ -69,7 +69,7 @@ let cmd =
     `P "Annotations are served at /<container>/<slug> where slug is the annotation filename.";
     `P "Supports both /container/slug and /container/slug.json formats.";
     `P "Example:";
-    `Pre "  miiify-serve --repository ./db-pack --port 10000 --base-url https://example.com";
+    `Pre "  miiify-serve --repository ./pack_store --port 10000 --base-url https://example.com";
   ] in
   let info = Cmd.info "serve" ~version:"0.1.0" ~doc ~man in
   Cmd.v info Term.(const serve $ repository_arg $ port_arg $ page_limit_arg $ base_url_arg)
