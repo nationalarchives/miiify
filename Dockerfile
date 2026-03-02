@@ -38,6 +38,5 @@ RUN mkdir -p git_store pack_store annotations && chown -R miiify:miiify git_stor
 
 USER miiify
 
-# Default to serve command, but allow running other commands
-ENTRYPOINT ["/home/miiify/miiify-serve"]
+# No default command - docker-compose.yml or docker run will specify the command
 

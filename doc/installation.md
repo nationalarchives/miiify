@@ -59,7 +59,7 @@ docker compose run --rm miiify /home/miiify/miiify-compile --git ./git_store --p
 
 Environment variables can be configured in a `.env` file:
 ```bash
-MIIIFY_PORT=10000
+MIIIFY_PORT=10000              # Host port (container always uses 10000 internally)
 MIIIFY_REPOSITORY=pack_store
 MIIIFY_PAGE_LIMIT=200
 MIIIFY_BASE_URL=http://localhost:10000

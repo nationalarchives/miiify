@@ -10,16 +10,17 @@ services:
     #   docker compose run miiify /home/miiify/miiify-clone https://github.com/...
     #   docker compose run miiify /home/miiify/miiify-compile --git ./git_store --pack ./pack_store
     command:
+      - "/home/miiify/miiify-serve"
       - "--repository"
       - "${MIIIFY_REPOSITORY:-pack_store}"
       - "--port"
-      - "${MIIIFY_PORT:-10000}"
+      - "10000"
       - "--page-limit"
       - "${MIIIFY_PAGE_LIMIT:-200}"
       - "--base-url"
       - "${MIIIFY_BASE_URL:-http://localhost:10000}"
     ports:
-      - "${MIIIFY_PORT:-10000}:${MIIIFY_PORT:-10000}"
+      - "${MIIIFY_PORT:-10000}:10000"
     volumes:
       - miiify_pack:/home/miiify/pack_store
       - miiify_git:/home/miiify/git_store
