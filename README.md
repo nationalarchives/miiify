@@ -17,14 +17,30 @@ Store annotations in Git, serve them from an optimized read-only store. Use fami
 
 ## Quick Start
 
-### Create Annotation Files
+### 1. Get Annotation Data
 
-**Using an existing Git repository?** Use `miiify-clone` to get started with [sample annotation data](https://github.com/jptmoore/miiify-sample-data):
+**Option A: Clone from Git** (recommended)
+
+Use `miiify-clone` to get started with [sample annotation data](https://github.com/jptmoore/miiify-sample-data):
+
 ```bash
-miiify-clone https://github.com/jptmoore/miiify-sample-data.git --git ./db-git
+miiify-clone https://github.com/jptmoore/miiify-sample-data.git --git ./git_store
 ```
 
-**Or create annotations manually:**
+<details>
+<summary><strong>Using Docker?</strong> Click to see Docker commands</summary>
+
+```bash
+# Clone using Docker
+docker run --rm -v $(pwd)/git_store:/home/miiify/git_store miiify \
+  /home/miiify/miiify-clone https://github.com/jptmoore/miiify-sample-data.git --git ./git_store
+```
+
+</details>
+
+**Option B: Create from filesystem**
+
+Create annotation files manually:
 
 ```bash
 # Create directory structure
@@ -59,31 +75,69 @@ cat > annotations/my-canvas/comment-1.json << 'EOF'
 EOF
 ```
 
-### Import
-
-If you created annotations manually, import them into Git storage:
+Then import them into Git storage:
 
 ```bash
-miiify-import --input ./annotations --git ./db-git
+miiify-import --input ./annotations --git ./git_store
 ```
 
-
-### Compile
-
-Compile Git storage to optimized storage for serving:
+<details>
+<summary><strong>Using Docker?</strong> Click to see Docker commands</summary>
 
 ```bash
-miiify-compile --git ./db-git --pack ./db-pack
+# Import using Docker
+docker run --rm \
+  -v $(pwd)/annotations:/home/miiify/annotations \
+  -v $(pwd)/git_store:/home/miiify/git_store miiify \
+  /home/miiify/miiify-import --input ./annotations --git ./git_store
 ```
 
-### Run Server
+</details>
+
+### 2. Compile to Pack Store
+
+Compile Git storage to optimized pack storage for serving (required for both options):
+
+```bash
+miiify-compile --git ./git_store --pack ./pack_store
+```
+
+<details>
+<summary><strong>Using Docker?</strong> Click to see Docker commands</summary>
+
+```bash
+# Compile using Docker
+docker run --rm \
+  -v $(pwd)/git_store:/home/miiify/git_store \
+  -v $(pwd)/pack_store:/home/miiify/pack_store miiify \
+  /home/miiify/miiify-compile --git ./git_store --pack ./pack_store
+```
+
+</details>
+
+### 3. Run Server
 
 ```bash
 # Start the HTTP API server
-miiify-serve --repository ./db-pack --port 10000
+miiify-serve --repository ./pack_store --port 10000
 ```
 
-### Access Annotations
+<details>
+<summary><strong>Using Docker?</strong> Click to see Docker commands</summary>
+
+```bash
+# Serve using Docker
+docker run --rm -p 10000:10000 \
+  -v $(pwd)/pack_store:/home/miiify/pack_store miiify \
+  --repository ./pack_store --port 10000 --base-url http://localhost:10000
+
+# Or use Docker Compose
+docker compose up -d
+```
+
+</details>
+
+### 4. Access Annotations
 
 ```bash
 # Get annotation

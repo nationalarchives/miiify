@@ -98,8 +98,8 @@ let make_temp_workspace test_name =
   let pid = Unix.getpid () in
   let temp_dir = Printf.sprintf "/tmp/miiify_test_%s_%d_%d" test_name pid ts in
   let annotations_dir = temp_dir ^ "/annotations" in
-  let git_repo = temp_dir ^ "/db-git" in
-  let pack_repo = temp_dir ^ "/db-pack" in
+  let git_repo = temp_dir ^ "/git_store" in
+  let pack_repo = temp_dir ^ "/pack_store" in
 
   Unix.mkdir temp_dir 0o755;
   Unix.mkdir annotations_dir 0o755;

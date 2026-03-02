@@ -11,9 +11,9 @@ WORKDIR /home/opam/miiify
 # Update opam repository to get latest package versions
 RUN opam update
 
-# Install dependencies and build
+# Install dependencies and build all executables
 RUN opam install . --deps-only
-RUN opam exec -- dune build bin/serve.exe --profile=release
+RUN opam exec -- dune build @install --profile=release
 
 # Runtime image
 FROM alpine as run
@@ -24,13 +24,19 @@ RUN apk add --update libev gmp openssl musl
 
 WORKDIR /home/miiify
 
-# Copy the serve executable
+# Copy all executables
+COPY --from=build /home/opam/miiify/_build/default/bin/main.exe ./miiify
+COPY --from=build /home/opam/miiify/_build/default/bin/clone.exe ./miiify-clone
+COPY --from=build /home/opam/miiify/_build/default/bin/pull.exe ./miiify-pull
+COPY --from=build /home/opam/miiify/_build/default/bin/push.exe ./miiify-push
+COPY --from=build /home/opam/miiify/_build/default/bin/import.exe ./miiify-import
+COPY --from=build /home/opam/miiify/_build/default/bin/compile.exe ./miiify-compile
 COPY --from=build /home/opam/miiify/_build/default/bin/serve.exe ./miiify-serve
 
-# Create db directory and set ownership for miiify user
-RUN mkdir -p db && chown -R miiify:miiify db
+# Create directories and set ownership for miiify user
+RUN mkdir -p git_store pack_store annotations && chown -R miiify:miiify git_store pack_store annotations
 
 USER miiify
 
-ENTRYPOINT ["/home/miiify/miiify-serve"]
+# No default command - docker-compose.yml or docker run will specify the command
 

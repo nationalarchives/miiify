@@ -4,20 +4,30 @@ services:
   miiify:
     image: jptmoore/miiify:latest
     build: .
+    # Default: run miiify-serve
+    # To run other commands, override with: docker compose run miiify <command> <args>
+    # Examples:
+    #   docker compose run miiify /home/miiify/miiify-clone https://github.com/...
+    #   docker compose run miiify /home/miiify/miiify-compile --git ./git_store --pack ./pack_store
     command:
+      - "/home/miiify/miiify-serve"
       - "--repository"
-      - "${MIIIFY_REPOSITORY:-db-pack}"
+      - "${MIIIFY_REPOSITORY:-pack_store}"
       - "--port"
-      - "${MIIIFY_PORT:-10000}"
+      - "10000"
       - "--page-limit"
       - "${MIIIFY_PAGE_LIMIT:-200}"
       - "--base-url"
       - "${MIIIFY_BASE_URL:-http://localhost:10000}"
     ports:
-      - "${MIIIFY_PORT:-10000}:${MIIIFY_PORT:-10000}"
+      - "${MIIIFY_PORT:-10000}:10000"
     volumes:
-      - miiify_data:/home/miiify/db-pack
+      - miiify_pack:/home/miiify/pack_store
+      - miiify_git:/home/miiify/git_store
+      - miiify_annotations:/home/miiify/annotations
     restart: always
 
 volumes:
-  miiify_data:
+  miiify_pack:
+  miiify_git:
+  miiify_annotations:

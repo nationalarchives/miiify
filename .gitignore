@@ -44,5 +44,5 @@ packtest/.ocamlformat
 
 # test files
 miiify/annotations/
-miiify/db-git/
-miiify/db-pack/
+miiify/git_store/
+miiify/pack_store/

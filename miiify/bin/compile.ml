@@ -242,11 +242,11 @@ let compile_stores git_path pack_path validate =
 
 let git_path =
   let doc = "Source Git store directory" in
-  Arg.(value & opt string "db" & info ["git"; "g"] ~docv:"DIR" ~doc)
+  Arg.(value & opt string "git_store" & info ["git"; "g"] ~docv:"DIR" ~doc)
 
 let pack_path =
   let doc = "Destination Pack store directory" in
-  Arg.(value & opt string "db-pack" & info ["pack"; "p"] ~docv:"DIR" ~doc)
+  Arg.(value & opt string "pack_store" & info ["pack"; "p"] ~docv:"DIR" ~doc)
 
 let validate_flag =
   let doc = "Enable strict schema validation against specification.atd (structure and JSON syntax always validated)" in
@@ -262,8 +262,8 @@ let cmd =
     `P "With --validate: also validates annotations against W3C schema.";
     `P "Example:";
     `Pre "  miiify-compile";
-    `Pre "  miiify-compile --git ./db --pack ./db-pack";
-    `Pre "  miiify-compile --git ./db --pack ./db-pack --validate";
+    `Pre "  miiify-compile --git ./git_store --pack ./pack_store";
+    `Pre "  miiify-compile --git ./git_store --pack ./pack_store --validate";
   ] in
   let info = Cmd.info "compile" ~version:"0.1.0" ~doc ~man in
   Cmd.v info Term.(const compile_stores $ git_path $ pack_path $ validate_flag)

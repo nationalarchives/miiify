@@ -119,9 +119,9 @@ python scripts/generate_annotations.py \
 
 **Then import, compile, and test:**
 ```bash
-miiify-import --input ./test-annotations --git ./test-db-git
-miiify-compile --git ./test-db-git --pack ./test-db-pack
-miiify-serve --repository ./test-db-pack --port 10000
+miiify-import --input ./test-annotations --git ./test-git-store
+miiify-compile --git ./test-git-store --pack ./test-pack-store
+miiify-serve --repository ./test-pack-store --port 10000
 ```
 
 This allows you to:
