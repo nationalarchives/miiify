@@ -4,8 +4,6 @@
 
 Setup and deployment: start with [doc/installation.md](doc/installation.md).
 
-> **Quick Install:** Use Docker for the easiest setup ([Docker installation](doc/installation.md#docker-recommended)), or install natively on [Linux](doc/installation.md#linux-ubuntudebian)/[macOS](doc/installation.md#macos).
-
 Store annotations in Git, serve them from an optimized read-only store. Use familiar version control workflows without any database setup.
 
 ## Key Features
