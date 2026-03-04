@@ -31,8 +31,8 @@ miiify-clone https://github.com/jptmoore/miiify-sample-data.git --git ./git_stor
 <summary><strong>Using Docker?</strong> Click to see Docker commands</summary>
 
 ```bash
-# Clone using Docker
-docker run --rm -v $(pwd)/git_store:/home/miiify/git_store miiify \
+# Clone using Docker (using pre-built image from GHCR)
+docker run --rm -v $(pwd)/git_store:/home/miiify/git_store ghcr.io/nationalarchives/miiify:latest \
   /home/miiify/miiify-clone https://github.com/jptmoore/miiify-sample-data.git --git ./git_store
 ```
 
@@ -85,10 +85,10 @@ miiify-import --input ./annotations --git ./git_store
 <summary><strong>Using Docker?</strong> Click to see Docker commands</summary>
 
 ```bash
-# Import using Docker
+# Import using Docker (using pre-built image from GHCR)
 docker run --rm \
   -v $(pwd)/annotations:/home/miiify/annotations \
-  -v $(pwd)/git_store:/home/miiify/git_store miiify \
+  -v $(pwd)/git_store:/home/miiify/git_store ghcr.io/nationalarchives/miiify:latest \
   /home/miiify/miiify-import --input ./annotations --git ./git_store
 ```
 
@@ -106,10 +106,10 @@ miiify-compile --git ./git_store --pack ./pack_store
 <summary><strong>Using Docker?</strong> Click to see Docker commands</summary>
 
 ```bash
-# Compile using Docker
+# Compile using Docker (using pre-built image from GHCR)
 docker run --rm \
   -v $(pwd)/git_store:/home/miiify/git_store \
-  -v $(pwd)/pack_store:/home/miiify/pack_store miiify \
+  -v $(pwd)/pack_store:/home/miiify/pack_store ghcr.io/nationalarchives/miiify:latest \
   /home/miiify/miiify-compile --git ./git_store --pack ./pack_store
 ```
 
@@ -126,9 +126,9 @@ miiify-serve --repository ./pack_store --port 10000
 <summary><strong>Using Docker?</strong> Click to see Docker commands</summary>
 
 ```bash
-# Serve using Docker
+# Serve using Docker (using pre-built image from GHCR)
 docker run --rm -p 10000:10000 \
-  -v $(pwd)/pack_store:/home/miiify/pack_store miiify \
+  -v $(pwd)/pack_store:/home/miiify/pack_store ghcr.io/nationalarchives/miiify:latest \
   --repository ./pack_store --port 10000 --base-url http://localhost:10000
 
 # Or use Docker Compose

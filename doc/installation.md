@@ -6,7 +6,19 @@ Miiify can be installed using Docker or natively on Linux/macOS.
 
 The easiest way to get started is with Docker, which includes all dependencies and commands.
 
-### Build the Docker image
+### Pull the pre-built image
+
+Docker images are automatically built via GitHub Actions and published to GitHub Container Registry:
+
+```bash
+# Pull the latest image
+docker pull ghcr.io/nationalarchives/miiify:latest
+```
+
+<details>
+<summary><strong>Alternative:</strong> Build the image locally</summary>
+
+If you prefer to build the image yourself:
 
 ```bash
 # Clone the repository
@@ -17,31 +29,35 @@ cd miiify
 docker build -t miiify .
 ```
 
+Note: If you build locally, replace `ghcr.io/nationalarchives/miiify:latest` with `miiify` in the commands below.
+
+</details>
+
 ### Using Docker commands
 
 All Miiify commands are available in the Docker image. You can run them using `docker run`:
 
 ```bash
 # Clone a repository (recommended)
-docker run --rm -v $(pwd)/git_store:/home/miiify/git_store miiify \
+docker run --rm -v $(pwd)/git_store:/home/miiify/git_store ghcr.io/nationalarchives/miiify:latest \
   /home/miiify/miiify-clone https://github.com/jptmoore/miiify-sample-data.git --git ./git_store
 
 # OR: Import local annotations from filesystem (if you created files manually)
-docker run --rm -v $(pwd)/annotations:/home/miiify/annotations -v $(pwd)/git_store:/home/miiify/git_store miiify \
+docker run --rm -v $(pwd)/annotations:/home/miiify/annotations -v $(pwd)/git_store:/home/miiify/git_store ghcr.io/nationalarchives/miiify:latest \
   /home/miiify/miiify-import --input ./annotations --git ./git_store
 
 # Compile to pack store (required after clone or import)
-docker run --rm -v $(pwd)/git_store:/home/miiify/git_store -v $(pwd)/pack_store:/home/miiify/pack_store miiify \
+docker run --rm -v $(pwd)/git_store:/home/miiify/git_store -v $(pwd)/pack_store:/home/miiify/pack_store ghcr.io/nationalarchives/miiify:latest \
   /home/miiify/miiify-compile --git ./git_store --pack ./pack_store
 
 # Serve annotations
-docker run --rm -p 10000:10000 -v $(pwd)/pack_store:/home/miiify/pack_store miiify \
+docker run --rm -p 10000:10000 -v $(pwd)/pack_store:/home/miiify/pack_store ghcr.io/nationalarchives/miiify:latest \
   --repository ./pack_store --port 10000 --base-url http://localhost:10000
 ```
 
 ### Using Docker Compose
 
-For production deployments, use Docker Compose:
+For production deployments, use Docker Compose (configured to use the GHCR image):
 
 ```bash
 # Start the server (default configuration)

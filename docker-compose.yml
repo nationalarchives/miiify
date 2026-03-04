@@ -2,13 +2,8 @@ version: "3"
 
 services:
   miiify:
-    image: jptmoore/miiify:latest
+    image: ghcr.io/nationalarchives/miiify:latest
     build: .
-    # Default: run miiify-serve
-    # To run other commands, override with: docker compose run miiify <command> <args>
-    # Examples:
-    #   docker compose run miiify /home/miiify/miiify-clone https://github.com/...
-    #   docker compose run miiify /home/miiify/miiify-compile --git ./git_store --pack ./pack_store
     command:
       - "/home/miiify/miiify-serve"
       - "--repository"
