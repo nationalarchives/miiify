@@ -291,6 +291,20 @@ let import_directory input_dir git_path validate =
     Printf.eprintf "Error: Path is not a directory: %s\n" input_dir;
     exit 1
   );
+
+  (* Refuse to import into an existing non-empty git store unless forced *)
+  if Sys.file_exists git_path then (
+    if not (Sys.is_directory git_path) then (
+      Printf.eprintf "Error: --git path exists and is not a directory: %s\n" git_path;
+      exit 1
+    ) else
+      let entries = Sys.readdir git_path |> Array.to_list in
+      if List.length entries > 0 then (
+        Printf.eprintf "Error: --git directory already exists and is not empty: %s\n" git_path;
+        Printf.eprintf "Remove it first if you want to start fresh: rm -rf <git-path>\n";
+        exit 1
+      )
+  );
   
   let result =
     Lwt_main.run
@@ -328,6 +342,7 @@ let cmd =
     `S Manpage.s_description;
     `P "Imports JSON annotation files into Irmin Git store for development/testing.";
     `P "In production, use 'miiify clone' to clone a remote repository instead.";
+    `P "Refuses to import into an existing non-empty --git directory. Remove it first if needed.";
     `P "Example:";
     `Pre "  miiify-import --input ./annotations --git ./git_store";
     `Pre "  miiify-import --input ./annotations --git ./git_store --validate";
