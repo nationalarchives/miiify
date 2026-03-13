@@ -66,17 +66,25 @@ let import_annotation container_id path validate =
       Lwt.return_unit
   in
 
-  (* Check if user supplied an ID - warn that it will be ignored *)
+  (* Check for existing id - error if --validate, warn and continue otherwise *)
   let* () =
     try
       let json = Yojson.Basic.from_string content in
       match Yojson.Basic.Util.member "id" json with
       | `Null -> Lwt.return_unit
       | `String supplied_id ->
-          Lwt_io.printlf "ℹ %s/%s - Ignoring supplied ID (%s)"
-            container_id filename supplied_id
+          if validate then
+            let* () =
+              Lwt_io.eprintlf "✗ %s/%s - annotation must not contain an id (%s)"
+                container_id filename supplied_id
+            in
+            Lwt.fail (Failure ("Annotation contains existing id in " ^ path))
+          else
+            Lwt_io.printlf "ℹ %s/%s - Ignoring supplied ID (%s)"
+              container_id filename supplied_id
       | _ -> Lwt.return_unit
-    with _ -> Lwt.return_unit
+    with Failure _ as e -> Lwt.fail e
+       | _ -> Lwt.return_unit
   in
   
   (* Return key and data for batch commit *)
