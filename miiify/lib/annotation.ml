@@ -69,20 +69,13 @@ let page json ~page ~total ~limit =
 
 let annotation json = json |> to_string
 
-(* Inject ID into annotation for read-only serving *)
+(* Inject ID into annotation for read-only serving.
+   Any existing id field is replaced with the server-generated IRI. *)
 let inject_id json ~container_id ~annotation_id ~base_url =
-  let open Util in
-  let existing_id = json |> member "id" in
-  match existing_id with
-  | `Null ->
-      (* No ID present, inject it *)
-      let iri = base_url ^ "/" ^ container_id ^ "/" ^ annotation_id in
-      combine (`Assoc [ ("id", `String iri) ]) json
-  | `String id ->
-      (* ID exists but might not match server URL, update it *)
-      let iri = base_url ^ "/" ^ container_id ^ "/" ^ annotation_id in
-      if id <> iri then
-        combine (`Assoc [ ("id", `String iri) ]) json
-      else
-        json
-  | _ -> json
+  let iri = base_url ^ "/" ^ container_id ^ "/" ^ annotation_id in
+  let stripped =
+    match json with
+    | `Assoc pairs -> `Assoc (List.filter (fun (k, _) -> k <> "id") pairs)
+    | other -> other
+  in
+  Util.combine (`Assoc [ ("id", `String iri) ]) stripped

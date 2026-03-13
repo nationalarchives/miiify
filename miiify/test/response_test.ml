@@ -86,10 +86,20 @@ let test_id_replacement _switch () =
     Miiify.Controller.get_annotation ~db ~container_id ~annotation_id ~base_url
   in
   let json = Yojson.Basic.from_string result in
-  let id = Yojson.Basic.Util.member "id" json |> Yojson.Basic.Util.to_string in
 
+  (* Confirm the id is the server-generated IRI *)
+  let id = Yojson.Basic.Util.member "id" json |> Yojson.Basic.Util.to_string in
   Alcotest.(check string) "annotation has server-generated ID (not supplied ID)"
     "http://localhost:10000/my-canvas/highlight-1" id;
+
+  (* Confirm no duplicate id keys (JSON parsed as assoc should have exactly one "id") *)
+  let id_count =
+    match json with
+    | `Assoc pairs -> List.length (List.filter (fun (k, _) -> k = "id") pairs)
+    | _ -> 0
+  in
+  Alcotest.(check int) "exactly one id key in output" 1 id_count;
+
   Lwt.return_unit
 
 (* Test: ID injection into container *)
