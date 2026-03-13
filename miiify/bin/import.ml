@@ -66,17 +66,25 @@ let import_annotation container_id path validate =
       Lwt.return_unit
   in
 
-  (* Check if user supplied an ID - warn that it will be ignored *)
+  (* Check for existing id - error if --validate, warn and continue otherwise *)
   let* () =
     try
       let json = Yojson.Basic.from_string content in
       match Yojson.Basic.Util.member "id" json with
       | `Null -> Lwt.return_unit
       | `String supplied_id ->
-          Lwt_io.printlf "ℹ %s/%s - Ignoring supplied ID (%s)"
-            container_id filename supplied_id
+          if validate then
+            let* () =
+              Lwt_io.eprintlf "✗ %s/%s - annotation must not contain an id (%s)"
+                container_id filename supplied_id
+            in
+            Lwt.fail (Failure ("Annotation contains existing id in " ^ path))
+          else
+            Lwt_io.printlf "ℹ %s/%s - Ignoring supplied ID (%s)"
+              container_id filename supplied_id
       | _ -> Lwt.return_unit
-    with _ -> Lwt.return_unit
+    with Failure _ as e -> Lwt.fail e
+       | _ -> Lwt.return_unit
   in
   
   (* Return key and data for batch commit *)
@@ -283,6 +291,20 @@ let import_directory input_dir git_path validate =
     Printf.eprintf "Error: Path is not a directory: %s\n" input_dir;
     exit 1
   );
+
+  (* Refuse to import into an existing non-empty git store unless forced *)
+  if Sys.file_exists git_path then (
+    if not (Sys.is_directory git_path) then (
+      Printf.eprintf "Error: --git path exists and is not a directory: %s\n" git_path;
+      exit 1
+    ) else
+      let entries = Sys.readdir git_path |> Array.to_list in
+      if List.length entries > 0 then (
+        Printf.eprintf "Error: --git directory already exists and is not empty: %s\n" git_path;
+        Printf.eprintf "Remove it first if you want to start fresh: rm -rf <git-path>\n";
+        exit 1
+      )
+  );
   
   let result =
     Lwt_main.run
@@ -320,6 +342,7 @@ let cmd =
     `S Manpage.s_description;
     `P "Imports JSON annotation files into Irmin Git store for development/testing.";
     `P "In production, use 'miiify clone' to clone a remote repository instead.";
+    `P "Refuses to import into an existing non-empty --git directory. Remove it first if needed.";
     `P "Example:";
     `Pre "  miiify-import --input ./annotations --git ./git_store";
     `Pre "  miiify-import --input ./annotations --git ./git_store --validate";

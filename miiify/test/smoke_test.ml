@@ -66,7 +66,72 @@ let test_import_compile_then_http _switch () =
 
   Lwt.return_unit
 
+(* Test: annotation with existing id is warned but accepted without --validate *)
+let test_import_with_id_no_validate _switch () =
+  let ws = make_temp_workspace "id-no-validate" in
+  let _ =
+    write_annotation_file ~annotations_dir:ws.annotations_dir
+      ~container_id:"my-canvas" ~slug:"anno-with-id" ~contents:annotation_with_id
+  in
+  let result =
+    run_miiify_import ~annotations_dir:ws.annotations_dir ~git_repo:ws.git_repo
+  in
+  Alcotest.(check int) "import succeeds without --validate when annotation has id" 0 result;
+  Lwt.return_unit
+
+(* Test: annotation with existing id fails with --validate *)
+let test_import_with_id_validate _switch () =
+  let ws = make_temp_workspace "id-validate" in
+  let _ =
+    write_annotation_file ~annotations_dir:ws.annotations_dir
+      ~container_id:"my-canvas" ~slug:"anno-with-id" ~contents:annotation_with_id
+  in
+  let result =
+    run_miiify_import_validate ~annotations_dir:ws.annotations_dir ~git_repo:ws.git_repo
+  in
+  Alcotest.(check bool) "import fails with --validate when annotation has id" true (result <> 0);
+  Lwt.return_unit
+
+(* Test: compile with existing id is warned but accepted without --validate *)
+let test_compile_with_id_no_validate _switch () =
+  let ws = make_temp_workspace "compile-id-no-validate" in
+  let _ =
+    write_annotation_file ~annotations_dir:ws.annotations_dir
+      ~container_id:"my-canvas" ~slug:"anno-with-id" ~contents:annotation_with_id
+  in
+  let import_result =
+    run_miiify_import ~annotations_dir:ws.annotations_dir ~git_repo:ws.git_repo
+  in
+  Alcotest.(check int) "import succeeds" 0 import_result;
+  let result = run_miiify_compile ~git_repo:ws.git_repo ~pack_repo:ws.pack_repo in
+  Alcotest.(check int) "compile succeeds without --validate when annotation has id" 0 result;
+  Lwt.return_unit
+
+(* Test: compile with existing id fails with --validate *)
+let test_compile_with_id_validate _switch () =
+  let ws = make_temp_workspace "compile-id-validate" in
+  let _ =
+    write_annotation_file ~annotations_dir:ws.annotations_dir
+      ~container_id:"my-canvas" ~slug:"anno-with-id" ~contents:annotation_with_id
+  in
+  let import_result =
+    run_miiify_import ~annotations_dir:ws.annotations_dir ~git_repo:ws.git_repo
+  in
+  Alcotest.(check int) "import succeeds" 0 import_result;
+  let result = run_miiify_compile_validate ~git_repo:ws.git_repo ~pack_repo:ws.pack_repo in
+  Alcotest.(check bool) "compile fails with --validate when annotation has id" true (result <> 0);
+  Lwt.return_unit
+
 let () =
   Lwt_main.run @@
   run "Miiify Smoke Tests"
-    [ ("E2E", [ test_case "import+compile+http" `Quick test_import_compile_then_http ]) ]
+    [
+      ("E2E", [ test_case "import+compile+http" `Quick test_import_compile_then_http ]);
+      ( "ID handling",
+        [
+          test_case "import: id ignored without --validate" `Quick test_import_with_id_no_validate;
+          test_case "import: id rejected with --validate" `Quick test_import_with_id_validate;
+          test_case "compile: id ignored without --validate" `Quick test_compile_with_id_no_validate;
+          test_case "compile: id rejected with --validate" `Quick test_compile_with_id_validate;
+        ] );
+    ]

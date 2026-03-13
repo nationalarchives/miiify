@@ -65,17 +65,25 @@ let process_annotation git_path data validate =
         Lwt.fail (Failure ("JSON validation failed for " ^ String.concat "/" git_path))
   in
 
-  (* Check if user supplied an ID - warn that it will be ignored *)
+  (* Check for existing id - error if --validate, warn and continue otherwise *)
   let* () =
     try
       let json = Yojson.Basic.from_string data in
       match Yojson.Basic.Util.member "id" json with
       | `Null -> Lwt.return_unit
       | `String supplied_id ->
-          Lwt_io.printlf "ℹ %s - Ignoring supplied ID (%s)"
-            (String.concat "/" git_path) supplied_id
+          if validate then
+            let* () =
+              Lwt_io.eprintlf "✗ %s - annotation must not contain an id (%s)"
+                (String.concat "/" git_path) supplied_id
+            in
+            Lwt.fail (Failure ("Annotation contains existing id: " ^ String.concat "/" git_path))
+          else
+            Lwt_io.printlf "ℹ %s - Ignoring supplied ID (%s)"
+              (String.concat "/" git_path) supplied_id
       | _ -> Lwt.return_unit
-    with _ -> Lwt.return_unit
+    with Failure _ as e -> Lwt.fail e
+       | _ -> Lwt.return_unit
   in
   
   (* Validate against schema if flag is set *)

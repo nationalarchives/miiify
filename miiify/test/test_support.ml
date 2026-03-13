@@ -62,6 +62,19 @@ let comment_annotation =
 
 let comment_target = "https://example.com/iiif/canvas/1#xywh=300,150,100,75"
 
+let annotation_with_id =
+  {|{
+  "id": "https://example.com/existing-id",
+  "type": "Annotation",
+  "motivation": "highlighting",
+  "body": {
+    "type": "TextualBody",
+    "value": "Has an existing id",
+    "purpose": "commenting"
+  },
+  "target": "https://example.com/iiif/canvas/1#xywh=100,100,200,50"
+}|}
+
 let write_file path contents =
   let oc = open_out path in
   output_string oc contents;
@@ -120,9 +133,25 @@ let run_miiify_import ~annotations_dir ~git_repo =
   in
   Sys.command cmd
 
+let run_miiify_import_validate ~annotations_dir ~git_repo =
+  let cmd =
+    Printf.sprintf "%s --input %s --git %s --validate > /dev/null 2>&1"
+      (Filename.quote (import_exe ())) (Filename.quote annotations_dir)
+      (Filename.quote git_repo)
+  in
+  Sys.command cmd
+
 let run_miiify_compile ~git_repo ~pack_repo =
   let cmd =
     Printf.sprintf "%s --git %s --pack %s > /dev/null 2>&1"
+      (Filename.quote (compile_exe ())) (Filename.quote git_repo)
+      (Filename.quote pack_repo)
+  in
+  Sys.command cmd
+
+let run_miiify_compile_validate ~git_repo ~pack_repo =
+  let cmd =
+    Printf.sprintf "%s --git %s --pack %s --validate > /dev/null 2>&1"
       (Filename.quote (compile_exe ())) (Filename.quote git_repo)
       (Filename.quote pack_repo)
   in
